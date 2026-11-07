@@ -34,11 +34,22 @@ New decisions must be dated with owner, alternatives, migration impact, and test
 Phase 3. Use the supplied legacy workbook and include all data in review.
 This selects the file as review input, not as authoritative metric truth or as
 byte-equivalent to the original manifest. The response “All data” did not provide
-a calendar snapshot date; that remains unconfirmed.
+a calendar snapshot date at that point; it was subsequently confirmed below.
 Alternatives: a replacement workbook or proceeding with Planning Center first.
 Migration impact: none for offline discovery. Verify the actual fingerprint,
 all-sheet coverage, unknown values and copy dependencies; obtain explicit
 mapping/source/date approvals before importing and approving real weeks.
+
+## Legacy workbook snapshot — 2026-11-07
+**APPROVED**, owner: product owner. The supplied workbook was exported or last
+updated “yesterday,” interpreted as **2026-11-06** relative to 2026-11-07 in
+America/Chicago. Use that date for this working-copy snapshot, not its filename,
+latest populated Sunday or upload timestamp. This does not approve metric
+semantics, source authority, manifest equivalence or any weekly values.
+Alternatives: leaving the date unknown or obtaining a replacement export.
+Migration impact: none; retain this date with any subsequent import provenance.
+Tests: valid calendar input, inclusive snapshot boundary, future-week flags,
+unknown snapshot handling and preservation of all source rows.
 
 ## Phase 2 authorization — 2026-11-07
 **APPROVED**, owner: product owner. Proceed with the roadmap's historical

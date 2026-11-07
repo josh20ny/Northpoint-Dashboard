@@ -42,3 +42,31 @@ mtime_ms = 1794086931145
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/529f2563-f801-49c2-a1a8-4a246fd41719/91ea3aaf-2510-4a93-b659-cfdba27a6ef3"
 storage_version_token = "1794086938483381"
 content_type = "text/csv"
+
+[[outputs]]
+id = "dnarsrSjUqyAAVzS5_Mld"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/source-review.html"
+type = "html"
+title = "Workbook review — November 6 snapshot"
+description = "Updated draft: eight future adult weeks separated from five incomplete weeks on or before the confirmed snapshot. Nothing approved."
+logical_id = "66e43769-c08e-4e82-9170-44c969d015eb"
+content_hash = "sha256:e2451bcc4d94368e19b3e7e18d22a018557dfdf3b8bdfc282172e3ad5e249347"
+size = 21964
+mtime_ms = 1794091129625
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/66e43769-c08e-4e82-9170-44c969d015eb/4abd7419-2dfa-4dd6-921b-ea047dc7fde5"
+storage_version_token = "1794091197859187"
+content_type = "text/html"
+
+[[outputs]]
+id = "3qEdKeNltV1Ra6zqn7cCK"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/adult-comparison-unapproved.csv"
+type = "table"
+title = "Adult comparison — November 6 snapshot"
+description = "All 52 rows retained with explicit snapshot date and future-week flags. Comparisons remain unapproved."
+logical_id = "e0d67073-ab91-45b0-98c9-f6f0398c7e9c"
+content_hash = "sha256:cd83f3ac4b6ae13d223f1662194379031a36345a30528f5c09829e528e6f52f2"
+size = 9641
+mtime_ms = 1794091129637
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/e0d67073-ab91-45b0-98c9-f6f0398c7e9c/41e52116-5972-41cb-9542-ec33c0536423"
+storage_version_token = "1794091198444873"
+content_type = "text/csv"

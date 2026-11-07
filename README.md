@@ -128,8 +128,9 @@ application mechanism per database. No production release is authorized by this 
 
 ## Next roadmap slice
 
-Phase 2: confirm the legacy workbook snapshot/fingerprint, approve explicit
-source mappings and reconcile several selected weeks in the import workspace.
+Phase 2: the selected legacy working copy has a confirmed 2026-11-06 snapshot.
+Approve explicit source mappings and reconcile several selected weeks in the
+import workspace; the different original-manifest fingerprint remains documented.
 Do not proceed into Phase 3 ingestion, metrics or later phases without approval.
 
 ## Non-negotiable standards

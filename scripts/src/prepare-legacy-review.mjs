@@ -50,7 +50,14 @@ export function csv(rows) {
 }
 
 // Discovery only: never calls a repository, storage, evaluator or approval API.
-export function buildReview(workbook, excelDate) {
+export function buildReview(workbook, excelDate, snapshotDate = null) {
+  if (
+    snapshotDate !== null &&
+    (!/^\d{4}-\d{2}-\d{2}$/.test(snapshotDate) ||
+      Number.isNaN(Date.parse(`${snapshotDate}T00:00:00Z`)) ||
+      new Date(`${snapshotDate}T00:00:00Z`).toISOString().slice(0, 10) !== snapshotDate)
+  )
+    throw new Error("Snapshot must be a valid YYYY-MM-DD calendar date");
   const lookup = new Map(
     workbook.cells.map(({ sheet, cell }) => [JSON.stringify([sheet, cell.coordinate]), cell]),
   );
@@ -117,10 +124,17 @@ export function buildReview(workbook, excelDate) {
       variance: totalValue !== null && dashValue !== null ? dashValue - totalValue : null,
       formula: dash?.formula ?? "",
       flags: [
-        ...new Set(
-          [first, second, total, dash, get("SPD", `A${row}`)].flatMap((c) => c?.flags ?? []),
-        ),
+        ...new Set([
+          ...[first, second, total, dash, get("SPD", `A${row}`)].flatMap((c) => c?.flags ?? []),
+          ...(snapshotDate !== null && date > snapshotDate ? ["future_relative_to_snapshot"] : []),
+        ]),
       ],
+      snapshotStatus:
+        snapshotDate === null
+          ? "SNAPSHOT_UNCONFIRMED"
+          : date > snapshotDate
+            ? "FUTURE"
+            : "WITHIN_SNAPSHOT",
       status:
         spdDate !== date
           ? "DATE_MISMATCH"
@@ -137,6 +151,7 @@ export function buildReview(workbook, excelDate) {
     .filter(Boolean)
     .sort();
   return {
+    snapshotDate,
     sheets: workbook.sheets,
     columns: [...columns.values()],
     flags,
@@ -178,7 +193,12 @@ th{background:#e7efec}td{max-width:390px;overflow-wrap:anywhere}
 </style></head><body><main>
 <h1>Phase 2 source review</h1>
 <p class="notice"><strong>Draft — not approved or published.</strong>
-Snapshot date is unconfirmed. Future-relative-to-snapshot checks have not run.
+${
+  review.snapshotDate === null
+    ? "Snapshot date is unconfirmed. Future-relative-to-snapshot checks have not run."
+    : `Snapshot date: ${escapeHtml(review.snapshotDate)}. Later adult weeks are flagged, not deleted.
+Snapshot checks here cover the 2026 adult date axis only; other columns require explicit date mappings.`
+}
 No workbook data has been cataloged, staged or approved by this review.</p>
 <p>Source: ${escapeHtml(source.filename)}<br><small>SHA-256:
 <code>${escapeHtml(source.sha256)}</code></small><br>Excel date system:
@@ -203,6 +223,17 @@ ${review.adult.filter((r) => r.status === "MATCHED_COPIES_UNAPPROVED").length}
 have matching caches and diagnostic service-count sums;
 ${review.adult.filter((r) => r.status === "INCOMPLETE").length} are incomplete.
 None has been independently reconciled or approved.</li>
+${
+  review.snapshotDate === null
+    ? ""
+    : `<li>${
+        review.adult.filter((r) => r.snapshotStatus === "FUTURE").length
+      } adult weeks are later than the snapshot. ${
+        review.adult.filter(
+          (r) => r.snapshotStatus === "WITHIN_SNAPSHOT" && r.status === "INCOMPLETE",
+        ).length
+      } incomplete adult weeks fall on or before the snapshot. Missing future weeks are not past attendance gaps.</li>`
+}
 <li>All Raw Data column A has ${review.rawDateCoverage.dates2026} interpreted dates
 in 2026. Its observed date-axis coverage is
 ${escapeHtml(review.rawDateCoverage.first ?? "unknown")} to
@@ -210,7 +241,11 @@ ${escapeHtml(review.rawDateCoverage.last ?? "unknown")}. This does not establish
 the workbook snapshot date or the coverage of every historical tab.</li>
 </ul></section>
 <section><h2>Decisions required before approval</h2><ol>
-<li>Confirm the workbook's export/as-of date, or obtain a dated replacement.</li>
+<li>${
+    review.snapshotDate === null
+      ? "Confirm the workbook's export/as-of date, or obtain a dated replacement."
+      : `Keep the owner-confirmed ${escapeHtml(review.snapshotDate)} snapshot date with the original-file provenance.`
+  }</li>
 <li>Confirm adult in-person semantics and whether SPD F/I are entered headcounts
 and L their authoritative weekly total. The old 9:30 header is not proof of a
 2026 service time. Online multipliers are excluded from this comparison.</li>
@@ -259,7 +294,7 @@ ${table(
     r.total,
     r.dash,
     r.variance,
-    r.status + "; " + r.flags.join(", "),
+    r.snapshotStatus + "; " + r.status + "; " + r.flags.join(", "),
     r.formula,
   ]),
 )}
@@ -272,15 +307,28 @@ identities or provider URLs are embedded.</p></main></body></html>`;
 async function main() {
   const filename = process.argv[2];
   if (!filename)
-    throw new Error("Usage: pnpm exec tsx scripts/src/prepare-legacy-review.mjs <workbook.xlsx>");
+    throw new Error(
+      "Usage: pnpm exec tsx scripts/src/prepare-legacy-review.mjs <workbook.xlsx> [YYYY-MM-DD]",
+    );
+  const snapshotDate = process.argv[3] ?? null;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(
+    new Date(),
+  );
+  if (snapshotDate !== null && snapshotDate > today)
+    throw new Error("Snapshot cannot be later than today in America/Chicago");
   const { readWorkbook, excelDate, digest } =
     await import("../../artifacts/api-server/src/lib/workbook.ts");
   const bytes = await fs.readFile(filename),
     workbook = readWorkbook(bytes);
   const sha256 = digest(bytes),
-    review = buildReview(workbook, excelDate);
+    review = buildReview(workbook, excelDate, snapshotDate);
   const source = { filename: path.basename(filename), sha256, dateSystem: workbook.dateSystem };
-  const directory = path.join("generated-artifacts", "phase2-review", sha256);
+  const directory = path.join(
+    "generated-artifacts",
+    "phase2-review",
+    sha256,
+    snapshotDate ?? "undated",
+  );
   await fs.mkdir(directory, { recursive: true });
   const html = renderReview(review, source);
   if (Buffer.byteLength(html, "utf8") > 5 * 1024 * 1024)
@@ -347,6 +395,8 @@ async function main() {
         "status",
         "flags",
         "dash_formula",
+        "snapshot_date",
+        "snapshot_status",
       ],
       ...review.adult.map((r) => [
         r.date,
@@ -361,6 +411,8 @@ async function main() {
         r.status,
         r.flags.join(";"),
         r.formula,
+        snapshotDate,
+        r.snapshotStatus,
       ]),
     ]),
   );

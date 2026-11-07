@@ -43,6 +43,23 @@ describe("offline source review (never an approval)", () => {
     w.cells.find((x) => x.sheet === "SPD" && x.cell.column === "A")!.cell.value = "46033";
     expect(buildReview(w, excelDate).adult[0].status).toBe("DATE_MISMATCH");
   });
+  it("checks the explicit snapshot boundary without changing or removing source rows", () => {
+    const w = readWorkbook(syntheticWorkbook());
+    const dateCell = w.cells.find((x) => x.cell.column === "A")!.cell;
+    w.cells = [{ sheet: "Dash", cell: { ...dateCell, coordinate: "A3", row: 3 } }];
+    const later = buildReview(w, excelDate, "2026-01-03");
+    expect(later.adult).toHaveLength(1);
+    expect(later.adult[0].snapshotStatus).toBe("FUTURE");
+    expect(later.adult[0].flags).toContain("future_relative_to_snapshot");
+    expect(w.cells[0].cell.flags).toEqual([]);
+    const boundary = buildReview(w, excelDate, "2026-01-04");
+    expect(boundary.adult[0].snapshotStatus).toBe("WITHIN_SNAPSHOT");
+    expect(boundary.adult[0].flags).not.toContain("future_relative_to_snapshot");
+    expect(buildReview(w, excelDate).adult[0].snapshotStatus).toBe("SNAPSHOT_UNCONFIRMED");
+    expect(() => buildReview(w, excelDate, "2026-02-30")).toThrow("valid");
+    expect(() => buildReview(w, excelDate, "yesterday")).toThrow("valid");
+    expect(renderReview(boundary, source)).toContain("Snapshot date: 2026-01-04");
+  });
   it("escapes HTML and CSV; report is offline and explicitly unapproved", () => {
     const report = renderReview(buildReview(readWorkbook(syntheticWorkbook()), excelDate), source);
     expect(report).not.toContain("<script>");

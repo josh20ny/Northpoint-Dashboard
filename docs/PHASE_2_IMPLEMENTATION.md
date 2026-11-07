@@ -159,20 +159,21 @@ still apply. All import UI/API/download/export paths are Admin-only and audited.
 - Synthetic batch remains withdrawn to retain audit/source history. The test
   account is suspended and sessions revoked. No real mappings were approved.
 
-The real source is not yet cataloged: its snapshot date remains unconfirmed.
+The real source is not yet cataloged. Its snapshot date has now been confirmed
+as 2026-11-06; source mappings and weekly approvals remain outstanding.
 Several owner-approved real weeks have not reconciled, so the roadmap's Phase 2
 exit gate is not yet met. No Phase 3 work, canonical metric publication or
 production release is claimed.
 
 ## Owner-selected offline review — 2026-11-07
 The owner chose to finish Phase 2 before Phase 3 and selected the supplied legacy
-workbook, including all data, as the review input. This does not confirm its
-snapshot date or equivalence to the original manifest.
+workbook, including all data, as the review input. The snapshot was subsequently
+confirmed as 2026-11-06; equivalence to the original manifest remains unproven.
 
 Reproduce a discovery-only review with:
 ```sh
 pnpm exec tsx scripts/src/prepare-legacy-review.mjs \
-  'data/NP Dashboard - 2026 (orignal source-legacy).xlsx'
+  'data/NP Dashboard - 2026 (orignal source-legacy).xlsx' 2026-11-06
 ```
 The command makes no database/storage/provider calls, evaluates no formulas,
 and does not import, approve or publish. Its digest-scoped HTML/CSV outputs in
@@ -194,7 +195,17 @@ the count definition or establish independent evidence: Dash C points to SPD L.
 All Raw Data's interpreted column-A dates cover 2013-01-06 through 2023-12-31,
 with no 2026 dates. Other historical grids still need explicit mapping review.
 
-The three offline-review tests cover complete column discovery, zero versus
+The four offline-review tests cover complete column discovery, zero versus
 missing values, date mismatch, copied-cache status, CSV/HTML escaping and the
-unapproved/offline report boundary. Snapshot-relative QA, Admin mapping approval
-and independent sample-week reconciliation remain open.
+unapproved/offline report boundary, explicit snapshot dates and inclusive
+future-week checks. With the owner's confirmed snapshot of 2026-11-06,
+snapshot checks apply to the adult date axis; the remaining columns need
+approved date mappings before equivalent checks can run. Future rows remain
+in the packet, not silently removed. Outputs are versioned by digest and date.
+Of the 52 adult rows, 44 are on/before the snapshot and eight later weeks are
+flagged as future. Five on/before-snapshot weeks are incomplete: 2026-01-25,
+2026-04-12, 2026-04-19, 2026-04-26 and 2026-05-03. No cancellation, zero-attendance
+or other explanation is inferred for these gaps.
+Admin mapping approval and sample-week reconciliation remain open. Cataloging
+must use the authenticated Admin flow; offline discovery does not impersonate
+an Admin or write approval/audit records on the owner's behalf.

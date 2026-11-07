@@ -15,5 +15,12 @@ The separately named working file `NP Dashboard - 2026 (orignal source-legacy).x
 has SHA-256 `c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3`.
 Its 51-sheet / 35,123-formula / 1,536-external-formula counts agree with the
 earlier inspection, but its bytes differ from the original fingerprint above.
-Do not assume the source values are identical. Confirm snapshot date and source
-equivalence with the owner before approving real historical mappings.
+Do not assume the source values are identical. The owner later confirmed the
+snapshot date below; source equivalence and historical mappings remain unapproved.
+
+## Owner-selected review input and snapshot — 2026-11-07
+The owner selected the supplied legacy working copy for review, including all
+data, and reported its export/last-updated date as “yesterday.” Relative to
+2026-11-07 in America/Chicago, its confirmed snapshot date is **2026-11-06**.
+This selects a review input and date; it does not establish byte equivalence to
+the earlier manifest, source authority or approval of any metric/mapping/week.
