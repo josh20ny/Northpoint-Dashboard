@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "eSDfV-V2dgxARy6d2Qald"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/source-review.html"
+type = "html"
+title = "Phase 2 workbook review — draft"
+description = "All 51 sheets inspected, quality findings, and unapproved adult attendance comparisons. No donor or person-level values."
+logical_id = "b2e297a2-306f-490d-a2c8-01535371352f"
+content_hash = "sha256:5d6d67bce0e72c285a1b9380c5c95b070e0fb44c3c83bf97d8d1e71ec8fd6555"
+size = 20652
+mtime_ms = 1794086931137
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b2e297a2-306f-490d-a2c8-01535371352f/14b16ab0-7045-48d9-a65b-370b0a59133f"
+storage_version_token = "1794086937244919"
+content_type = "text/html"
+
+[[outputs]]
+id = "Z5btnctkS96b9Aik3-aNt"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/column-inventory-unreviewed.csv"
+type = "table"
+title = "All-sheet column inventory — unreviewed"
+description = "1,012 populated columns with source coordinates and quality counts. Metric mappings remain unassigned."
+logical_id = "848c0446-8c31-4dbc-ac78-eaae273ad50c"
+content_hash = "sha256:98bb74ab7640888e8d4e59cb55b65e90563fa538bd27511ff3a5c0cd123d0a6f"
+size = 94450
+mtime_ms = 1794086931145
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/848c0446-8c31-4dbc-ac78-eaae273ad50c/3c05e134-3e95-49be-ba74-6088d185c6bc"
+storage_version_token = "1794086937871330"
+content_type = "text/csv"
+
+[[outputs]]
+id = "bVHFHCHbLxqvGTNQwJRvy"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/adult-comparison-unapproved.csv"
+type = "table"
+title = "2026 adult comparison — unapproved"
+description = "All 52 dated adult rows, preserved missing values, source coordinates and copied-cache warnings."
+logical_id = "529f2563-f801-49c2-a1a8-4a246fd41719"
+content_hash = "sha256:1c3f56ddd1189bba765ec252420c9e8d6a4ca72e481a164ef92e96d7d7f89bc6"
+size = 7843
+mtime_ms = 1794086931145
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/529f2563-f801-49c2-a1a8-4a246fd41719/91ea3aaf-2510-4a93-b659-cfdba27a6ef3"
+storage_version_token = "1794086938483381"
+content_type = "text/csv"

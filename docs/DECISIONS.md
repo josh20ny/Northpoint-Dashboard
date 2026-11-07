@@ -29,6 +29,17 @@
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
 
+## Historical review input and ordering — 2026-11-07
+**APPROVED**, owner: product owner. Finish Phase 2 reconciliation before starting
+Phase 3. Use the supplied legacy workbook and include all data in review.
+This selects the file as review input, not as authoritative metric truth or as
+byte-equivalent to the original manifest. The response “All data” did not provide
+a calendar snapshot date; that remains unconfirmed.
+Alternatives: a replacement workbook or proceeding with Planning Center first.
+Migration impact: none for offline discovery. Verify the actual fingerprint,
+all-sheet coverage, unknown values and copy dependencies; obtain explicit
+mapping/source/date approvals before importing and approving real weeks.
+
 ## Phase 2 authorization — 2026-11-07
 **APPROVED**, owner: product owner. Proceed with the roadmap's historical
 workbook explorer, explicit mapping review, raw-only staging and reconciliation.

@@ -163,3 +163,38 @@ The real source is not yet cataloged: its snapshot date remains unconfirmed.
 Several owner-approved real weeks have not reconciled, so the roadmap's Phase 2
 exit gate is not yet met. No Phase 3 work, canonical metric publication or
 production release is claimed.
+
+## Owner-selected offline review — 2026-11-07
+The owner chose to finish Phase 2 before Phase 3 and selected the supplied legacy
+workbook, including all data, as the review input. This does not confirm its
+snapshot date or equivalence to the original manifest.
+
+Reproduce a discovery-only review with:
+```sh
+pnpm exec tsx scripts/src/prepare-legacy-review.mjs \
+  'data/NP Dashboard - 2026 (orignal source-legacy).xlsx'
+```
+The command makes no database/storage/provider calls, evaluates no formulas,
+and does not import, approve or publish. Its digest-scoped HTML/CSV outputs in
+ignored `generated-artifacts/phase2-review/` contain whole-workbook quality
+metadata, an unreviewed populated-column inventory and an adult aggregate
+comparison. Non-operating headers, ministry semantics and metric mappings are
+left unassigned. Donor/person-level values are not exported.
+
+Working-copy findings: all 51 sheets, 61,101 populated cells and 1,012 populated
+columns inspected. There are 1,536 external-dependency formulas, 5,432 missing
+formula caches and 25,867 unresolved shared-formula followers (overlapping flags).
+There are zero typed Excel errors but 2,408 error-like raw/cached results;
+the original typed-error inventory is not a clean-data guarantee.
+
+All 52 dates in the 2026 Dash adult slice were compared with the corresponding
+SPD date/count cells. Thirty-nine rows have matching copied caches and diagnostic
+first-plus-second-service sums; thirteen are incomplete. This does not approve
+the count definition or establish independent evidence: Dash C points to SPD L.
+All Raw Data's interpreted column-A dates cover 2013-01-06 through 2023-12-31,
+with no 2026 dates. Other historical grids still need explicit mapping review.
+
+The three offline-review tests cover complete column discovery, zero versus
+missing values, date mismatch, copied-cache status, CSV/HTML escaping and the
+unapproved/offline report boundary. Snapshot-relative QA, Admin mapping approval
+and independent sample-week reconciliation remain open.
