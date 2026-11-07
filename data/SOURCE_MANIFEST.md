@@ -9,3 +9,11 @@
 - Typed Excel error cells: 0
 - Note: zero typed Excel error cells does **not** mean all cross-sheet/Google Sheets formula results are valid. Raw cells/cached values and formulas need separate QA.
 - This manifest is reproducible using standard ZIP/OpenXML parsing; do not treat cached values as authoritative.
+
+## Working-copy verification — 2026-11-07
+The separately named working file `NP Dashboard - 2026 (orignal source-legacy).xlsx`
+has SHA-256 `c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3`.
+Its 51-sheet / 35,123-formula / 1,536-external-formula counts agree with the
+earlier inspection, but its bytes differ from the original fingerprint above.
+Do not assume the source values are identical. Confirm snapshot date and source
+equivalence with the owner before approving real historical mappings.

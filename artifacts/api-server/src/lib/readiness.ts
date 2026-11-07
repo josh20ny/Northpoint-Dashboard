@@ -12,6 +12,20 @@ export async function databaseReadiness() {
         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='raw_append_only' AND tgenabled<>'D')
         AND EXISTS (SELECT 1 FROM pg_class WHERE oid=to_regclass('raw_source_records') AND relrowsecurity AND relforcerowsecurity)
         AND EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('raw_source_records') AND polname='raw_admin_only')
+        AND (SELECT count(*) FROM pg_class WHERE oid IN
+          (to_regclass('import_batches'),to_regclass('import_cells'),to_regclass('import_mappings'),
+           to_regclass('import_staged_rows'),to_regclass('import_week_reviews'))
+          AND relrowsecurity AND relforcerowsecurity)=5
+        AND (SELECT count(*) FROM pg_policy WHERE polname='import_admin_only' AND polrelid IN
+          (to_regclass('import_batches'),to_regclass('import_cells'),to_regclass('import_mappings'),
+           to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=5
+        AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_no_delete' AND tgenabled<>'D' AND tgrelid IN
+          (to_regclass('import_batches'),to_regclass('import_cells'),to_regclass('import_mappings'),
+           to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=5
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='import_mapping_provenance' AND tgenabled<>'D')
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='import_batch_provenance' AND tgenabled<>'D')
+        AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_immutable' AND tgenabled<>'D' AND tgrelid IN
+          (to_regclass('import_cells'),to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=3
         AS schema_ready FROM foundation_metadata WHERE key = $1`,
       ["application"],
     );

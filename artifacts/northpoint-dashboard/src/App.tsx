@@ -10,6 +10,7 @@ import Ministries from "@/pages/ministries";
 import Ministry from "@/pages/ministry";
 import Administration from "@/pages/administration";
 import Integrations from "@/pages/integrations";
+import Imports from "@/pages/imports";
 import SystemPage from "@/pages/system";
 import Documentation from "@/pages/documentation";
 import DocumentPage from "@/pages/document";
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/ministries/:slug" component={Ministry} />
           <Route path="/administration" component={Administration} />
           <Route path="/administration/integrations" component={Integrations} />
+          <Route path="/administration/imports" component={Imports} />
           <Route path="/system" component={SystemPage} />
           <Route path="/documentation" component={Documentation} />
           <Route path="/documentation/:slug" component={DocumentPage} />

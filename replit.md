@@ -1,6 +1,6 @@
 # Northpoint Dashboard 2.0
 
-Phase 1 implementation of a portable internal ministry analytics platform.
+Phase 2 historical import workspace for a portable internal ministry analytics platform.
 Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
 
 ## Run & Operate
@@ -32,7 +32,7 @@ All supplied planning documents are retained under their original paths.
 
 ## Architecture decisions
 
-- Phase 1 authorized; do not advance into Phase 2+ without explicit approval.
+- Phase 2 authorized; do not advance into Phase 3+ without explicit approval.
 - Vite/Express retained instead of introducing proposed Next.js; recommendation
   and alternatives in `docs/IMPLEMENTATION.md`, not recorded as owner-approved.
 - Invite-only verified staff access; no inferred domain admission.
@@ -42,8 +42,9 @@ All supplied planning documents are retained under their original paths.
 ## Product
 
 Foundation shell, invite-only OIDC/local roles, Admin access/ministry/service
-configuration, audit log, reference schemas, documentation and health. No
-operational metrics, imports or individual attendance/giving views.
+configuration, audit log, historical workbook exploration/raw staging,
+reference schemas, documentation and health. No operational metrics,
+source integrations or individual attendance/giving views.
 
 ## User preferences
 

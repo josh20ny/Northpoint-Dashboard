@@ -1,5 +1,19 @@
 # API Contract Skeleton
 
+## Phase 2 implemented surface
+All `/api/v1/admin/imports` routes require a current Admin session and `no-store`.
+Mutations additionally require exact Origin and session-bound `X-CSRF-Token`.
+The generated OpenAPI contract defines upload (raw octet-stream XLSX), supplied
+workbook cataloging, batch listing/detail, paginated cells/rows, immutable
+mapping versions/review/staging, withdrawal/restore, reports and evidence-bound
+week approval. Original XLSX and all five report exports are also protected.
+No generic object-storage or raw payload route is exposed.
+
+Inputs include an explicit snapshot date and mapping semantics; there is no
+automatic source-authority inference. `409` marks state/review conflicts,
+`400` invalid or unsupported input, and `503` unavailable private storage.
+No operation publishes normalized observations or operational metrics.
+
 ## Phase 1 implemented surface
 The runtime contract is `lib/api-spec/openapi.yaml`. Auth endpoints are
 `GET /api/auth/user`, `GET /api/login`, `GET /api/callback`, and CSRF-protected

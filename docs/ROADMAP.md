@@ -5,8 +5,10 @@ Phase 0 is retained. Phase 1 implementation adds invite-only verified sign-in,
 local roles, ministry/service configuration, people/source reference schemas and
 append-only audit history. See `PHASE_1_IMPLEMENTATION.md` for scope, verification
 and release limits; `AUTH_SETUP.md` for admission and runtime configuration.
-No source imports, person-level views, operational metrics or Phase 2+ features
-are enabled. Later phases require explicit authorization.
+Phase 2 adds the Admin-only historical workbook explorer, explicit mapping
+review, raw staging and reconciliation reports. Source values are not published
+to metrics. See `PHASE_2_IMPLEMENTATION.md`; the exit gate still requires several
+owner-approved real weeks to reconcile. Phase 3+ requires explicit authorization.
 
 | Phase | Build | Exit gate |
 |---|---|---|

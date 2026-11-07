@@ -1,5 +1,14 @@
 # Logical Database Model (proposed; validate before migration generation)
 
+## Phase 2 implementation note
+`import_batches`, `import_cells`, `import_mappings`, `import_staged_rows` and
+`import_week_reviews` now implement Admin-only, review-only historical staging.
+Original XLSX bytes are write-once in private App Storage, never in PostgreSQL.
+Mapping versions/cells/staged rows and evidence approvals preserve lineage.
+Withdraw/restore retains history. Custom triggers and forced RLS must be preserved.
+No approved staging value becomes a normalized observation or metric in Phase 2.
+See `PHASE_2_IMPLEMENTATION.md`.
+
 ## Phase 1 implementation note
 The additive Phase 1 migration implements local users/access invitations/sessions,
 ministry/service reference records, people/external ID references, raw source

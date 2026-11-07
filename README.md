@@ -1,7 +1,8 @@
 # Northpoint Dashboard 2.0
 
-**Status:** Phase 1 implementation — invite-only sign-in and administration;
-no imported church data or operational metrics.
+**Status:** Phase 2 historical import workspace — invite-only administration,
+workbook exploration, explicit mapping review and raw-only staging. No published
+operational metrics; real sample-week reconciliation still requires owner approval.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
 The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
 
@@ -32,7 +33,10 @@ One place for Northpoint staff to see ministry health, understand what is changi
   TypeScript, formatting configuration, credential-pattern check and GitHub CI.
 
 No dashboards contain invented operational numbers. Unknown values are not zero.
-No live integration, historical data import or ministry formula exists. Only
+Admin-only historical workbook exploration/staging is available at
+`/administration/imports`; see `docs/PHASE_2_IMPLEMENTATION.md` for the workflow,
+limits, source fingerprint discrepancy and remaining release gates.
+No live integration, published dataset or ministry formula exists. Only
 invited, verified identities can create staff sessions. Public pages remain a
 no-data preview; this is not a production-ready analytics release.
 
@@ -124,9 +128,9 @@ application mechanism per database. No production release is authorized by this 
 
 ## Next roadmap slice
 
-Phase 1: verify the invited-owner login and administration walkthrough. Phase 2
-is the historical workbook import explorer with explicit mapping approval.
-Do not proceed into ingestion, metrics or later phases without approval.
+Phase 2: confirm the legacy workbook snapshot/fingerprint, approve explicit
+source mappings and reconcile several selected weeks in the import workspace.
+Do not proceed into Phase 3 ingestion, metrics or later phases without approval.
 
 ## Non-negotiable standards
 

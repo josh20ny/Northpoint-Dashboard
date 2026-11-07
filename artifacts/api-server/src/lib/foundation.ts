@@ -33,7 +33,7 @@ const integrations = [
 export async function foundationStatus() {
   const now = new Date();
   return {
-    phase: 1,
+    phase: 2,
     mode: "foundation_only",
     timezone: REPORTING_TIMEZONE,
     weekEnding: reportingWeekEnding(now),

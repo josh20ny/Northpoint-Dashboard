@@ -15,6 +15,13 @@
       "when": 1794056085994,
       "tag": "0001_majestic_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794070942455,
+      "tag": "0002_acoustic_christian_walker",
+      "breakpoints": true
     }
   ]
 }

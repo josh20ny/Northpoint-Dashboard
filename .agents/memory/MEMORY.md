@@ -1,1 +1,2 @@
 - [Brand direction](brand-direction.md) — preserve the liked dashboard layout; use practical copy and the brand guide plus both Northpoint websites.
+- [Historical source review](historical-source-review.md) — matching inventory counts do not prove workbook equivalence; confirm actual source and snapshot date.

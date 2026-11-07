@@ -29,6 +29,15 @@
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
 
+## Phase 2 authorization — 2026-11-07
+**APPROVED**, owner: product owner. Proceed with the roadmap's historical
+workbook explorer, explicit mapping review, raw-only staging and reconciliation.
+Alternatives were remaining at Phase 1 or starting live connectors; live
+connectors and authoritative metrics remain out of scope. Migration impact:
+additive import lineage/review tables plus private original-file storage.
+Tests cover discovery, source quality, authorization, approval, rollback and
+re-import. Source authority and real sample-week approval remain owner decisions.
+
 ## Implementation recommendation — 2026-11-06
 
 **PROPOSED**, owner: implementation agent; awaiting product-owner acceptance.

@@ -5,6 +5,263 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type WorkbookBytes = Blob;
+
+export interface WorkbookSourceInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  snapshotDate: string;
+}
+
+export type ImportStateInputState = typeof ImportStateInputState[keyof typeof ImportStateInputState];
+
+
+export const ImportStateInputState = {
+  active: 'active',
+  withdrawn: 'withdrawn',
+} as const;
+
+export interface ImportStateInput {
+  state: ImportStateInputState;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  note: string;
+}
+
+export type ImportBatchState = typeof ImportBatchState[keyof typeof ImportBatchState];
+
+
+export const ImportBatchState = {
+  active: 'active',
+  withdrawn: 'withdrawn',
+} as const;
+
+export interface ImportBatch {
+  id: string;
+  sha256: string;
+  filename: string;
+  snapshotDate: string;
+  state: ImportBatchState;
+  createdAt: string;
+}
+
+export interface ImportList {
+  storageReady: boolean;
+  batches: ImportBatch[];
+}
+
+export interface WorkbookSheet {
+  name: string;
+  state: string;
+  cellCount: number;
+  maxRow: number;
+  formulas: number;
+  externalFormulas: number;
+  errors: number;
+  merges: string[];
+}
+
+export type ImportDetailDateSystem = typeof ImportDetailDateSystem[keyof typeof ImportDetailDateSystem];
+
+
+export const ImportDetailDateSystem = {
+  NUMBER_1900: '1900',
+  NUMBER_1904: '1904',
+} as const;
+
+export type ImportMappingInputConfidence = typeof ImportMappingInputConfidence[keyof typeof ImportMappingInputConfidence];
+
+
+export const ImportMappingInputConfidence = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ImportMappingInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  sheet: string;
+  /** @pattern ^[A-Z]{1,3}$ */
+  valueColumn: string;
+  /** @pattern ^[A-Z]{1,3}$ */
+  dateColumn: string;
+  /**
+     * @minimum 1
+     * @maximum 100000
+     */
+  startRow: number;
+  /**
+     * @minimum 1
+     * @maximum 100000
+     */
+  endRow: number;
+  /** @pattern ^[a-z][a-z0-9_]{1,99}$ */
+  target: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  unit: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  ministry: string;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  semantics: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  priority: string;
+  confidence: ImportMappingInputConfidence;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  legacyLabel: string;
+  /** @nullable */
+  supersedes?: string | null;
+}
+
+export type ImportMappingStatus = typeof ImportMappingStatus[keyof typeof ImportMappingStatus];
+
+
+export const ImportMappingStatus = {
+  draft: 'draft',
+  approved: 'approved',
+  rejected: 'rejected',
+  superseded: 'superseded',
+} as const;
+
+export interface ImportMapping {
+  id: string;
+  definition: ImportMappingInput;
+  status: ImportMappingStatus;
+  /** @nullable */
+  reviewNote: string | null;
+  stagedCount: number;
+}
+
+export interface ImportDetail {
+  batch: ImportBatch;
+  dateSystem: ImportDetailDateSystem;
+  sheets: WorkbookSheet[];
+  mappings: ImportMapping[];
+}
+
+export interface WorkbookCell {
+  coordinate: string;
+  row: number;
+  column: string;
+  type: string;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  formula: string | null;
+  /** @nullable */
+  cachedValue: string | null;
+  /** @nullable */
+  style: string | null;
+  flags: string[];
+}
+
+export interface ImportCellPage {
+  cells: WorkbookCell[];
+  page: number;
+  hasMore: boolean;
+}
+
+export type MappingReviewInputDecision = typeof MappingReviewInputDecision[keyof typeof MappingReviewInputDecision];
+
+
+export const MappingReviewInputDecision = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface MappingReviewInput {
+  decision: MappingReviewInputDecision;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  note: string;
+}
+
+export interface StagedImportRow {
+  sourceRow: number;
+  sheet: string;
+  coordinate: string;
+  dateCoordinate: string;
+  /** @nullable */
+  originalDate: string | null;
+  /** @nullable */
+  sundayDate: string | null;
+  /** @nullable */
+  value: number | null;
+  /** @nullable */
+  formula: string | null;
+  /** @nullable */
+  cachedValue: string | null;
+  calculationStatus: string;
+  flags: string[];
+}
+
+export interface ImportRowPage {
+  rows: StagedImportRow[];
+  page: number;
+  hasMore: boolean;
+}
+
+export interface ImportEvidence {
+  mappingId: string;
+  sheet: string;
+  coordinate: string;
+  /** @nullable */
+  value: number | null;
+  flags: string[];
+}
+
+export interface ImportWeek {
+  week: string;
+  target: string;
+  unit: string;
+  ministry: string;
+  evidence: ImportEvidence[];
+  /** @nullable */
+  variance: number | null;
+  flags: string[];
+  evidenceHash: string;
+  approved: boolean;
+}
+
+export interface ImportReport {
+  weeks: ImportWeek[];
+  stagedRows: number;
+  flaggedRows: number;
+  approvedWeeks: number;
+}
+
+export interface WeekReviewInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  week: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidenceHash: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  note: string;
+}
+
 export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
 
 
@@ -236,6 +493,34 @@ export interface DocumentContent {
 export interface HealthStatus {
   status: string;
 }
+
+export type UploadWorkbookParams = {
+/**
+ * @maxLength 180
+ */
+filename: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+snapshotDate: string;
+};
+
+export type GetImportCellsParams = {
+sheet: string;
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
+};
+
+export type GetImportRowsParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
+};
 
 export type GetAdminWorkspaceParams = {
 /**

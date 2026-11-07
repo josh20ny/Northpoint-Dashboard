@@ -7,6 +7,7 @@ import {
   Lock,
   Menu,
   Plug,
+  FileSpreadsheet,
   ShieldCheck,
   Activity,
   X,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/ministries", label: "Ministries", icon: LayoutGrid },
   { href: "/administration", label: "Administration", icon: ShieldCheck, exact: true },
   { href: "/administration/integrations", label: "Integrations", icon: Plug, indent: true },
+  { href: "/administration/imports", label: "Imports", icon: FileSpreadsheet, indent: true },
   { href: "/system", label: "System", icon: Activity },
   { href: "/documentation", label: "Documentation", icon: BookOpen },
 ];

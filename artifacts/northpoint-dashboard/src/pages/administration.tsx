@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
@@ -264,7 +265,18 @@ export default function Administration() {
         eyebrow="Northpoint Austin · Admin"
         title="Administration"
         description="Manage invited access, ministry records, service dates, and the configuration audit."
-        actions={<RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />}
+        actions={
+          <>
+            <Link
+              href="/administration/imports"
+              data-testid="link-admin-imports"
+              className="inline-flex h-9 items-center rounded-lg border bg-card px-3 text-[13px] font-medium hover:bg-secondary"
+            >
+              Workbook imports
+            </Link>
+            <RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />
+          </>
+        }
       />
       {q.isRefetchError && workspace && (
         <div

@@ -8,6 +8,383 @@
 import * as zod from 'zod';
 
 
+export const ListImportsResponse = zod.object({
+  "storageReady": zod.boolean(),
+  "batches": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "state": zod.enum(['active', 'withdrawn']),
+  "createdAt": zod.string()
+}))
+})
+
+
+export const uploadWorkbookQueryFilenameMax = 180;
+
+export const uploadWorkbookQuerySnapshotDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const UploadWorkbookQueryParams = zod.object({
+  "filename": zod.coerce.string().max(uploadWorkbookQueryFilenameMax),
+  "snapshotDate": zod.coerce.string().regex(uploadWorkbookQuerySnapshotDateRegExp)
+})
+
+export const UploadWorkbookResponse = zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "state": zod.enum(['active', 'withdrawn']),
+  "createdAt": zod.string()
+})
+
+
+export const importProvidedWorkbookBodySnapshotDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const ImportProvidedWorkbookBody = zod.object({
+  "snapshotDate": zod.string().regex(importProvidedWorkbookBodySnapshotDateRegExp)
+})
+
+export const ImportProvidedWorkbookResponse = zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "state": zod.enum(['active', 'withdrawn']),
+  "createdAt": zod.string()
+})
+
+
+export const GetImportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getImportResponseMappingsItemDefinitionSheetMax = 100;
+
+export const getImportResponseMappingsItemDefinitionValueColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const getImportResponseMappingsItemDefinitionDateColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const getImportResponseMappingsItemDefinitionStartRowMax = 100000;
+
+export const getImportResponseMappingsItemDefinitionEndRowMax = 100000;
+
+export const getImportResponseMappingsItemDefinitionTargetRegExp = new RegExp('^[a-z][a-z0-9_]{1,99}$');
+export const getImportResponseMappingsItemDefinitionUnitMax = 80;
+
+export const getImportResponseMappingsItemDefinitionMinistryMax = 100;
+
+export const getImportResponseMappingsItemDefinitionSemanticsMin = 5;
+export const getImportResponseMappingsItemDefinitionSemanticsMax = 1000;
+
+export const getImportResponseMappingsItemDefinitionPriorityMax = 100;
+
+export const getImportResponseMappingsItemDefinitionLegacyLabelMax = 300;
+
+
+
+export const GetImportResponse = zod.object({
+  "batch": zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "state": zod.enum(['active', 'withdrawn']),
+  "createdAt": zod.string()
+}),
+  "dateSystem": zod.enum(['1900', '1904']),
+  "sheets": zod.array(zod.object({
+  "name": zod.string(),
+  "state": zod.string(),
+  "cellCount": zod.number().int(),
+  "maxRow": zod.number().int(),
+  "formulas": zod.number().int(),
+  "externalFormulas": zod.number().int(),
+  "errors": zod.number().int(),
+  "merges": zod.array(zod.string())
+})),
+  "mappings": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "definition": zod.object({
+  "sheet": zod.string().min(1).max(getImportResponseMappingsItemDefinitionSheetMax),
+  "valueColumn": zod.string().regex(getImportResponseMappingsItemDefinitionValueColumnRegExp),
+  "dateColumn": zod.string().regex(getImportResponseMappingsItemDefinitionDateColumnRegExp),
+  "startRow": zod.number().int().min(1).max(getImportResponseMappingsItemDefinitionStartRowMax),
+  "endRow": zod.number().int().min(1).max(getImportResponseMappingsItemDefinitionEndRowMax),
+  "target": zod.string().regex(getImportResponseMappingsItemDefinitionTargetRegExp),
+  "unit": zod.string().min(1).max(getImportResponseMappingsItemDefinitionUnitMax),
+  "ministry": zod.string().min(1).max(getImportResponseMappingsItemDefinitionMinistryMax),
+  "semantics": zod.string().min(getImportResponseMappingsItemDefinitionSemanticsMin).max(getImportResponseMappingsItemDefinitionSemanticsMax),
+  "priority": zod.string().min(1).max(getImportResponseMappingsItemDefinitionPriorityMax),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "legacyLabel": zod.string().min(1).max(getImportResponseMappingsItemDefinitionLegacyLabelMax),
+  "supersedes": zod.string().uuid().nullish()
+}),
+  "status": zod.enum(['draft', 'approved', 'rejected', 'superseded']),
+  "reviewNote": zod.string().nullable(),
+  "stagedCount": zod.number().int()
+}))
+})
+
+
+export const GetImportCellsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getImportCellsQueryPageDefault = 1;
+export const getImportCellsQueryPageMax = 10000;
+
+
+
+export const GetImportCellsQueryParams = zod.object({
+  "sheet": zod.coerce.string(),
+  "page": zod.coerce.number().int().min(1).max(getImportCellsQueryPageMax).default(getImportCellsQueryPageDefault)
+})
+
+export const GetImportCellsResponse = zod.object({
+  "cells": zod.array(zod.object({
+  "coordinate": zod.string(),
+  "row": zod.number().int(),
+  "column": zod.string(),
+  "type": zod.string(),
+  "value": zod.string().nullable(),
+  "formula": zod.string().nullable(),
+  "cachedValue": zod.string().nullable(),
+  "style": zod.string().nullable(),
+  "flags": zod.array(zod.string())
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean()
+})
+
+
+export const DownloadImportOriginalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DownloadImportOriginalResponse = zod.unknown()
+
+
+export const ChangeImportStateParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const changeImportStateBodyNoteMin = 5;
+export const changeImportStateBodyNoteMax = 1000;
+
+
+
+export const ChangeImportStateBody = zod.object({
+  "state": zod.enum(['active', 'withdrawn']),
+  "note": zod.string().min(changeImportStateBodyNoteMin).max(changeImportStateBodyNoteMax)
+})
+
+export const ChangeImportStateResponse = zod.void()
+
+
+export const CreateImportMappingParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createImportMappingBodySheetMax = 100;
+
+export const createImportMappingBodyValueColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const createImportMappingBodyDateColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const createImportMappingBodyStartRowMax = 100000;
+
+export const createImportMappingBodyEndRowMax = 100000;
+
+export const createImportMappingBodyTargetRegExp = new RegExp('^[a-z][a-z0-9_]{1,99}$');
+export const createImportMappingBodyUnitMax = 80;
+
+export const createImportMappingBodyMinistryMax = 100;
+
+export const createImportMappingBodySemanticsMin = 5;
+export const createImportMappingBodySemanticsMax = 1000;
+
+export const createImportMappingBodyPriorityMax = 100;
+
+export const createImportMappingBodyLegacyLabelMax = 300;
+
+
+
+export const CreateImportMappingBody = zod.object({
+  "sheet": zod.string().min(1).max(createImportMappingBodySheetMax),
+  "valueColumn": zod.string().regex(createImportMappingBodyValueColumnRegExp),
+  "dateColumn": zod.string().regex(createImportMappingBodyDateColumnRegExp),
+  "startRow": zod.number().int().min(1).max(createImportMappingBodyStartRowMax),
+  "endRow": zod.number().int().min(1).max(createImportMappingBodyEndRowMax),
+  "target": zod.string().regex(createImportMappingBodyTargetRegExp),
+  "unit": zod.string().min(1).max(createImportMappingBodyUnitMax),
+  "ministry": zod.string().min(1).max(createImportMappingBodyMinistryMax),
+  "semantics": zod.string().min(createImportMappingBodySemanticsMin).max(createImportMappingBodySemanticsMax),
+  "priority": zod.string().min(1).max(createImportMappingBodyPriorityMax),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "legacyLabel": zod.string().min(1).max(createImportMappingBodyLegacyLabelMax),
+  "supersedes": zod.string().uuid().nullish()
+})
+
+export const createImportMappingResponseDefinitionSheetMax = 100;
+
+export const createImportMappingResponseDefinitionValueColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const createImportMappingResponseDefinitionDateColumnRegExp = new RegExp('^[A-Z]{1,3}$');
+export const createImportMappingResponseDefinitionStartRowMax = 100000;
+
+export const createImportMappingResponseDefinitionEndRowMax = 100000;
+
+export const createImportMappingResponseDefinitionTargetRegExp = new RegExp('^[a-z][a-z0-9_]{1,99}$');
+export const createImportMappingResponseDefinitionUnitMax = 80;
+
+export const createImportMappingResponseDefinitionMinistryMax = 100;
+
+export const createImportMappingResponseDefinitionSemanticsMin = 5;
+export const createImportMappingResponseDefinitionSemanticsMax = 1000;
+
+export const createImportMappingResponseDefinitionPriorityMax = 100;
+
+export const createImportMappingResponseDefinitionLegacyLabelMax = 300;
+
+
+
+export const CreateImportMappingResponse = zod.object({
+  "id": zod.string().uuid(),
+  "definition": zod.object({
+  "sheet": zod.string().min(1).max(createImportMappingResponseDefinitionSheetMax),
+  "valueColumn": zod.string().regex(createImportMappingResponseDefinitionValueColumnRegExp),
+  "dateColumn": zod.string().regex(createImportMappingResponseDefinitionDateColumnRegExp),
+  "startRow": zod.number().int().min(1).max(createImportMappingResponseDefinitionStartRowMax),
+  "endRow": zod.number().int().min(1).max(createImportMappingResponseDefinitionEndRowMax),
+  "target": zod.string().regex(createImportMappingResponseDefinitionTargetRegExp),
+  "unit": zod.string().min(1).max(createImportMappingResponseDefinitionUnitMax),
+  "ministry": zod.string().min(1).max(createImportMappingResponseDefinitionMinistryMax),
+  "semantics": zod.string().min(createImportMappingResponseDefinitionSemanticsMin).max(createImportMappingResponseDefinitionSemanticsMax),
+  "priority": zod.string().min(1).max(createImportMappingResponseDefinitionPriorityMax),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "legacyLabel": zod.string().min(1).max(createImportMappingResponseDefinitionLegacyLabelMax),
+  "supersedes": zod.string().uuid().nullish()
+}),
+  "status": zod.enum(['draft', 'approved', 'rejected', 'superseded']),
+  "reviewNote": zod.string().nullable(),
+  "stagedCount": zod.number().int()
+})
+
+
+export const ReviewImportMappingParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "mappingId": zod.coerce.string().uuid()
+})
+
+export const reviewImportMappingBodyNoteMin = 5;
+export const reviewImportMappingBodyNoteMax = 1000;
+
+
+
+export const ReviewImportMappingBody = zod.object({
+  "decision": zod.enum(['approved', 'rejected']),
+  "note": zod.string().min(reviewImportMappingBodyNoteMin).max(reviewImportMappingBodyNoteMax)
+})
+
+export const ReviewImportMappingResponse = zod.void()
+
+
+export const StageImportMappingParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "mappingId": zod.coerce.string().uuid()
+})
+
+export const StageImportMappingResponse = zod.void()
+
+
+export const GetImportRowsParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "mappingId": zod.coerce.string().uuid()
+})
+
+export const getImportRowsQueryPageDefault = 1;
+export const getImportRowsQueryPageMax = 10000;
+
+
+
+export const GetImportRowsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(getImportRowsQueryPageMax).default(getImportRowsQueryPageDefault)
+})
+
+export const GetImportRowsResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "sourceRow": zod.number().int(),
+  "sheet": zod.string(),
+  "coordinate": zod.string(),
+  "dateCoordinate": zod.string(),
+  "originalDate": zod.string().nullable(),
+  "sundayDate": zod.string().nullable(),
+  "value": zod.number().nullable(),
+  "formula": zod.string().nullable(),
+  "cachedValue": zod.string().nullable(),
+  "calculationStatus": zod.string(),
+  "flags": zod.array(zod.string())
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean()
+})
+
+
+export const GetImportReportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetImportReportResponse = zod.object({
+  "weeks": zod.array(zod.object({
+  "week": zod.string(),
+  "target": zod.string(),
+  "unit": zod.string(),
+  "ministry": zod.string(),
+  "evidence": zod.array(zod.object({
+  "mappingId": zod.string(),
+  "sheet": zod.string(),
+  "coordinate": zod.string(),
+  "value": zod.number().nullable(),
+  "flags": zod.array(zod.string())
+})),
+  "variance": zod.number().nullable(),
+  "flags": zod.array(zod.string()),
+  "evidenceHash": zod.string(),
+  "approved": zod.boolean()
+})),
+  "stagedRows": zod.number().int(),
+  "flaggedRows": zod.number().int(),
+  "approvedWeeks": zod.number().int()
+})
+
+
+export const ApproveImportWeekParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const approveImportWeekBodyWeekRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const approveImportWeekBodyEvidenceHashRegExp = new RegExp('^[a-f0-9]{64}$');
+export const approveImportWeekBodyNoteMin = 10;
+export const approveImportWeekBodyNoteMax = 1000;
+
+
+
+export const ApproveImportWeekBody = zod.object({
+  "week": zod.string().regex(approveImportWeekBodyWeekRegExp),
+  "evidenceHash": zod.string().regex(approveImportWeekBodyEvidenceHashRegExp),
+  "note": zod.string().min(approveImportWeekBodyNoteMin).max(approveImportWeekBodyNoteMax)
+})
+
+export const ApproveImportWeekResponse = zod.void()
+
+
+export const ExportImportReportParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "kind": zod.enum(['mappings', 'errors', 'conflicts', 'weekly', 'report'])
+})
+
+export const ExportImportReportResponse = zod.unknown()
+
+
 export const GetCurrentAuthUserResponse = zod.object({
   "user": zod.union([zod.object({
   "id": zod.string().uuid(),
