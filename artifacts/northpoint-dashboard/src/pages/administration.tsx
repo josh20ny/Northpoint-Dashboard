@@ -454,8 +454,11 @@ export default function Administration() {
               <SectionHeading
                 icon={ClipboardList}
                 title="Ministries"
-                detail="Keep records for history. Set an end date to archive a ministry."
+                detail="Create reporting groups. Set an end date to archive while keeping history."
               />
+              <p className="mb-3 rounded-md bg-accent/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+                Setup records only. This does not import Planning Center data or calculate metrics.
+              </p>
               <form onSubmit={submitMinistry} className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <TextField
@@ -466,7 +469,7 @@ export default function Administration() {
                     required
                     pattern="^[a-z][a-z0-9-]{1,59}$"
                     placeholder="care-team"
-                    hint="Lowercase; start with a letter, then letters, numbers, or hyphens."
+                    hint="Unique, stable ID; lowercase letters, numbers, or hyphens (for example, care-team)."
                   />
                   <TextField
                     name="ministry-name"
@@ -474,6 +477,7 @@ export default function Administration() {
                     value={ministry.name}
                     onChange={(v) => setMinistry({ ...ministry, name: v })}
                     required
+                    hint="Readable name shown in the dashboard."
                   />
                   <TextField
                     name="ministry-active-from"
@@ -481,6 +485,7 @@ export default function Administration() {
                     type="date"
                     value={ministry.activeFrom}
                     onChange={(v) => setMinistry({ ...ministry, activeFrom: v })}
+                    hint="Optional; leave blank if unknown."
                   />
                   <TextField
                     name="ministry-active-to"
@@ -523,8 +528,11 @@ export default function Administration() {
               <SectionHeading
                 icon={CalendarDays}
                 title="Service occurrences"
-                detail="Add dated services explicitly. No recurring schedule or default time is assumed."
+                detail="Enter one record for each service date; no recurring schedule is assumed."
               />
+              <p className="mb-3 rounded-md bg-accent/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+                Setup records only. This does not import Planning Center data or calculate metrics.
+              </p>
               <form onSubmit={submitService} className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <SelectField
@@ -552,6 +560,7 @@ export default function Administration() {
                     value={service.serviceDate}
                     onChange={(v) => setService({ ...service, serviceDate: v })}
                     required
+                    hint="Use the service's calendar date in Chicago."
                   />
                   <TextField
                     name="service-start-at"
@@ -561,7 +570,7 @@ export default function Administration() {
                     required
                     placeholder="2026-11-08T09:00:00-06:00"
                     pattern={OFFSET_DATETIME_PATTERN}
-                    hint="Chicago timezone. Enter an explicit UTC offset; do not use a browser-local time. Example: 2026-11-08T09:00:00-06:00"
+                    hint="Enter Chicago time with an explicit offset; the date must match Chicago's local date. Example: 2026-11-08T09:00:00-06:00"
                   />
                   <TextField
                     name="service-capacity"
@@ -573,24 +582,28 @@ export default function Administration() {
                     value={service.capacity}
                     onChange={(v) => setService({ ...service, capacity: v })}
                     placeholder="Leave blank if unknown"
+                    hint="Blank means unknown; enter 0 only if capacity is zero."
                   />
                   <TextField
                     name="service-location"
                     label="Location reference"
                     value={service.locationRef}
                     onChange={(v) => setService({ ...service, locationRef: v })}
+                    hint="Optional reference only; it does not connect to a location system."
                   />
                   <TextField
                     name="service-plan-id"
                     label="Plan external ID"
                     value={service.planExternalId}
                     onChange={(v) => setService({ ...service, planExternalId: v })}
+                    hint="Optional external ID only; no service plan is imported."
                   />
                   <TextField
                     name="service-event-ref"
                     label="Special event reference"
                     value={service.specialEventRef}
                     onChange={(v) => setService({ ...service, specialEventRef: v })}
+                    hint="Optional reference only; it does not link event data."
                   />
                 </div>
                 <FormError error={serviceCreateMutation.error || serviceUpdateMutation.error} />
