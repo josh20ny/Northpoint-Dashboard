@@ -1,0 +1,136 @@
+# Northpoint Dashboard 2.0
+
+**Status:** Phase 0 foundation — no live church data, authentication disabled.
+The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
+The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
+
+## Vision
+
+One place for Northpoint staff to see ministry health, understand what is changing, forecast attendance, and identify what needs attention. Emphasize clarity first, optional depth second.
+
+## Read this first
+
+1. `docs/PRD.md` — product goals and scope.
+2. `docs/DECISIONS.md` — approved decisions and open decisions.
+3. `AGENTS.md` — required instructions for coding agents.
+4. `docs/ROADMAP.md` — incremental build order and acceptance gates.
+5. `docs/METRICS.md` and `docs/DATABASE.md` — definitions and storage contracts.
+6. `docs/HISTORICAL_MIGRATION.md` and `data/workbook_inventory.csv` — legacy spreadsheet inventory.
+
+## Implemented foundation
+
+- React/TypeScript web shell, ministry directory and reusable future-module placeholders.
+- Read-only administration/integration setup, documentation reader and system status.
+- Separate Express/TypeScript API; generated OpenAPI clients and response validation.
+- PostgreSQL infrastructure metadata, versioned SQL and explicit migration commands.
+- Replaceable auth contract, disabled provider and fail-closed operational API paths.
+- Synthetic test-only principals, unit/API tests, optional database check, lint,
+  TypeScript, formatting configuration, credential-pattern check and GitHub CI.
+
+No dashboards contain invented operational numbers. Unknown values are not zero.
+No live integration, user account, historical data import or ministry formula exists.
+The application is an unauthenticated **foundation preview**, not a secure staff
+session or a production-ready analytics release.
+
+## Architecture and repository
+
+Node.js 24, pnpm 10.26.1, React/Vite, Express, PostgreSQL and Drizzle.
+See `docs/IMPLEMENTATION.md` for the recommendation to use the supplied
+Vite/Express structure instead of the proposed Next.js stack, the alternatives,
+documentation conflicts and postponed work.
+
+```text
+artifacts/northpoint-dashboard/  web application
+artifacts/api-server/            TypeScript API
+lib/api-spec/                    OpenAPI source of truth
+lib/api-client-react/            generated React Query hooks
+lib/api-zod/                     generated server response validation
+lib/db/                         schema, pool and versioned SQL
+workers/                        future worker boundary (not running)
+tests/                          synthetic unit/API/database tests
+docs/ and data/                 complete planning package
+scripts/                        portable startup and repository checks
+```
+
+## Replit development
+
+1. Dependencies: `pnpm install --frozen-lockfile`.
+2. PostgreSQL uses the provided server-side `DATABASE_URL`; never print or commit it.
+3. Apply the development foundation migration: `pnpm db:migrate:local`.
+4. Use Run to start the managed API and Northpoint Dashboard web workflows. The
+   workflows provide their ports and route prefixes. The Canvas workflow is not
+   required for this application.
+5. Preview `/`. Liveness: `/api/healthz`; database readiness: `/api/v1/readyz`.
+   Readiness returns HTTP 503 when the database or foundation migration is missing.
+
+## Independent local development
+
+1. Install Node.js 24, pnpm 10.26.1 and access to ordinary PostgreSQL.
+2. Run `pnpm install --frozen-lockfile`.
+3. Copy `.env.example` to an ignored `.env`; replace database placeholders with a
+   local/development database connection. Leave `AUTH_PROVIDER=disabled`.
+4. Run `pnpm db:migrate:local`. This is development/CI only, not a production script.
+5. Run **`pnpm start:local`**. It builds the frontend and API and serves both through
+   a single origin at `http://localhost:5000` (or your configured `PORT`).
+   Re-run after edits; this portability preview is not a hot-reload server.
+6. No workers/scheduler or church/provider accounts are needed for Phase 0.
+
+Managed preview uses separate routed services; independent preview uses the API's
+optional static gateway. No browser code uses hardcoded API hostnames.
+
+## Commands
+
+| Command                                         | Purpose                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `pnpm lint`                                     | ESLint application/server/libs/tests/scripts                       |
+| `pnpm typecheck`                                | Shared libraries and artifact TypeScript                           |
+| `pnpm test`                                     | Unit and in-process API/permission tests (no provider credentials) |
+| `pnpm test:db`                                  | Explicit development database/migration check                      |
+| `pnpm format` / `pnpm format:check`             | Prettier; source specs/data/generated files excluded               |
+| `pnpm secrets:check`                            | High-confidence credential patterns and tracked `.env` check       |
+| `pnpm db:generate`                              | Generate versioned SQL after reviewed schema changes               |
+| `pnpm db:migrate:local`                         | Apply pending migrations to development/local PostgreSQL           |
+| `pnpm --filter @workspace/api-spec run codegen` | Regenerate typed clients and schemas                               |
+
+GitHub CI installs dependencies, lints, typechecks, tests, replays migrations against
+ephemeral PostgreSQL and checks credential patterns. CI configuration is not a claim
+that a hosted CI run has passed. See `docs/PHASE_0_VERIFICATION.md`.
+
+## Environment and security
+
+`.env.example` documents safe defaults only. Required for database readiness:
+`DATABASE_URL`. API startup requires `PORT`; managed frontend also requires
+`BASE_PATH`. Auth is disabled by default and unsupported values fail validation.
+`REPORTING_TIMEZONE` is fixed to `America/Chicago`; `LOG_LEVEL` controls structured
+logging. `PROJECT_ROOT` optionally sets the repository root for document loading;
+otherwise it is found by walking from the working directory.
+
+No secrets or live records are required in source. Do not enable sensitive data
+until Phase 1 admission, verified identity, roles and audit are implemented. Public
+Phase 0 specifications/readiness must be reviewed before any production release.
+See `docs/AUTH_SETUP.md` for the precise provider setup and missing admission policy.
+
+## Migrations and hosting
+
+`lib/db/migrations/` contains the initial SQL and snapshot journal. Changes are
+explicit, never startup DDL. A repeat migration invocation should make no changes.
+Managed Replit production schema changes use its Publish review/diff workflow,
+not custom production migration scripts or deployment-build DDL. Independent
+hosting needs a separately reviewed release process. Keep only one schema
+application mechanism per database. No production release is authorized by this setup.
+
+## Next roadmap slice
+
+Phase 1: verified sign-in plus owner-approved invitation/domain admission,
+database-backed roles, auditable access, and initial ministries/service schemas.
+Do not proceed into ingestion, metrics or later phases without approval.
+
+## Non-negotiable standards
+
+No live personal/church data committed to source. Staff cannot access person-level giving through UI, API, exports, AI, logs, or notifications. Every metric exposes source, freshness, definition version, and date window. All integrations must be reconnectable from Admin > Integrations.
+
+## Sources
+
+- `NP Dashboard PRD.pdf` — 4-page project brief, provided November 2026.
+- `NP Dashboard - 2026.xlsx` — legacy workbook; see extracted inventory and migration plan.
+- User decisions from the requirements discussion (November 2026).

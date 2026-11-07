@@ -1,0 +1,45 @@
+# Documentation Index
+
+- `AGENTS.md`
+- `README.md`
+- `docs/AGENT_TASK_PROMPTS.md`
+- `docs/AI_ANALYST.md`
+- `docs/API.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATABASE.md`
+- `docs/DATA_PIPELINES.md`
+- `docs/DECISIONS.md`
+- `docs/DEPLOYMENT.md`
+- `docs/DESIGN_SYSTEM.md`
+- `docs/FORECASTING.md`
+- `docs/GLOSSARY.md`
+- `docs/HEALTH_SCORING.md`
+- `docs/HISTORICAL_MIGRATION.md`
+- `docs/INTEGRATIONS.md`
+- `docs/JOURNEYS.md`
+- `docs/METRICS.md`
+- `docs/OPEN_QUESTIONS.md`
+- `docs/OPERATIONS.md`
+- `docs/PERMISSIONS.md`
+- `docs/PRD.md`
+- `docs/REPORTING.md`
+- `docs/ROADMAP.md`
+- `docs/SCORECARDS.md`
+- `docs/SECURITY.md`
+- `docs/TESTING.md`
+- `docs/UX.md`
+- `docs/specs/CAMP_75.md`
+- `docs/specs/COMMUNICATIONS.md`
+- `docs/specs/CONNECTION.md`
+- `docs/specs/GIVING.md`
+- `docs/specs/INSIDEOUT.md`
+- `docs/specs/SPD.md`
+- `docs/specs/SPECIAL_EVENTS.md`
+- `docs/specs/TRANSIT.md`
+- `docs/specs/UPSTREET.md`
+- `docs/specs/WAUMBA_LAND.md`
+- `docs/WORKBOOK_FINDINGS.md` — workbook inspection
+- `data/SOURCE_MANIFEST.md` — digest and QA counts
+- `data/workbook_inventory.csv` — 51-sheet metadata
+- `data/legacy_columns.csv` — 2026 source header positions
+- `data/sample_week_cells.csv` — example cached cells and formulas

@@ -3,6 +3,15 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "start:local": "node --env-file-if-exists=.env scripts/src/local-foundation.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:db": "RUN_DATABASE_TESTS=1 vitest run tests/database.test.ts",
+    "db:generate": "pnpm --filter @workspace/db run generate",
+    "db:migrate:local": "node --env-file-if-exists=.env scripts/src/migrate-local.mjs",
+    "secrets:check": "node scripts/src/check-secrets.mjs",
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
@@ -13,7 +22,17 @@
     "@replit/connectors-sdk": "^0.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^10.14.0",
+    "express": "^5.3.0",
+    "globals": "^17.14.0",
     "prettier": "^3.9.10",
-    "typescript": "~5.9.3"
+    "supertest": "^7.3.1",
+    "tsx": "catalog:",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0"
   }
 }

@@ -1,14 +1,19 @@
-# [Project name]
+# Northpoint Dashboard 2.0
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Phase 0 foundation for a portable internal ministry analytics platform.
+Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- Managed frontend: `artifacts/northpoint-dashboard: web`; use Run/managed workflows.
+- `pnpm start:local` — independent single-origin build-and-run preview outside Replit.
+- `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm secrets:check` — quality checks
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm db:generate`, `pnpm db:migrate:local` — versioned development migrations
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
@@ -22,23 +27,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+See `README.md` for the repository map; `docs/IMPLEMENTATION.md` for boundaries.
+All supplied planning documents are retained under their original paths.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Phase 0 only; do not advance roadmap phases without explicit approval.
+- Vite/Express retained instead of introducing proposed Next.js; recommendation
+  and alternatives in `docs/IMPLEMENTATION.md`, not recorded as owner-approved.
+- No live accounts or production credentials in initialization.
+- Disabled auth means no authorized users, not a permissive fake admin.
+- Operational routes fail closed; public preview is non-sensitive infrastructure/specs.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Read-only foundation shell, ministry placeholders, integration scaffolding,
+documentation reader, and infrastructure health. No operational metrics.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+Follow approved decisions; preserve unknown/TBD rules. No invented ministry
+calculations, numeric thresholds, branding, donors, attendance or role sessions.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+Re-run OpenAPI codegen after contract edits. Apply migrations only explicitly in
+development/CI; no startup/deploy DDL. See `docs/AUTH_SETUP.md` before enabling auth.
 
 ## Pointers
 

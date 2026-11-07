@@ -53,3 +53,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Secrets and local overrides; keep the safe template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+/generated-artifacts/

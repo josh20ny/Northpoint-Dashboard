@@ -1,0 +1,278 @@
+worksheet,column,header_cell,original_header,mapping_status
+Dash,A,A2,Date,UNREVIEWED
+Dash,B,B2,2025 In-Person Attendance,UNREVIEWED
+Dash,C,C2,2026 In-Person Attendance,UNREVIEWED
+Dash,D,D2,In-Person YoY Change,UNREVIEWED
+Dash,E,E2,2025 Sun. Online Connections,UNREVIEWED
+Dash,F,F2,2026 Sun. Online Connections,UNREVIEWED
+Dash,G,G2,Sun. Online Connections YoY Change,UNREVIEWED
+Dash,H,H2,2025 Sun. Total Adult Engagement,UNREVIEWED
+Dash,I,I2,2026 Sun. Total Adult Engagement,UNREVIEWED
+Dash,J,J2,Total Adult Engagement YoY Change,UNREVIEWED
+Dash,K,K2,1 Week On Demand Views,UNREVIEWED
+Dash,L,L2,Total YT views,UNREVIEWED
+Dash,M,M2,Sunday Avg Watch Times,UNREVIEWED
+Dash,N,N2,Pageviews,UNREVIEWED
+Dash,O,O2,New Sub- scribers,UNREVIEWED
+Dash,P,P2,SM Reach,UNREVIEWED
+Dash,Q,Q2,SM Engage- ment,UNREVIEWED
+Dash,R,R2,2025 Number of Groups,UNREVIEWED
+Dash,S,S2,2026 Number of Groups,UNREVIEWED
+Dash,T,T2,YoY Change,UNREVIEWED
+Dash,U,U2,2025 Groups Attendance,UNREVIEWED
+Dash,V,V2,2026 Groups Attendance,UNREVIEWED
+Dash,W,W2,YoY Change,UNREVIEWED
+Dash,X,X2,What's Next Page Views,UNREVIEWED
+Dash,Y,Y2,2025 Volunteers,UNREVIEWED
+Dash,Z,Z2,2026 Volunteers,UNREVIEWED
+Dash,AA,AA2,YoY Change,UNREVIEWED
+Dash,AB,AB2,2025 Engaged 1,UNREVIEWED
+Dash,AC,AC2,2026 Engaged 1,UNREVIEWED
+Dash,AD,AD2,YoY Change,UNREVIEWED
+Dash,AE,AE2,2025 Attendance In-Person,UNREVIEWED
+Dash,AF,AF2,2026 Attendance In-Person,UNREVIEWED
+Dash,AG,AG2,YoY Change,UNREVIEWED
+Dash,AH,AH2,Online Views Total,UNREVIEWED
+Dash,AI,AI2,2025 Attendance In-Person,UNREVIEWED
+Dash,AJ,AJ2,2026 Attendance In-Person,UNREVIEWED
+Dash,AK,AK2,YoY Change,UNREVIEWED
+Dash,AL,AL2,Online Views Total,UNREVIEWED
+Dash,AM,AM2,2025 Attendance In-Person,UNREVIEWED
+Dash,AN,AN2,2026 Attendance In-Person,UNREVIEWED
+Dash,AO,AO2,YoY Change,UNREVIEWED
+Dash,AP,AP2,New Students,UNREVIEWED
+Dash,AQ,AQ2,2025 Attendance In-Person,UNREVIEWED
+Dash,AR,AR2,2026 Attendance In-Person,UNREVIEWED
+Dash,AS,AS2,YoY Change,UNREVIEWED
+Dash,AT,AT2,New Students,UNREVIEWED
+Dash,AU,AU2,2025 In-Person,UNREVIEWED
+Dash,AV,AV2,In-Person,UNREVIEWED
+Dash,AW,AW2,YoY Change,UNREVIEWED
+Dash,AX,AX2,2025 In-Person and Online,UNREVIEWED
+Dash,AY,AY2,In-Person and Online,UNREVIEWED
+Dash,AZ,AZ2,YoY Change,UNREVIEWED
+Dash,BA,BA2,Weekly Giving,UNREVIEWED
+Dash,BB,BB2,Giving Units,UNREVIEWED
+Dash,BC,BC2,New Giving Units,UNREVIEWED
+Dash,BD,BD2,# Unique Web Visits,UNREVIEWED
+Dash,BE,BE2,# Requests for Info,UNREVIEWED
+Dash,BF,BF2,2025 # of People in Facility,UNREVIEWED
+Dash,BG,BG2,2026 # of People in Facility,UNREVIEWED
+Dash,BH,BH2,YoY Change,UNREVIEWED
+Dash,BI,BI2,2025 # of Events,UNREVIEWED
+Dash,BJ,BJ2,2026 # of Events,UNREVIEWED
+Dash,BK,BK2,YoY Change,UNREVIEWED
+Dash,BL,BL2,2023 Revenue Collected,UNREVIEWED
+Dash,BM,BM2,2024 Revenue Collected,UNREVIEWED
+Dash,BN,BN2,2025 Revenue Collected,UNREVIEWED
+Dash,BO,BO2,2026 Revenue Collected,UNREVIEWED
+Dash,BP,BP2,YoY Change,UNREVIEWED
+Dash,BQ,BQ2,Content (Sunday),UNREVIEWED
+Dash,BR,BR2,Connection,UNREVIEWED
+Dash,BS,BS2,Waumba Land,UNREVIEWED
+Dash,BT,BT2,UpStreet,UNREVIEWED
+Dash,BU,BU2,Transit,UNREVIEWED
+Dash,BV,BV2,InsideOut,UNREVIEWED
+Dash,BW,BW2,Guest Services,UNREVIEWED
+Dash,BX,BX2,Weather,UNREVIEWED
+Dash,BY,BY2,Notes,UNREVIEWED
+Connection,A,A2,Date,UNREVIEWED
+Connection,B,B2,Number of Groups 2025,UNREVIEWED
+Connection,C,C2,Number of Groups,UNREVIEWED
+Connection,D,D2,Total Groups Attendance,UNREVIEWED
+Connection,E,E2,% of Sun. Morn. Atten.,UNREVIEWED
+Connection,F,F2,Attendance per Group,UNREVIEWED
+Connection,G,G2,What's Next Page Views 2025,UNREVIEWED
+Connection,H,H2,What's Next Page Views 2026,UNREVIEWED
+Connection,I,I2,YoY Change,UNREVIEWED
+Connection,J,J2,Groups  Page Views 2025,UNREVIEWED
+Connection,K,K2,Groups  Page Views 2026,UNREVIEWED
+Connection,L,L2,YoY Change,UNREVIEWED
+Connection,M,M2,Group Leaders,UNREVIEWED
+Connection,N,N2,Coaches,UNREVIEWED
+Connection,O,O2,Total Groups Volunteers,UNREVIEWED
+Connection,P,P2,Guest Services Volunteers,UNREVIEWED
+Connection,Q,Q2,Engaged 1,UNREVIEWED
+Connection,R,R2,Engaged 2,UNREVIEWED
+Connection,S,S2,Engaged 3,UNREVIEWED
+Connection,T,T2,Total Church Volunteers,UNREVIEWED
+Connection,U,U2,Groups that took attendance,UNREVIEWED
+Connection,V,V2,Group Member Attendance,UNREVIEWED
+Connection,W,W2,Leaders w\ Identified Leaders,UNREVIEWED
+Connection,X,X2,Leaders w\ Apprentices,UNREVIEWED
+Connection,Y,Y2,Leaders Shane met with,UNREVIEWED
+Connection,Z,Z2,Leaders Jen met with,UNREVIEWED
+Connection,AA,AA2,Leaders all coaches met with,UNREVIEWED
+Connection,AB,AB2,Thank You notes written,UNREVIEWED
+Connection,AC,AC2,Overall Connection Score,UNREVIEWED
+Connection,AD,AD2,Overal Connection Momentum,UNREVIEWED
+Connection,AE,AE2,Notes,UNREVIEWED
+$$$,A,A2,Date,UNREVIEWED
+$$$,B,B2,2013,UNREVIEWED
+$$$,C,C2,2014,UNREVIEWED
+$$$,D,D2,2015,UNREVIEWED
+$$$,E,E2,2016,UNREVIEWED
+$$$,F,F2,2017,UNREVIEWED
+$$$,G,G2,2018,UNREVIEWED
+$$$,H,H2,2019,UNREVIEWED
+$$$,I,I2,2020,UNREVIEWED
+$$$,J,J2,2021.0,UNREVIEWED
+$$$,K,K2,2022,UNREVIEWED
+$$$,L,L2,2023,UNREVIEWED
+$$$,M,M2,2024,UNREVIEWED
+$$$,N,N2,2025,UNREVIEWED
+$$$,O,O2,2026,UNREVIEWED
+$$$,P,P2,YOY %  Growth,UNREVIEWED
+$$$,Q,Q2,Strategic,UNREVIEWED
+$$$,R,R2,Building Fund,UNREVIEWED
+$$$,S,S2,Care,UNREVIEWED
+$$$,T,T2,Fuel,UNREVIEWED
+$$$,U,U2,Mosaic,UNREVIEWED
+$$$,V,V2,FOR,UNREVIEWED
+$$$,W,W2,Notes,UNREVIEWED
+$$$,X,X2,First Time Giver,UNREVIEWED
+$$$,Y,Y2,Recurring Giving,UNREVIEWED
+$$$,Z,Z2,Lapsed Donor,UNREVIEWED
+WL,A,A2,Date,UNREVIEWED
+WL,B,B2,YouTube Avg. Watch Time,UNREVIEWED
+WL,C,C2,YouTube Views Sunday,UNREVIEWED
+WL,D,D2,YouTube Views Weekly,UNREVIEWED
+WL,E,E2,In-Person Attendance 9:30,UNREVIEWED
+WL,F,F2,In-Person Attendance 11:00,UNREVIEWED
+WL,G,G2,In-Person Attendance Total,UNREVIEWED
+WL,H,H2,New Kids 9:30,UNREVIEWED
+WL,I,I2,New Kids 11:00,UNREVIEWED
+WL,J,J2,New Kids In-Person,UNREVIEWED
+WL,K,K2,Volunteers 9:30,UNREVIEWED
+WL,L,L2,Volunteers 11:00,UNREVIEWED
+WL,M,M2,Total Volunteers,UNREVIEWED
+WL,N,N2,Instagram Followers,UNREVIEWED
+WL,O,O2,Score,UNREVIEWED
+WL,P,P2,Momentum,UNREVIEWED
+WL,Q,Q2,Notes,UNREVIEWED
+US,A,A2,Date,UNREVIEWED
+US,B,B2,YouTube Avg. Watch Time,UNREVIEWED
+US,C,C2,YouTube Views Sunday,UNREVIEWED
+US,D,D2,YouTube Views Weekly,UNREVIEWED
+US,E,E2,In-Person Attendance 9:30,UNREVIEWED
+US,F,F2,In-Person Attendance 11:00,UNREVIEWED
+US,G,G2,In-Person Attendance Total,UNREVIEWED
+US,H,H2,New Kids 9:30,UNREVIEWED
+US,I,I2,New Kids 11:00,UNREVIEWED
+US,J,J2,New Kids In-Person,UNREVIEWED
+US,K,K2,Volunteers in Rally 9:30,UNREVIEWED
+US,L,L2,Volunteers Serving at 9:30,UNREVIEWED
+US,M,M2,Volunteers in Rally 11:00,UNREVIEWED
+US,N,N2,Volunteers Serving at 11:00,UNREVIEWED
+US,O,O2,Volunteers in Rally Total,UNREVIEWED
+US,P,P2,Volunteers LG,UNREVIEWED
+US,Q,Q2,Volunteers Serving Total,UNREVIEWED
+US,R,R2,Volunteers - New Family Check-in,UNREVIEWED
+US,S,S2,Instagram Followers,UNREVIEWED
+US,T,T2,Score,UNREVIEWED
+US,U,U2,Momentum,UNREVIEWED
+US,V,V2,Notes,UNREVIEWED
+Transit,A,A2,Date,UNREVIEWED
+Transit,B,B2,Sunday In-Person Headcount 9:30,UNREVIEWED
+Transit,C,C2,Sunday In-Person Headcount 11:00,UNREVIEWED
+Transit,D,D2,Sunday In-Person Headcount Total,UNREVIEWED
+Transit,E,E2,New Students In-Person,UNREVIEWED
+Transit,F,F2,SGLs in Rally 9:30,UNREVIEWED
+Transit,G,G2,SGLs in Rally 11:00,UNREVIEWED
+Transit,H,H2,SGLs in Rally Total,UNREVIEWED
+Transit,I,I2,Instagram Followers,UNREVIEWED
+Transit,J,J2,TikTok Videos Published,UNREVIEWED
+Transit,K,K2,TikTok Views,UNREVIEWED
+Transit,L,L2,TikTok Followers,UNREVIEWED
+Transit,M,M2,Engage,UNREVIEWED
+Transit,N,N2,Involve,UNREVIEWED
+Transit,O,O2,Challenge,UNREVIEWED
+Transit,P,P2,Overall,UNREVIEWED
+Transit,Q,Q2,Score,UNREVIEWED
+Transit,R,R2,Momentum,UNREVIEWED
+Transit,S,S2,Notes,UNREVIEWED
+IO,A,A2,Date,UNREVIEWED
+IO,B,B2,YouTube Avg. Watch Time,UNREVIEWED
+IO,C,C2,YouTube Views Live,UNREVIEWED
+IO,D,D2,YouTube Views After Live,UNREVIEWED
+IO,E,E2,Total View Count,UNREVIEWED
+IO,F,F2,In-Person Lge Grp Attendance,UNREVIEWED
+IO,G,G2,In-Person Sml Grp Attendance,UNREVIEWED
+IO,H,H2,New Students In-Person,UNREVIEWED
+IO,I,I2,SGLs in Rally,UNREVIEWED
+IO,J,J2,SGLs in Groups,UNREVIEWED
+IO,K,K2,Instagram Followers,UNREVIEWED
+IO,L,L2,Engage,UNREVIEWED
+IO,M,M2,Involve,UNREVIEWED
+IO,N,N2,Challenge,UNREVIEWED
+IO,O,O2,Overal,UNREVIEWED
+IO,P,P2,Score,UNREVIEWED
+IO,Q,Q2,Momentum,UNREVIEWED
+IO,R,R2,Notes,UNREVIEWED
+SPD,A,A2,Date,UNREVIEWED
+SPD,B,B2,Sunday Connections Online,UNREVIEWED
+SPD,C,C2,Online Multiplier,UNREVIEWED
+SPD,D,D2,Total Attendance Online,UNREVIEWED
+SPD,E,E2,Chair  Count,UNREVIEWED
+SPD,F,F2,1st Service Attendance In-Person 9:30,UNREVIEWED
+SPD,G,G2,%  Capacity  9:00,UNREVIEWED
+SPD,H,H2,%  Distro  9:00,UNREVIEWED
+SPD,I,I2,2nd Service Attendance In-Person 11:00,UNREVIEWED
+SPD,J,J2,%  Capacity 11:00,UNREVIEWED
+SPD,K,K2,%  Distro  11:00,UNREVIEWED
+SPD,L,L2,Sunday Attendance In-Person Total,UNREVIEWED
+SPD,M,M2,Sunday Total Engagement,UNREVIEWED
+SPD,N,N2,Welcome,UNREVIEWED
+SPD,O,O2,Music,UNREVIEWED
+SPD,P,P2,Vision,UNREVIEWED
+SPD,Q,Q2,Message,UNREVIEWED
+SPD,R,R2,Production,UNREVIEWED
+SPD,S,S2,Walk Away,UNREVIEWED
+SPD,T,T2,Overall,UNREVIEWED
+SPD,U,U2,Eval Team Change,UNREVIEWED
+SPD,V,V2,Production,UNREVIEWED
+SPD,W,W2,Guest  Services,UNREVIEWED
+Communications,A,A2,Date,UNREVIEWED
+Communications,B,B2,YouTube Service Live Stream,UNREVIEWED
+Communications,C,C2,YouTube Total Views 1 Week Later,UNREVIEWED
+Communications,D,D2,YouTube Total Views 4 weeks Later,UNREVIEWED
+Communications,E,E2,Service AVG Watch,UNREVIEWED
+Communications,F,F2,Service Impressions,UNREVIEWED
+Communications,G,G2,Service CTR,UNREVIEWED
+Communications,H,H2,Total YT  Video Views,UNREVIEWED
+Communications,I,I2,Total YT Subscribers,UNREVIEWED
+Communications,J,J2,NET New Subscribers,UNREVIEWED
+Communications,K,K2,OT Views,UNREVIEWED
+Communications,L,L2,Views,UNREVIEWED
+Communications,M,M2,Interactions,UNREVIEWED
+Communications,N,N2,Profile Visits,UNREVIEWED
+Communications,O,O2,Website Taps,UNREVIEWED
+Communications,P,P2,Address Taps,UNREVIEWED
+Communications,Q,Q2,Reposts,UNREVIEWED
+Communications,R,R2,Shares,UNREVIEWED
+Communications,S,S2,IG Total Followers,UNREVIEWED
+Communications,T,T2,IG Net Followers,UNREVIEWED
+Communications,U,U2,FB  Streams,UNREVIEWED
+Communications,V,V2,FB Total Followers,UNREVIEWED
+Communications,W,W2,FB Net Followers,UNREVIEWED
+Communications,X,X2,Website Users,UNREVIEWED
+Communications,Y,Y2,Website Page Views,UNREVIEWED
+Communications,Z,Z2,Listeners,UNREVIEWED
+Communications,AA,AA2,Engaged Listeners,UNREVIEWED
+Communications,AB,AB2,Plays,UNREVIEWED
+Communications,AC,AC2,# of Streams,UNREVIEWED
+Communications,AD,AD2,# of Emails Sent,UNREVIEWED
+Communications,AE,AE2,Email Open Rate,UNREVIEWED
+Communications,AF,AF2,Email Click Rate,UNREVIEWED
+Communications,AG,AG2,# of Emails Sent,UNREVIEWED
+Communications,AH,AH2,Email Open Rate,UNREVIEWED
+Communications,AI,AI2,Email Click Rate,UNREVIEWED
+Communications,AJ,AJ2,# of Emails Sent,UNREVIEWED
+Communications,AK,AK2,Email Open Rate,UNREVIEWED
+Communications,AL,AL2,Email Click Rate,UNREVIEWED
+Communications,AM,AM2,# of Emails Sent,UNREVIEWED
+Communications,AN,AN2,Email Open Rate,UNREVIEWED
+Communications,AO,AO2,Email Click Rate,UNREVIEWED
+Communications,AP,AP2,# of Emails Sent,UNREVIEWED
+Communications,AQ,AQ2,Email Open Rate,UNREVIEWED
+Communications,AR,AR2,Email Click Rate,UNREVIEWED

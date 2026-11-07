@@ -1,0 +1,127 @@
+worksheet,cell,cached_value,formula_excerpt
+Dash,A3,46026.0,
+Dash,B3,842.0,
+Dash,C3,910,SPD!L3
+Dash,D3,0.08076009501,"IF(C3="""","""",(C3-B3)/B3)"
+Dash,E3,471.0,
+Dash,F3,568,SPD!B3
+Dash,G3,0.2059447983,"IF(F3="""","""",(F3-E3)/E3)"
+Dash,H3,1548.5,
+Dash,I3,1762,SPD!M3
+Dash,J3,0.1378753633,"IF(I3="""","""",(I3-H3)/H3)"
+Dash,K3,105,"If(Communications!C3="""","""",Communications!C3-Communications!B3)"
+Dash,L3,757,Communications!H3
+Dash,M3,1.039583333,Communications!E3
+Dash,O3,5,Communications!J3
+Connection,A3,46026,Dash!A3
+Connection,B3,72.0,
+Connection,C3,72.0,
+Connection,D3,679.0,
+Connection,E3,0.7461538462,"IF(D3="""","""",(D3/Dash!C3))"
+Connection,F3,9.430555556,"if(D3="""","""",(D3/C3))"
+Connection,G3,35.0,
+Connection,H3,59.0,
+Connection,I3,0.6857142857,"IF(H3="""","""",(H3-G3)/G3)"
+Connection,J3,47.0,
+Connection,K3,77.0,
+Connection,L3,0.6382978723,"IF(K3="""","""",(K3-J3)/J3)"
+Connection,M3,125.0,
+Connection,O3,128.0,
+$$$,A3,46026,Dash!A3
+$$$,B3,3893.0,
+$$$,C3,6794.0,
+$$$,D3,12707.0,
+$$$,E3,15352.0,
+$$$,F3,22726.0,
+$$$,G3,23115.0,
+$$$,H3,37017.0,
+$$$,I3,23615.0,
+$$$,J3,15591.0,
+$$$,K3,15577.0,
+$$$,L3,18700.0,
+$$$,M3,33269.31,
+$$$,O3,37001.36,
+WL,A3,46026,Dash!A3
+WL,B3,0.1722222222,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,C3,9,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,D3,9,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,E3,57,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,F3,32,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,G3,89,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,H3,4,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,I3,3,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,J3,7,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,K3,38,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,L3,24,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+WL,M3,62,"if(or(K3="""",L3=""""), """", sum(K3,L3))"
+WL,O3,2.833333333,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1jQkouBbip7q0-Ge2hmHwcwAi_Dq4sost48PcrtT2McQ/edit?gid=86196976#gid=86196976"""
+US,A3,46026,Dash!A3
+US,B3,0.1805555556,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AK3:"
+US,C3,3,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AI3:"
+US,D3,3,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AJ3:"
+US,E3,98,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!L3:L"
+US,F3,96,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!V3:V"
+US,G3,194,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!X3:X"
+US,H3,4,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!M3:M"
+US,I3,2,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!W3:W"
+US,J3,6,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AA3:"
+US,K3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AC3:"
+US,L3,32,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AB3:"
+US,M3,75,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1Bci8aotne99jIB1m58-MAYNidU2OSNDhzUhfVORkqX8/edit?gid=0#gid=0"""", """"KPIs!AE3:"
+US,O3,75,"if(or(K3>0,M3>0), sum(K3,M3),"""")"
+Transit,A3,46026,Dash!A3
+Transit,B3,50,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1FKWFuaLY89W73QnFioWvd0z6dRUKRY4hutRW9CphYxU/edit?usp=sharing"""", """"2026!B3:B"
+Transit,C3,48,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1FKWFuaLY89W73QnFioWvd0z6dRUKRY4hutRW9CphYxU/edit?usp=sharing"""", """"2026!c3:c"
+Transit,D3,98,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1FKWFuaLY89W73QnFioWvd0z6dRUKRY4hutRW9CphYxU/edit?usp=sharing"""", """"2026!D3:D"
+Transit,E3,,
+Transit,F3,,
+Transit,G3,,
+Transit,H3,,
+Transit,I3,,
+Transit,J3,,
+Transit,K3,,
+Transit,L3,,
+Transit,M3,Triple,"IFERROR(__xludf.DUMMYFUNCTION(""importrange(""""https://docs.google.com/spreadsheets/d/1G8yR4wW_EjAxpGN-03LpPsITBJqryLqjVCN6OQnBCDQ/edit?gid=0#gid=0"""", """"Ratings!C"
+Transit,O3,Triple,"IFERROR(__xludf.DUMMYFUNCTION(""importrange(""""https://docs.google.com/spreadsheets/d/1G8yR4wW_EjAxpGN-03LpPsITBJqryLqjVCN6OQnBCDQ/edit?gid=0#gid=0"""", """"Ratings!E"
+IO,A3,46026,Dash!A3
+IO,B3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!B3:"
+IO,C3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!C3:"
+IO,D3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!D3:"
+IO,E3,,"if(C3>0,sum(C3:D3),"""")"
+IO,F3,158,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!E3:"
+IO,G3,3,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!H3:"
+IO,H3,3,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!F3:"
+IO,I3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!K3:"
+IO,J3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!L3:"
+IO,K3,,"IFERROR(__xludf.DUMMYFUNCTION(""IMPORTRANGE(""""https://docs.google.com/spreadsheets/d/1X_Qjn8hslLTRU5CYzaJeHi9Bwmi4mm-IJA2e3KM3W-o/edit?usp=sharing"""", """"KPI's!S3:"
+IO,L3,,
+IO,M3,,
+IO,O3,,
+SPD,A3,46026,Dash!A3
+SPD,B3,568,"if(Communications!B3="""",,sum(Communications!B3,Communications!U3))"
+SPD,C3,1.5,"if(B3>0,1.5,"""")"
+SPD,D3,852,"if(B3>0,B3*C3,"""")"
+SPD,E3,414.0,
+SPD,F3,446.0,
+SPD,G3,1.077294686,"if(F3>0,F3/(E3),"""")"
+SPD,H3,0.4901098901,"if(F3>0,(F3/L3),"""")"
+SPD,I3,464.0,
+SPD,J3,1.120772947,"if(I3>0,I3/E3,"""")"
+SPD,K3,0.5098901099,"if(I3>0,(I3/L3),"""")"
+SPD,L3,910,"if(or(F3>0,I3>0),sum(F3,I3),)"
+SPD,M3,1762,"if(or(D3="""",L3=""""),"""",sum(D3,L3))"
+SPD,O3,3.0,
+Communications,A3,46026,Dash!A3
+Communications,B3,338.0,
+Communications,C3,443.0,
+Communications,D3,589.0,
+Communications,E3,1.0395833333333333,
+Communications,F3,1428.0,
+Communications,G3,0.171,
+Communications,H3,757.0,
+Communications,I3,2846.0,
+Communications,J3,5.0,
+Communications,K3,,
+Communications,L3,,
+Communications,M3,,
+Communications,O3,,

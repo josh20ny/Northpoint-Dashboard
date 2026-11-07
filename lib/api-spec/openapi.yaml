@@ -11,6 +11,61 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/foundation:
+    get:
+      operationId: getFoundation
+      summary: Public non-sensitive Phase 0 foundation status
+      responses:
+        "200":
+          description: Foundation status without ministry data or identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Foundation"
+  /v1/documents:
+    get:
+      operationId: listDocuments
+      summary: Planning document index
+      responses:
+        "200":
+          description: Public project specifications, no source datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlanningDocument"
+  /v1/documents/{slug}:
+    get:
+      operationId: getDocument
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Markdown document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentContent"
+        "404":
+          description: Unknown document
+  /v1/readyz:
+    get:
+      operationId: getReadiness
+      summary: Database connectivity and migration readiness
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: Database or migration unavailable
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +81,74 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    Foundation:
+      type: object
+      required:
+        [phase, mode, timezone, weekEnding, asOf, quality, auth, database, ministries, integrations]
+      properties:
+        phase: { type: integer }
+        mode: { type: string }
+        timezone: { type: string }
+        weekEnding: { type: string }
+        asOf: { type: string }
+        quality: { type: string }
+        auth:
+          type: object
+          required: [enabled, provider, status]
+          properties:
+            enabled: { type: boolean }
+            provider: { type: string }
+            status: { type: string }
+        database:
+          $ref: "#/components/schemas/Readiness"
+        ministries:
+          type: array
+          items:
+            $ref: "#/components/schemas/MinistryPlaceholder"
+        integrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntegrationPlaceholder"
+    Readiness:
+      type: object
+      required: [status, connectivity, migration]
+      properties:
+        status: { type: string }
+        connectivity: { type: string }
+        migration: { type: string }
+    MinistryPlaceholder:
+      type: object
+      required: [slug, name, description, status]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        description: { type: string }
+        status: { type: string }
+    IntegrationPlaceholder:
+      type: object
+      required: [id, name, purpose, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        purpose: { type: string }
+        status: { type: string }
+    PlanningDocument:
+      type: object
+      required: [slug, title, path, category]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        path: { type: string }
+        category: { type: string }
+    DocumentContent:
+      type: object
+      required: [slug, title, path, category, content]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        path: { type: string }
+        category: { type: string }
+        content: { type: string }
     HealthStatus:
       type: object
       properties:
@@ -33,4 +156,3 @@ components:
           type: string
       required:
         - status
-

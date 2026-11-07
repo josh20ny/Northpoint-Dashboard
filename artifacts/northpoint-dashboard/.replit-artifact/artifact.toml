@@ -1,0 +1,28 @@
+kind = "data-app"
+previewPath = "/"
+title = "Northpoint Dashboard 2.0"
+description = "Phase 0 foundation for Northpoint Church ministry analytics. A lightweight application shell with explicit unavailable-data states, foundation status, documentation, ministry navigation and disabled administration until authentication is verified."
+version = "1.0.0"
+id = "artifacts/northpoint-dashboard"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18827
+
+[services.development]
+run = "pnpm --filter @workspace/northpoint-dashboard run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/northpoint-dashboard", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/northpoint-dashboard/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18827"
+BASE_PATH = "/"
