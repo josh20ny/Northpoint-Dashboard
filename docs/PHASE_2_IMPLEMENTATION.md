@@ -76,9 +76,66 @@ the workbook snapshot date require owner confirmation.
 The initial catalog runs synchronously with a process-local four-per-minute
 upload limit; use one API instance and review worker/multi-instance requirements
 before increasing limits. Private file persistence is required; there is no
-filesystem or database-byte fallback. Failed transactions can leave an unlinked
-private original, so retention/orphan cleanup requires a separately reviewed
-policy. Do not delete originals automatically.
+filesystem or database-byte fallback. Original-file upload attempts are now
+tracked independently of the catalog transaction; see the review workflow below.
+Retention/orphan cleanup requires a separately reviewed policy. Do not delete
+originals automatically.
+
+## Original-file upload review
+Administration → Workbook imports → Original-file upload history is Admin-only.
+The paginated history lists unlinked references first, including attempt ID,
+filename, snapshot date, private object reference, SHA-256, status, storage
+acknowledgement, failure phase, timestamps and any current linked batch. The
+review endpoint (`GET /api/v1/admin/imports/uploads?page=1`) rechecks active Admin
+access, audits reads and returns `Cache-Control: no-store`. Staff, Leadership and
+signed-out requests are denied; forced RLS separately restricts the ledger.
+Private references are not public download links. No unlinked download or delete
+endpoint has been introduced.
+
+An intent and its audit event commit **before** the storage write. Status is
+`pending`, `linked` or `failed`; storage is `unknown` or `stored`. Storage errors
+may occur after bytes were saved, so **unknown never means absent**. A confirmed
+write is committed to the ledger before starting the catalog transaction. The
+catalog, cell lineage, linked status and success audit commit atomically. On
+failure a separate transaction records only a fixed phase code, never raw error
+text or workbook contents. If that update also fails (database outage, process
+interruption or lost Admin access), the original pending intent remains reviewable.
+Pending is not proof that a request is still running, nor permission to delete.
+
+Identical digest/snapshot uploads serialize under a database session lock, using
+one connection for independently committed stages to avoid pool exhaustion.
+An existing batch returns unchanged, including its withdrawn state, without
+another file write or upload-attempt row. A retry after catalog failure reuses a
+confirmed stored original and records a new attempt. Older failed/pending attempts
+are retained unchanged; the review shows the later batch link by private reference.
+Unknown writes are not reused: their references remain visible for manual review.
+No automatic deletion, retention deadline, history editing, or cleanup action is
+implemented. An owner must approve retention/deletion policy separately.
+
+Development migrations `0003`–`0005` add the ledger, immutable attempt provenance,
+no-delete guards and linked rows for existing cataloged originals. They also
+declare the existing source/import RLS flags and policies in Drizzle and reconcile
+them in SQL: development verification found those older tables' RLS disabled and
+policies absent despite their original migrations. Keeping the declarative schema
+in sync prevents a schema push from removing hand-written privacy protections.
+Readiness now requires the upload ledger's policy and immutability guards.
+Apply with `pnpm db:migrate:local` in development/CI only; no startup DDL.
+Previously untracked storage objects cannot be reconstructed from catalog history;
+this migration does not claim to discover old unlinked files.
+
+Verification for upload tracking: database failure injection after storage success
+(cell insert and catalog commit), lost storage acknowledgement, failure-recording
+failure, durable pending intent, retry reuse, unchanged terminal history, pagination
+and non-Admin RLS denial. These use synthetic workbooks and rollback-only fixtures;
+no original or audit history is deleted.
+
+The final automated pass covered 19 rollback-only database checks and 58 unit/API
+checks; typecheck, lint and credential-pattern checks passed. Readiness returned
+`ready` after the additive development migrations. A browser pass confirmed the
+signed-out gate and uploads API denial, but the identity provider's login flow
+blocked the synthetic Admin sign-in. The signed-in history UI and its mobile
+layout were therefore not browser-verified. The synthetic test account was
+suspended and normal workflow configuration restored.
 
 Custom import immutability triggers and forced RLS are part of the migration.
 Readiness verifies them. Privileged database owners can bypass RLS/alter guards;

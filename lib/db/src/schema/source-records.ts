@@ -1,4 +1,5 @@
-import { pgTable, text, uuid, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, pgPolicy, text, uuid, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 
 // Revision-keyed raw provenance only. No ingestion or raw payload read API yet.
@@ -16,6 +17,10 @@ export const rawSourceRecordsTable = pgTable(
     ingestedAt: timestamp("ingested_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    pgPolicy("raw_admin_only", {
+      using: sql`current_setting('np.role',true) = 'admin'`,
+      withCheck: sql`current_setting('np.role',true) = 'admin'`,
+    }),
     uniqueIndex("raw_source_revision_unique").on(
       t.provider,
       t.accountRef,
@@ -24,7 +29,7 @@ export const rawSourceRecordsTable = pgTable(
       t.payloadHash,
     ),
   ],
-);
+).enableRLS();
 export const insertRawSourceSchema = createInsertSchema(rawSourceRecordsTable).omit({
   id: true,
   ingestedAt: true,

@@ -41,6 +41,34 @@ export const UploadWorkbookResponse = zod.object({
 })
 
 
+export const listImportUploadsQueryPageDefault = 1;
+export const listImportUploadsQueryPageMax = 100000;
+
+
+
+export const ListImportUploadsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(listImportUploadsQueryPageMax).default(listImportUploadsQueryPageDefault)
+})
+
+export const ListImportUploadsResponse = zod.object({
+  "attempts": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "objectPath": zod.string(),
+  "status": zod.enum(['pending', 'linked', 'failed']),
+  "storageState": zod.enum(['unknown', 'stored']),
+  "failurePhase": zod.union([zod.literal('storage'),zod.literal('storage_confirmation'),zod.literal('catalog'),zod.literal(null)]).nullable(),
+  "linkedBatchId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean()
+})
+
+
 export const importProvidedWorkbookBodySnapshotDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 

@@ -44,7 +44,9 @@ import type {
   ImportReport,
   ImportRowPage,
   ImportStateInput,
+  ImportUploadPage,
   InvitationInput,
+  ListImportUploadsParams,
   MappingReviewInput,
   MinistryInput,
   PlanningDocument,
@@ -266,6 +268,108 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUploadWorkbookMutationOptions(options), queryClient);
     }
+
+export const getListImportUploadsUrl = (params?: ListImportUploadsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/imports/uploads?${stringifiedParams}` : `/api/v1/admin/imports/uploads`
+}
+
+export const listImportUploads = async (params?: ListImportUploadsParams, options?: Parameters<typeof customFetch>[1]): Promise<ImportUploadPage> => {
+
+  return customFetch<ImportUploadPage>(getListImportUploadsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListImportUploadsQueryKey = (params?: ListImportUploadsParams,) => {
+    return [
+    `/api/v1/admin/imports/uploads`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListImportUploadsQueryOptions = <TData = Awaited<ReturnType<typeof listImportUploads>>, TError = ErrorType<unknown>>(params?: ListImportUploadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListImportUploadsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listImportUploads>>> = ({ signal }) => listImportUploads(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListImportUploadsQueryResult = NonNullable<Awaited<ReturnType<typeof listImportUploads>>>
+export type ListImportUploadsQueryError = ErrorType<unknown>
+
+
+export function useListImportUploads<TData = Awaited<ReturnType<typeof listImportUploads>>, TError = ErrorType<unknown>>(
+ params: undefined |  ListImportUploadsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listImportUploads>>,
+          TError,
+          Awaited<ReturnType<typeof listImportUploads>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListImportUploads<TData = Awaited<ReturnType<typeof listImportUploads>>, TError = ErrorType<unknown>>(
+ params?: ListImportUploadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listImportUploads>>,
+          TError,
+          Awaited<ReturnType<typeof listImportUploads>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListImportUploads<TData = Awaited<ReturnType<typeof listImportUploads>>, TError = ErrorType<unknown>>(
+ params?: ListImportUploadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListImportUploads<TData = Awaited<ReturnType<typeof listImportUploads>>, TError = ErrorType<unknown>>(
+ params?: ListImportUploadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listImportUploads>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListImportUploadsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getImportProvidedWorkbookUrl = () => {
 

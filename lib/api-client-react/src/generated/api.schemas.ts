@@ -46,6 +46,57 @@ export interface ImportBatch {
   createdAt: string;
 }
 
+export type ImportUploadAttemptStatus = typeof ImportUploadAttemptStatus[keyof typeof ImportUploadAttemptStatus];
+
+
+export const ImportUploadAttemptStatus = {
+  pending: 'pending',
+  linked: 'linked',
+  failed: 'failed',
+} as const;
+
+export type ImportUploadAttemptStorageState = typeof ImportUploadAttemptStorageState[keyof typeof ImportUploadAttemptStorageState];
+
+
+export const ImportUploadAttemptStorageState = {
+  unknown: 'unknown',
+  stored: 'stored',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ImportUploadAttemptFailurePhase = typeof ImportUploadAttemptFailurePhase[keyof typeof ImportUploadAttemptFailurePhase] | null;
+
+
+export const ImportUploadAttemptFailurePhase = {
+  storage: 'storage',
+  storage_confirmation: 'storage_confirmation',
+  catalog: 'catalog',
+} as const;
+
+export interface ImportUploadAttempt {
+  id: string;
+  sha256: string;
+  filename: string;
+  snapshotDate: string;
+  objectPath: string;
+  status: ImportUploadAttemptStatus;
+  storageState: ImportUploadAttemptStorageState;
+  /** @nullable */
+  failurePhase: ImportUploadAttemptFailurePhase;
+  /** @nullable */
+  linkedBatchId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImportUploadPage {
+  attempts: ImportUploadAttempt[];
+  page: number;
+  hasMore: boolean;
+}
+
 export interface ImportList {
   storageReady: boolean;
   batches: ImportBatch[];
@@ -503,6 +554,14 @@ filename: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 snapshotDate: string;
+};
+
+export type ListImportUploadsParams = {
+/**
+ * @minimum 1
+ * @maximum 100000
+ */
+page?: number;
 };
 
 export type GetImportCellsParams = {

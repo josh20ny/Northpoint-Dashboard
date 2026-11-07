@@ -42,6 +42,19 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ImportBatch" }
+  /v1/admin/imports/uploads:
+    get:
+      operationId: listImportUploads
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, maximum: 100000, default: 1 }
+      responses:
+        "200":
+          description: Admin-only upload attempt history, including unlinked originals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportUploadPage" }
   /v1/admin/imports/source:
     post:
       operationId: importProvidedWorkbook
@@ -453,6 +466,28 @@ components:
         snapshotDate: { type: string }
         state: { type: string, enum: [active, withdrawn] }
         createdAt: { type: string }
+    ImportUploadAttempt:
+      type: object
+      required: [id, sha256, filename, snapshotDate, objectPath, status, storageState, failurePhase, linkedBatchId, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sha256: { type: string }
+        filename: { type: string }
+        snapshotDate: { type: string }
+        objectPath: { type: string }
+        status: { type: string, enum: [pending, linked, failed] }
+        storageState: { type: string, enum: [unknown, stored] }
+        failurePhase: { type: ["string", "null"], enum: [storage, storage_confirmation, catalog, null] }
+        linkedBatchId: { type: ["string", "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ImportUploadPage:
+      type: object
+      required: [attempts, page, hasMore]
+      properties:
+        attempts: { type: array, items: { $ref: "#/components/schemas/ImportUploadAttempt" } }
+        page: { type: integer }
+        hasMore: { type: boolean }
     ImportList:
       type: object
       required: [storageReady, batches]

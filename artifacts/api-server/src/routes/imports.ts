@@ -4,6 +4,8 @@ import path from "node:path";
 import { rateLimit } from "express-rate-limit";
 import {
   ListImportsResponse,
+  ListImportUploadsResponse,
+  ListImportUploadsQueryParams,
   UploadWorkbookQueryParams,
   UploadWorkbookResponse,
   ImportProvidedWorkbookBody,
@@ -52,6 +54,17 @@ export function createImportRouter(provider: AuthProvider = sessionAuthProvider)
   };
   r.get("/v1/admin/imports", async (_req, res): Promise<void> => {
     res.json(ListImportsResponse.parse(await imports.listImports(res.locals.principal)));
+  });
+  r.get("/v1/admin/imports/uploads", async (req, res): Promise<void> => {
+    const q = ListImportUploadsQueryParams.safeParse(req.query);
+    if (!q.success) throw new AccessError(400, "Invalid upload history page");
+    res
+      .set("Cache-Control", "no-store")
+      .json(
+        ListImportUploadsResponse.parse(
+          await imports.listImportUploads(res.locals.principal, q.data.page),
+        ),
+      );
   });
   r.post(
     "/v1/admin/imports",

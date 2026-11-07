@@ -11,7 +11,8 @@ import type { Principal } from "./auth";
 import { adminTransaction, AccessError, validCalendarDate } from "./administration";
 import { recordAudit } from "./audit";
 import { digest, readWorkbook, stageRows, columnNumber, type Catalog } from "./workbook";
-import { preserveWorkbook, originalWorkbook, importStorageReady } from "./import-storage";
+import { originalWorkbook, importStorageReady } from "./import-storage";
+import { trackedOriginal, withImportLock } from "./import-attempts";
 
 type Batch = {
   id: string;
@@ -46,6 +47,34 @@ export async function listImports(p: Principal) {
     return { storageReady: importStorageReady(), batches: r.rows.map(publicBatch) };
   });
 }
+export async function listImportUploads(p: Principal, page: number) {
+  return adminTransaction(p, async (c) => {
+    const r = await c.query(
+      `SELECT a.id,a.sha256,a.filename,a.snapshot_date AS "snapshotDate",
+       a.object_path AS "objectPath",a.status,a.storage_state AS "storageState",
+       a.failure_phase AS "failurePhase",b.id AS "linkedBatchId",
+       a.created_at AS "createdAt",a.updated_at AS "updatedAt"
+       FROM import_upload_attempts a LEFT JOIN import_batches b ON b.object_path=a.object_path
+       ORDER BY (b.id IS NULL) DESC,a.created_at DESC,a.id DESC LIMIT 51 OFFSET $1`,
+      [(page - 1) * 50],
+    );
+    await recordAudit(
+      p.userId!,
+      "import.uploads_read",
+      "import_upload_attempts",
+      null,
+      "success",
+      c,
+    );
+    return JSON.parse(
+      JSON.stringify({
+        attempts: r.rows.slice(0, 50),
+        page,
+        hasMore: r.rows.length > 50,
+      }),
+    );
+  });
+}
 export async function catalogWorkbook(
   p: Principal,
   bytes: Buffer,
@@ -75,37 +104,58 @@ export async function catalogWorkbook(
   await adminTransaction(p, async () => undefined);
   const hash = digest(bytes);
   const parsed = readWorkbook(bytes);
-  return adminTransaction(p, async (c) => {
-    const existing = await c.query<Batch>(
-      `SELECT ${batchSelect} FROM import_batches WHERE sha256=$1 AND snapshot_date=$2`,
-      [hash, snapshotDate],
+  return withImportLock(`${hash}:${snapshotDate}`, async (connection) => {
+    const matched = await adminTransaction(
+      p,
+      async (c) => {
+        const existing = await c.query<Batch>(
+          `SELECT ${batchSelect} FROM import_batches WHERE sha256=$1 AND snapshot_date=$2`,
+          [hash, snapshotDate],
+        );
+        if (existing.rows[0]) {
+          await audit(c, p, "reimport_matched", existing.rows[0].id);
+          return publicBatch(existing.rows[0]);
+        }
+        if ((await c.query("SELECT id FROM import_batches LIMIT 100")).rowCount! >= 100)
+          throw new AccessError(
+            409,
+            "Import workspace is limited to 100 batches; review retention before adding more",
+          );
+        return null;
+      },
+      connection,
     );
-    if (existing.rows[0]) {
-      await audit(c, p, "reimport_matched", existing.rows[0].id);
-      return publicBatch(existing.rows[0]);
-    }
-    if ((await c.query("SELECT id FROM import_batches LIMIT 100")).rowCount! >= 100)
-      throw new AccessError(
-        409,
-        "Import workspace is limited to 100 batches; review retention before adding more",
-      );
-    const id = randomUUID();
-    const objectPath = await preserveWorkbook(id, bytes);
-    const catalog: Catalog = { dateSystem: parsed.dateSystem, sheets: parsed.sheets };
-    const r = await c.query<Batch>(
-      `INSERT INTO import_batches(id,sha256,filename,snapshot_date,object_path,catalog,created_by)
+    if (matched) return matched;
+    return trackedOriginal(
+      p,
+      connection,
+      { sha256: hash, filename, snapshotDate },
+      bytes,
+      async (c, objectPath) => {
+        // Recheck the workspace limit at commit time (other digests may have completed).
+        if ((await c.query("SELECT id FROM import_batches LIMIT 100")).rowCount! >= 100)
+          throw new AccessError(
+            409,
+            "Import workspace is limited to 100 batches; review retention before adding more",
+          );
+        const id = randomUUID();
+        const catalog: Catalog = { dateSystem: parsed.dateSystem, sheets: parsed.sheets };
+        const r = await c.query<Batch>(
+          `INSERT INTO import_batches(id,sha256,filename,snapshot_date,object_path,catalog,created_by)
       VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING ${batchSelect}`,
-      [id, hash, filename, snapshotDate, objectPath, JSON.stringify(catalog), p.userId],
-    );
-    for (let offset = 0; offset < parsed.cells.length; offset += 1000) {
-      await c.query(
-        `INSERT INTO import_cells(batch_id,sheet,coordinate,cell)
+          [id, hash, filename, snapshotDate, objectPath, JSON.stringify(catalog), p.userId],
+        );
+        for (let offset = 0; offset < parsed.cells.length; offset += 1000) {
+          await c.query(
+            `INSERT INTO import_cells(batch_id,sheet,coordinate,cell)
         SELECT $1,x.sheet,x.cell->>'coordinate',x.cell FROM jsonb_to_recordset($2::jsonb) AS x(sheet text,cell jsonb)`,
-        [id, JSON.stringify(parsed.cells.slice(offset, offset + 1000))],
-      );
-    }
-    await audit(c, p, "cataloged", id);
-    return publicBatch(r.rows[0]!);
+            [id, JSON.stringify(parsed.cells.slice(offset, offset + 1000))],
+          );
+        }
+        await audit(c, p, "cataloged", id);
+        return publicBatch(r.rows[0]!);
+      },
+    );
   });
 }
 async function mappings(c: PoolClient, id: string): Promise<ImportMapping[]> {

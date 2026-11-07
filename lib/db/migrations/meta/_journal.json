@@ -22,6 +22,27 @@
       "when": 1794070942455,
       "tag": "0002_acoustic_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794085099602,
+      "tag": "0003_naive_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794085224959,
+      "tag": "0004_many_cloak",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794085265648,
+      "tag": "0005_square_spiral",
+      "breakpoints": true
     }
   ]
 }

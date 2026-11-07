@@ -60,6 +60,7 @@ export function ImportBatches({
           void invalidate();
           onSelect(batch.id);
         },
+        onError: () => void invalidate(),
       },
     );
   };
@@ -72,6 +73,7 @@ export function ImportBatches({
           void invalidate();
           onSelect(batch.id);
         },
+        onError: () => void invalidate(),
       },
     );
   };

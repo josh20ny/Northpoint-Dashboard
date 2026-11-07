@@ -124,6 +124,7 @@ describe("Admin-only import boundary", () => {
   const id = "11111111-1111-4111-8111-111111111111";
   const endpoints = [
     ["get", "/v1/admin/imports"],
+    ["get", "/v1/admin/imports/uploads"],
     ["post", "/v1/admin/imports"],
     ["post", "/v1/admin/imports/source"],
     ["get", `/v1/admin/imports/${id}`],

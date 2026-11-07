@@ -14,9 +14,13 @@ export class AccessError extends Error {
 export function assertAdmin(p: Principal | null): asserts p is Principal & { userId: string } {
   if (!p?.userId || p.role !== "admin") throw new AccessError(403, "Forbidden");
 }
-export async function adminTransaction<T>(p: Principal, fn: (c: PoolClient) => Promise<T>) {
+export async function adminTransaction<T>(
+  p: Principal,
+  fn: (c: PoolClient) => Promise<T>,
+  connection?: PoolClient,
+) {
   assertAdmin(p);
-  const c = await pool.connect();
+  const c = connection ?? (await pool.connect());
   try {
     await c.query("BEGIN");
     await c.query("SELECT pg_advisory_xact_lock(716102)");
@@ -33,7 +37,7 @@ export async function adminTransaction<T>(p: Principal, fn: (c: PoolClient) => P
     await c.query("ROLLBACK");
     throw e;
   } finally {
-    c.release();
+    if (!connection) c.release();
   }
 }
 export async function adminWorkspace(p: Principal, page: number) {

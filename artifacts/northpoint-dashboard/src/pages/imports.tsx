@@ -19,6 +19,7 @@ import {
 import { FormError, RestrictedState } from "@/components/admin-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImportBatches } from "@/components/import-batches";
+import { ImportUploads } from "@/components/import-uploads";
 import { ImportInspect } from "@/components/import-inspect";
 import { ImportMappings } from "@/components/import-mappings";
 import { ImportReportPanel } from "@/components/import-report";
@@ -204,6 +205,7 @@ export default function Imports() {
             <Note tone="warn">Refresh failed. Showing last loaded batches.</Note>
           )}
           <ImportBatches list={list} selectedId={activeId} onSelect={setSelected} />
+          <ImportUploads />
           {activeId ? (
             <BatchWorkspace key={activeId} id={activeId} />
           ) : (
