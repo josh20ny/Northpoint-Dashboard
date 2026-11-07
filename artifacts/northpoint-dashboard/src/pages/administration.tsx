@@ -40,6 +40,11 @@ import {
   TextField,
 } from "@/components/admin-controls";
 import { AuditTable, MinistryList, ServiceList, UserTable } from "@/components/admin-record-tables";
+import {
+  chicagoAbbreviation,
+  chicagoDateTimeFromInstant,
+  resolveChicagoServiceTime,
+} from "@/lib/service-time";
 
 const WORKSPACE_PREFIX = ["/api/v1/admin/workspace"];
 const ROLES = ["staff", "leadership", "admin"] as const;
@@ -52,13 +57,13 @@ const blankMinistry = { code: "", name: "", activeFrom: "", activeTo: "" };
 const blankService = {
   ministryId: "",
   serviceDate: "",
-  startAt: "",
+  startTime: "",
+  ambiguousStartAt: "",
   capacity: "",
   locationRef: "",
   planExternalId: "",
   specialEventRef: "",
 };
-const OFFSET_DATETIME_PATTERN = String.raw`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$`;
 
 export default function Administration() {
   usePageTitle("Administration");
@@ -94,9 +99,14 @@ export default function Administration() {
   const [ministry, setMinistry] = useState(blankMinistry);
   const [serviceId, setServiceId] = useState("");
   const [service, setService] = useState(blankService);
-  const serviceDateTimeValid =
-    new RegExp(OFFSET_DATETIME_PATTERN).test(service.startAt.trim()) &&
-    Number.isFinite(new Date(service.startAt.trim()).getTime());
+  const serviceTimeResolution = resolveChicagoServiceTime(service.serviceDate, service.startTime);
+  const selectedServiceStartAt =
+    serviceTimeResolution.kind === "valid"
+      ? serviceTimeResolution.instant
+      : serviceTimeResolution.kind === "ambiguous"
+        ? (serviceTimeResolution.instants.find((instant) => instant === service.ambiguousStartAt) ??
+          null)
+        : null;
 
   const notifyMutationSuccess = () => {
     void invalidateWorkspace();
@@ -160,10 +170,10 @@ export default function Administration() {
       activeTo: item.activeTo ?? "",
     });
   };
-  const toServiceInput = (): ServiceInput => ({
+  const toServiceInput = (startAt: string): ServiceInput => ({
     ministryId: service.ministryId,
     serviceDate: service.serviceDate,
-    startAt: new Date(service.startAt.trim()).toISOString(),
+    startAt,
     capacity: service.capacity.trim() === "" ? null : Number(service.capacity),
     locationRef: service.locationRef.trim() || null,
     planExternalId: service.planExternalId.trim() || null,
@@ -171,8 +181,8 @@ export default function Administration() {
   });
   const submitService = (e: FormEvent) => {
     e.preventDefault();
-    if (!serviceDateTimeValid) return;
-    const data = toServiceInput();
+    if (!selectedServiceStartAt) return;
+    const data = toServiceInput(selectedServiceStartAt);
     const onSuccess = () => {
       setServiceId("");
       setService(blankService);
@@ -182,11 +192,19 @@ export default function Administration() {
     else serviceCreateMutation.mutate({ data }, { onSuccess });
   };
   const beginEditService = (item: ServiceRecord) => {
+    const localDateTime = chicagoDateTimeFromInstant(item.startAt);
+    const resolution = resolveChicagoServiceTime(localDateTime.date, localDateTime.time);
     setServiceId(item.id);
     setService({
       ministryId: item.ministryId,
-      serviceDate: item.serviceDate,
-      startAt: item.startAt,
+      serviceDate: localDateTime.date,
+      startTime: localDateTime.time,
+      ambiguousStartAt:
+        resolution.kind === "ambiguous"
+          ? (resolution.instants.find(
+              (instant) => instant === new Date(item.startAt).toISOString(),
+            ) ?? "")
+          : "",
       capacity: item.capacity === null ? "" : String(item.capacity),
       locationRef: item.locationRef ?? "",
       planExternalId: item.planExternalId ?? "",
@@ -570,20 +588,37 @@ export default function Administration() {
                     label="Service date"
                     type="date"
                     value={service.serviceDate}
-                    onChange={(v) => setService({ ...service, serviceDate: v })}
+                    onChange={(v) =>
+                      setService({ ...service, serviceDate: v, ambiguousStartAt: "" })
+                    }
                     required
                     hint="Use the service's calendar date in Chicago."
                   />
                   <TextField
                     name="service-start-at"
-                    label="Start time (ISO with offset)"
-                    value={service.startAt}
-                    onChange={(v) => setService({ ...service, startAt: v })}
+                    label="Start time (Chicago)"
+                    type="time"
+                    step={1}
+                    value={service.startTime}
+                    onChange={(v) => setService({ ...service, startTime: v, ambiguousStartAt: "" })}
                     required
-                    placeholder="2026-11-08T09:00:00-06:00"
-                    pattern={OFFSET_DATETIME_PATTERN}
-                    hint="Enter Chicago time with an explicit offset; the date must match Chicago's local date. Example: 2026-11-08T09:00:00-06:00"
+                    hint="Enter the local start time in America/Chicago."
                   />
+                  {serviceTimeResolution.kind === "ambiguous" && (
+                    <SelectField
+                      name="service-time-occurrence"
+                      label="Which occurrence?"
+                      value={service.ambiguousStartAt}
+                      onChange={(v) => setService({ ...service, ambiguousStartAt: v })}
+                    >
+                      {serviceTimeResolution.instants.map((instant, index) => (
+                        <option key={instant} value={instant}>
+                          {index === 0 ? "First" : "Second"} occurrence (
+                          {chicagoAbbreviation(instant)})
+                        </option>
+                      ))}
+                    </SelectField>
+                  )}
                   <TextField
                     name="service-capacity"
                     label="Capacity"
@@ -638,9 +673,18 @@ export default function Administration() {
                     </button>
                   )}
                 </div>
-                {service.startAt && !serviceDateTimeValid && (
+                {service.serviceDate &&
+                  service.startTime &&
+                  serviceTimeResolution.kind === "nonexistent" && (
+                    <p role="alert" className="text-[12px] text-destructive">
+                      This Chicago local time does not exist because clocks move forward. Choose
+                      another start time.
+                    </p>
+                  )}
+                {serviceTimeResolution.kind === "ambiguous" && !service.ambiguousStartAt && (
                   <p role="alert" className="text-[12px] text-destructive">
-                    Enter an ISO datetime with an explicit UTC offset.
+                    This Chicago local time occurs twice when clocks move back. Select the first or
+                    second occurrence.
                   </p>
                 )}
               </form>

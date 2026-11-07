@@ -51,6 +51,9 @@ identities only. No provider credentials required for CI.
   no fake role selector. Existing dashboard layout/brand is preserved.
 - Generated OpenAPI contracts and React Query mutations; unknown capacity remains
   null. Chicago service dates must agree with the timestamp at the database level.
+- Administrators enter each service's Chicago-local date and start time. The UI
+  resolves and stores an explicit instant; spring-forward gaps are rejected and
+  fall-back repeated times require choosing the first or second occurrence.
 
 ## Verification completed in development
 - `pnpm test`: 40 unit/API tests passed; 9 opt-in database tests skipped there.
