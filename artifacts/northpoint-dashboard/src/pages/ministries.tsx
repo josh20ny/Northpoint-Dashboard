@@ -21,7 +21,7 @@ export default function Ministries() {
       <PageHeader
         eyebrow="Directory"
         title="Ministries"
-        description="Each ministry will gain its own view once records exist. For now these are structural placeholders defined by the foundation."
+        description="Ministry reporting areas."
         actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
       />
 
@@ -81,7 +81,7 @@ export default function Ministries() {
               : "No ministries are defined yet"}
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Try a different name or clear the search.
+            {list && list.length > 0 ? "Try another search." : "No ministry records are available."}
           </p>
         </div>
       ) : (

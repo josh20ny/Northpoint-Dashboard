@@ -1,0 +1,1 @@
+- [Brand direction](brand-direction.md) — preserve the liked dashboard layout; use practical copy and the brand guide plus both Northpoint websites.

@@ -21,7 +21,7 @@ export default function Integrations() {
       <PageHeader
         eyebrow="Read-only"
         title="Integrations"
-        description="Sources the platform is designed to read from. None are connected; connections can only be made by an authorised administrator after setup is verified."
+        description="Connected services and their current status."
         actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
       />
       {q.isError ? (

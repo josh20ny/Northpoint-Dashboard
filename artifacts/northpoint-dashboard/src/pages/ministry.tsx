@@ -52,9 +52,9 @@ export default function Ministry() {
           className="rounded-xl border border-dashed bg-card/60 p-10 text-center"
           data-testid="status-not-found"
         >
-          <p className="text-sm font-medium">No ministry with the identifier "{slug}"</p>
+          <p className="text-sm font-medium">Ministry not found</p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            It may not be part of the Phase 0 directory.
+            This ministry is not in the directory.
           </p>
         </div>
       </>
@@ -71,7 +71,7 @@ export default function Ministry() {
       />
       <Panel
         title="Planned for this view"
-        meta={<span className="font-mono text-[11px] text-muted-foreground">future scope</span>}
+        meta={<span className="font-mono text-[11px] text-muted-foreground">Planned</span>}
       >
         <ol className="divide-y">
           {FUTURE.map(([t, d], i) => (
@@ -85,9 +85,7 @@ export default function Ministry() {
           ))}
         </ol>
       </Panel>
-      <p className="mt-4 text-[12.5px] text-muted-foreground">
-        No records exist for this ministry in Phase 0. Nothing on this page is estimated.
-      </p>
+      <p className="mt-4 text-[12.5px] text-muted-foreground">No ministry reports are available.</p>
     </>
   );
 }

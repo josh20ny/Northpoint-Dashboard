@@ -49,7 +49,7 @@ export default function SystemPage() {
       <PageHeader
         eyebrow="Foundation health"
         title="System"
-        description="Live checks against the API. Values come straight from the server on each refresh."
+        description="Current service and database status."
         actions={<RefreshButton busy={busy} onClick={refresh} />}
       />
       <div className="grid gap-5 md:grid-cols-2">

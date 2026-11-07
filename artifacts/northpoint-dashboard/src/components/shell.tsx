@@ -41,7 +41,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               n.indent && "ml-4 h-8 text-[13px]",
               active
                 ? "bg-card font-medium text-foreground ring-1 ring-border"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
             {active && (
@@ -53,7 +53,9 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
             <Icon
               className={cn(
                 "h-4 w-4 shrink-0",
-                active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                active
+                  ? "text-primary"
+                  : "text-sidebar-foreground/65 group-hover:text-sidebar-accent-foreground",
               )}
               aria-hidden
             />
@@ -67,21 +69,17 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 
 function Wordmark() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 rounded-md" data-testid="link-home">
-      <span
-        aria-hidden
-        className="grid h-7 w-7 place-items-center rounded-md border bg-card font-mono text-[11px] font-medium text-primary"
-      >
-        2.0
-      </span>
-      <span className="leading-tight">
-        <span className="block text-[13.5px] font-semibold tracking-tight">
-          Northpoint Dashboard
-        </span>
-        <span className="block font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
-          Phase 0 foundation
-        </span>
-      </span>
+    <Link
+      href="/"
+      className="flex items-center rounded-md"
+      data-testid="link-home"
+      aria-label="Northpoint Dashboard home"
+    >
+      <img
+        src={`${import.meta.env.BASE_URL}brand/northpoint-logo-light.png`}
+        alt="Northpoint"
+        className="h-auto w-[154px] object-contain"
+      />
     </Link>
   );
 }
@@ -89,14 +87,14 @@ function Wordmark() {
 function SessionNote() {
   return (
     <div
-      className="rounded-lg border border-dashed bg-background/60 p-3"
+      className="rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-3"
       data-testid="status-session"
     >
-      <div className="flex items-center gap-2 text-[12px] font-semibold">
-        <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden /> Unauthenticated preview
+      <div className="flex items-center gap-2 text-[12px] font-semibold text-sidebar-foreground">
+        <Lock className="h-3.5 w-3.5 text-sidebar-foreground/70" aria-hidden /> Preview access
       </div>
-      <p className="mt-1 text-[11.5px] leading-relaxed text-muted-foreground">
-        Not a signed-in session. No church records are loaded and operational APIs deny access.
+      <p className="mt-1 text-[11.5px] leading-relaxed text-sidebar-foreground/70">
+        Sign-in is disabled. Church records are not available.
       </p>
     </div>
   );
@@ -135,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SessionNote />
       </aside>
 
-      <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground lg:hidden">
         <Wordmark />
         <button
           type="button"
@@ -143,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           aria-label="Open navigation"
           aria-expanded={open}
           data-testid="button-open-nav"
-          className="grid h-9 w-9 place-items-center rounded-lg border bg-card hover:bg-secondary"
+          className="grid h-9 w-9 place-items-center rounded-lg border border-sidebar-border bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
         >
           <Menu className="h-4 w-4" aria-hidden />
         </button>

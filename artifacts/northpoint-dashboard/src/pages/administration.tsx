@@ -46,7 +46,7 @@ export default function Administration() {
       <PageHeader
         eyebrow="Read-only"
         title="Administration"
-        description="How Northpoint Dashboard is set up. This page explains the process; it cannot change anything and requests no credentials."
+        description="Setup requirements and access status."
         actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
       />
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
@@ -85,12 +85,7 @@ export default function Administration() {
                   value={f.auth.enabled ? "Yes" : "No"}
                   testId="text-auth-enabled"
                 />
-                <KV
-                  label="Provider adapter"
-                  value={f.auth.provider}
-                  mono
-                  testId="text-auth-provider"
-                />
+                <KV label="Provider" value={f.auth.provider} mono testId="text-auth-provider" />
                 <KV
                   label="Status"
                   value={<StatusPill status={f.auth.status} label={humanize(f.auth.status)} />}

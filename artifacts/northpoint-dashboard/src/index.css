@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -80,73 +80,73 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  --background: 40 23% 97%;
+  --background: 36 33% 96%;
 
-  --foreground: 215 28% 14%;
+  --foreground: 209 34% 20%;
 
-  --border: 36 14% 87%;
+  --border: 35 23% 86%;
 
-  --card: 40 30% 99%;
+  --card: 36 38% 98%;
 
-  --card-foreground: 215 28% 14%;
+  --card-foreground: 209 34% 20%;
 
-  --card-border: 36 14% 87%;
+  --card-border: 35 23% 86%;
 
-  --sidebar: 38 20% 94%;
+  --sidebar: 209 34% 20%;
 
-  --sidebar-foreground: 215 22% 22%;
+  --sidebar-foreground: 36 38% 96%;
 
-  --sidebar-border: 36 14% 85%;
+  --sidebar-border: 209 22% 29%;
 
-  --sidebar-primary: 191 52% 24%;
+  --sidebar-primary: 8 59% 50%;
 
-  --sidebar-primary-foreground: 40 30% 98%;
+  --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 36 18% 89%;
+  --sidebar-accent: 209 27% 27%;
 
-  --sidebar-accent-foreground: 215 28% 14%;
+  --sidebar-accent-foreground: 36 38% 96%;
 
-  --sidebar-ring: 191 52% 30%;
+  --sidebar-ring: 8 59% 58%;
 
-  --popover: 40 30% 99%;
+  --popover: 36 38% 98%;
 
-  --popover-foreground: 215 28% 14%;
+  --popover-foreground: 209 34% 20%;
 
-  --popover-border: 36 14% 85%;
+  --popover-border: 35 23% 86%;
 
-  --primary: 191 52% 24%;
+  --primary: 8 59% 50%;
 
-  --primary-foreground: 40 30% 98%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 36 18% 91%;
+  --secondary: 35 28% 91%;
 
-  --secondary-foreground: 215 28% 18%;
+  --secondary-foreground: 209 34% 20%;
 
-  --muted: 38 16% 92%;
+  --muted: 30 21% 93%;
 
-  --muted-foreground: 215 12% 38%;
+  --muted-foreground: 209 13% 39%;
 
-  --accent: 191 30% 92%;
+  --accent: 163 31% 88%;
 
-  --accent-foreground: 191 52% 20%;
+  --accent-foreground: 209 34% 20%;
 
-  --destructive: 4 62% 42%;
+  --destructive: 8 59% 50%;
 
-  --destructive-foreground: 40 30% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --input: 36 12% 80%;
-  --ring: 191 52% 30%;
-  --chart-1: 191 52% 30%;
-  --chart-2: 28 70% 48%;
-  --chart-3: 152 38% 34%;
-  --chart-4: 4 62% 42%;
-  --chart-5: 260 22% 46%;
+  --input: 35 18% 78%;
+  --ring: 8 59% 50%;
+  --chart-1: 8 59% 50%;
+  --chart-2: 209 34% 20%;
+  --chart-3: 163 31% 56%;
+  --chart-4: 35 50% 55%;
+  --chart-5: 209 15% 42%;
 
   color-scheme: light;
-  --app-font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-  --app-font-serif: "Instrument Serif", Georgia, serif;
+  --app-font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+  --app-font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --app-font-mono: "JetBrains Mono", Menlo, monospace;
-  --radius: 0.5rem; /* 8px */
+  --radius: 0.65rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
   --shadow-sm:
@@ -223,68 +223,68 @@
   --elevate-1: rgba(255, 255, 255, 0.04);
   --elevate-2: rgba(255, 255, 255, 0.09);
 
-  --background: 215 24% 9%;
+  --background: 209 18% 14%;
 
-  --foreground: 40 20% 92%;
+  --foreground: 36 30% 92%;
 
-  --border: 215 16% 20%;
+  --border: 209 15% 27%;
 
-  --card: 215 22% 11%;
+  --card: 209 18% 17%;
 
-  --card-foreground: 40 20% 92%;
+  --card-foreground: 36 30% 92%;
 
-  --card-border: 215 16% 20%;
+  --card-border: 209 15% 27%;
 
-  --sidebar: 215 24% 8%;
+  --sidebar: 209 34% 20%;
 
-  --sidebar-foreground: 40 14% 82%;
+  --sidebar-foreground: 36 30% 92%;
 
-  --sidebar-border: 215 16% 18%;
+  --sidebar-border: 209 22% 29%;
 
-  --sidebar-primary: 188 42% 55%;
+  --sidebar-primary: 8 59% 56%;
 
-  --sidebar-primary-foreground: 215 24% 9%;
+  --sidebar-primary-foreground: 0 0% 100%;
 
-  --sidebar-accent: 215 18% 16%;
+  --sidebar-accent: 209 27% 27%;
 
-  --sidebar-accent-foreground: 40 20% 92%;
+  --sidebar-accent-foreground: 36 30% 92%;
 
-  --sidebar-ring: 188 42% 55%;
+  --sidebar-ring: 8 59% 56%;
 
-  --popover: 215 22% 11%;
+  --popover: 209 18% 17%;
 
-  --popover-foreground: 40 20% 92%;
+  --popover-foreground: 36 30% 92%;
 
-  --popover-border: 215 16% 22%;
+  --popover-border: 209 15% 29%;
 
-  --primary: 188 42% 55%;
+  --primary: 8 59% 56%;
 
-  --primary-foreground: 215 24% 9%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 215 18% 16%;
+  --secondary: 209 15% 24%;
 
-  --secondary-foreground: 40 20% 92%;
+  --secondary-foreground: 36 30% 92%;
 
-  --muted: 215 18% 15%;
+  --muted: 209 15% 22%;
 
-  --muted-foreground: 215 10% 64%;
+  --muted-foreground: 36 12% 70%;
 
-  --accent: 191 30% 18%;
+  --accent: 163 25% 25%;
 
-  --accent-foreground: 188 42% 75%;
+  --accent-foreground: 163 40% 82%;
 
-  --destructive: 4 60% 52%;
+  --destructive: 8 59% 56%;
 
-  --destructive-foreground: 40 20% 96%;
+  --destructive-foreground: 0 0% 100%;
 
   /* Used as the border around inputs. Dark mode: Should be a border that is light enough to have high contrast when rendered on a --card background. More contrast than standard --border */
-  --input: 215 14% 28%;
-  --ring: 188 42% 55%;
-  --chart-1: 188 42% 55%;
-  --chart-2: 28 70% 58%;
-  --chart-3: 152 38% 48%;
-  --chart-4: 4 60% 56%;
-  --chart-5: 260 30% 66%;
+  --input: 209 12% 36%;
+  --ring: 8 59% 56%;
+  --chart-1: 8 59% 56%;
+  --chart-2: 36 30% 78%;
+  --chart-3: 163 40% 64%;
+  --chart-4: 35 50% 62%;
+  --chart-5: 209 12% 68%;
 
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
@@ -314,6 +314,15 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-feature-settings: "ss01", "cv11";
+    font-family: var(--app-font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
   }
   button {
     cursor: pointer;
@@ -339,6 +348,18 @@
       transition-duration: 0.01ms !important;
     }
   }
+}
+
+.font-display {
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+a,
+input {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
 }
 
 /**

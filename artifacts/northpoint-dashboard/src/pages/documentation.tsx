@@ -19,7 +19,7 @@ export default function Documentation() {
       <PageHeader
         eyebrow="Specification"
         title="Documentation"
-        description="The planning documents that define this platform. Read-only, served from the repository."
+        description="Planning and operating documents."
         actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
       />
       {q.isError ? (

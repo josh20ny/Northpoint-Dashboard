@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 export function usePageTitle(title: string) {
   useEffect(() => {
-    document.title = `${title} · Northpoint Dashboard 2.0`;
+    document.title = `${title} · Northpoint Dashboard`;
   }, [title]);
 }
 
@@ -36,12 +36,12 @@ export function toneFor(status: string | undefined): Tone {
 }
 
 const toneStyles: Record<Tone, string> = {
-  ok: "bg-[hsl(152_38%_92%)] text-[hsl(152_45%_22%)] border-[hsl(152_30%_80%)] dark:bg-[hsl(152_30%_14%)] dark:text-[hsl(152_40%_70%)] dark:border-[hsl(152_25%_24%)]",
+  ok: "bg-[hsl(163_31%_88%)] text-[hsl(209_34%_20%)] border-[hsl(163_20%_72%)] dark:bg-[hsl(163_25%_25%)] dark:text-[hsl(163_40%_82%)] dark:border-[hsl(163_20%_38%)]",
   warn: "bg-[hsl(36_80%_92%)] text-[hsl(28_70%_28%)] border-[hsl(36_50%_78%)] dark:bg-[hsl(30_40%_14%)] dark:text-[hsl(36_70%_70%)] dark:border-[hsl(30_30%_26%)]",
   bad: "bg-[hsl(4_70%_95%)] text-[hsl(4_62%_36%)] border-[hsl(4_50%_84%)] dark:bg-[hsl(4_40%_16%)] dark:text-[hsl(4_70%_74%)] dark:border-[hsl(4_30%_28%)]",
   off: "bg-muted text-muted-foreground border-border",
   neutral:
-    "bg-accent text-accent-foreground border-[hsl(191_25%_82%)] dark:border-[hsl(191_20%_26%)]",
+    "bg-accent text-accent-foreground border-[hsl(163_20%_72%)] dark:border-[hsl(163_20%_38%)]",
 };
 const dotStyles: Record<Tone, string> = {
   ok: "bg-[hsl(152_45%_36%)]",
@@ -101,7 +101,7 @@ export function PageHeader({
           </p>
         )}
         <h1
-          className="text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]"
+          className="font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]"
           data-testid="text-page-title"
         >
           {title}
@@ -132,12 +132,15 @@ export function Panel({
 }) {
   return (
     <section
-      className={cn("np-rise rounded-xl border bg-card", className)}
+      className={cn(
+        "np-rise rounded-xl border bg-card shadow-[0_2px_8px_rgba(34,50,66,0.035)]",
+        className,
+      )}
       style={{ animationDelay: `${delay}ms` }}
     >
       {title && (
         <div className="flex items-center justify-between gap-3 border-b px-5 py-3">
-          <h2 className="text-[13px] font-semibold tracking-tight">{title}</h2>
+          <h2 className="font-display text-[13px] font-semibold tracking-tight">{title}</h2>
           {meta}
         </div>
       )}
@@ -213,8 +216,7 @@ export function QueryError({
         <div className="flex-1">
           <p className="text-sm font-semibold">{title}</p>
           <p className="mt-1 text-[13px] text-muted-foreground" data-testid="text-error">
-            {errorMessage(error)} No status is shown in its place; nothing here is inferred or
-            cached.
+            {errorMessage(error)}
           </p>
           <button
             type="button"
