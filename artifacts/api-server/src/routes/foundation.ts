@@ -9,7 +9,6 @@ import {
 import { foundationStatus } from "../lib/foundation";
 import { databaseReadiness } from "../lib/readiness";
 import { documentIndex, readDocument } from "../lib/documents";
-import { requirePermission } from "../lib/auth";
 
 const router: IRouter = Router();
 router.use("/v1", (_req, res, next) => {
@@ -42,10 +41,4 @@ router.get("/v1/documents/:slug", async (req, res): Promise<void> => {
 
 // Public routes above contain only specifications and non-sensitive readiness.
 // All future operational routes below fail closed until verified auth is wired.
-router.use("/v1/admin", requirePermission("system:manage"));
-router.use("/v1/giving", requirePermission("giving:individual"));
-router.use("/v1", requirePermission("attendance:aggregate"));
-router.use("/v1", (_req, res) => {
-  res.status(501).json({ error: "Not implemented in Phase 0" });
-});
 export default router;

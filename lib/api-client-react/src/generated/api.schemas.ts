@@ -5,6 +5,180 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  staff: 'staff',
+  leadership: 'leadership',
+  admin: 'admin',
+} as const;
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: AuthUserRole;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  enabled: boolean;
+  /** @nullable */
+  csrfToken: string | null;
+  /** @nullable */
+  expiresAt: string | null;
+}
+
+export type InvitationInputRole = typeof InvitationInputRole[keyof typeof InvitationInputRole];
+
+
+export const InvitationInputRole = {
+  staff: 'staff',
+  leadership: 'leadership',
+  admin: 'admin',
+} as const;
+
+export interface InvitationInput {
+  /** @maxLength 254 */
+  email: string;
+  role: InvitationInputRole;
+}
+
+export type InvitationRole = typeof InvitationRole[keyof typeof InvitationRole];
+
+
+export const InvitationRole = {
+  staff: 'staff',
+  leadership: 'leadership',
+  admin: 'admin',
+} as const;
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: InvitationRole;
+  expiresAt: string;
+  /** @nullable */
+  consumedAt: string | null;
+  /** @nullable */
+  revokedAt: string | null;
+}
+
+export type AccessUserUpdateRole = typeof AccessUserUpdateRole[keyof typeof AccessUserUpdateRole];
+
+
+export const AccessUserUpdateRole = {
+  staff: 'staff',
+  leadership: 'leadership',
+  admin: 'admin',
+} as const;
+
+export type AccessUserUpdateStatus = typeof AccessUserUpdateStatus[keyof typeof AccessUserUpdateStatus];
+
+
+export const AccessUserUpdateStatus = {
+  active: 'active',
+  suspended: 'suspended',
+} as const;
+
+export interface AccessUserUpdate {
+  role: AccessUserUpdateRole;
+  status: AccessUserUpdateStatus;
+}
+
+export type AccessUserStatus = typeof AccessUserStatus[keyof typeof AccessUserStatus];
+
+
+export const AccessUserStatus = {
+  active: 'active',
+  suspended: 'suspended',
+} as const;
+
+export type AccessUser = AuthUser & {
+  status: AccessUserStatus;
+};
+
+export interface MinistryInput {
+  /** @pattern ^[a-z][a-z0-9-]{1,59}$ */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  activeFrom: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  activeTo: string | null;
+}
+
+export type MinistryRecord = MinistryInput & {
+  id: string;
+};
+
+export interface ServiceInput {
+  ministryId: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  serviceDate: string;
+  startAt: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     * @nullable
+     */
+  capacity: number | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  locationRef: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  planExternalId: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  specialEventRef: string | null;
+}
+
+export type ServiceRecord = ServiceInput & {
+  id: string;
+  timezone: string;
+};
+
+export interface AuditRecord {
+  id: string;
+  /** @nullable */
+  actorUserId: string | null;
+  action: string;
+  targetType: string;
+  /** @nullable */
+  targetId: string | null;
+  outcome: string;
+  timestamp: string;
+}
+
+export interface AdminWorkspace {
+  users: AccessUser[];
+  invitations: Invitation[];
+  ministries: MinistryRecord[];
+  services: ServiceRecord[];
+  audit: AuditRecord[];
+  page: number;
+  hasMore: boolean;
+  asOf: string;
+  quality: string;
+}
+
 export type FoundationAuth = {
   enabled: boolean;
   provider: string;
@@ -62,4 +236,12 @@ export interface DocumentContent {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetAdminWorkspaceParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
+};
 

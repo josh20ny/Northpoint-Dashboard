@@ -37,3 +37,13 @@ and generated OpenAPI contracts in Phase 0 instead of introducing Next.js.
 This follows approved D-002 (no mandatory stack). Alternatives, tradeoffs, migration
 boundary and verification commands are recorded in `IMPLEMENTATION.md`.
 No owner-approved product decision or unresolved business definition is changed.
+
+## Admission policy — 2026-11-07
+
+**APPROVED**, owner: product owner. Use invite-only access and reserve the first
+Admin invitation for the email supplied privately in this conversation (stored
+only in the development database). Alternatives were open domain admission or
+leaving admission unconfigured; no domain is inferred from public websites.
+Migration impact: user/invitation/session tables; no automatic user provisioning
+on startup. Tests: invitation expiry/revocation/replay, provider-subject collision,
+role spoofing, session revocation and last-active-Admin protection.

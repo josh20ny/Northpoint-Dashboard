@@ -4,6 +4,9 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { projectRoot } from "./lib/documents";
 import path from "node:path";
+import cookieParser from "cookie-parser";
+import { sessionMiddleware } from "./middlewares/session";
+import { AccessError } from "./lib/administration";
 
 const app: Express = express();
 
@@ -35,6 +38,8 @@ app.use((_req, res, next) => {
 // Same-origin API; no permissive cross-origin credential access.
 app.use(express.json({ limit: "64kb" }));
 app.use(express.urlencoded({ extended: true, limit: "64kb" }));
+app.use(cookieParser());
+app.use("/api", sessionMiddleware);
 
 app.use("/api", router);
 app.use("/api", (_req, res) => {
@@ -55,6 +60,19 @@ app.use((_req, res) => {
 });
 app.use(
   (error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (error instanceof AccessError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    const code = (error as { code?: string }).code;
+    if (code === "23505") {
+      res.status(409).json({ error: "A matching record already exists" });
+      return;
+    }
+    if (code === "23503" || code === "23514" || code === "22007" || code === "22008") {
+      res.status(400).json({ error: "Invalid record references, dates or values" });
+      return;
+    }
     const status = (error as { status?: number }).status;
     if (status === 400 || status === 413) {
       res.status(status).json({ error: status === 413 ? "Request too large" : "Invalid request" });

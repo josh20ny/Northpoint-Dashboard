@@ -1,142 +1,675 @@
-import { Link } from "wouter";
-import { ArrowRight, Lock } from "lucide-react";
-import { useGetFoundation } from "@workspace/api-client-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@workspace/replit-auth-web";
 import {
-  KV,
+  getGetAdminWorkspaceQueryKey,
+  useGetAdminWorkspace,
+  useCreateInvitation,
+  useRevokeInvitation,
+  useUpdateAccessUser,
+  useCreateMinistry,
+  useUpdateMinistry,
+  useCreateServiceOccurrence,
+  useUpdateServiceOccurrence,
+  type AccessUser,
+  type MinistryRecord,
+  type ServiceRecord,
+  type MinistryInput,
+  type ServiceInput,
+} from "@workspace/api-client-react";
+import { ShieldCheck, Users, Mail, CalendarDays, ClipboardList, RefreshCw } from "lucide-react";
+import {
   PageHeader,
   Panel,
   QueryError,
   RefreshButton,
   StatusPill,
-  humanize,
   usePageTitle,
+  formatDate,
 } from "@/components/kit";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  EmptyRecord,
+  FormError,
+  InvitationRow,
+  RestrictedState,
+  SectionHeading,
+  SelectField,
+  SubmitButton,
+  TextField,
+} from "@/components/admin-controls";
+import { AuditTable, MinistryList, ServiceList, UserTable } from "@/components/admin-record-tables";
 
-const STEPS = [
-  [
-    "Verify the identity provider",
-    "Authentication sits behind a provider adapter and stays disabled until the provider configuration is verified.",
-  ],
-  [
-    "Confirm database readiness",
-    "Connectivity and migrations must report ready before any records can be written.",
-  ],
-  [
-    "Assign staff access",
-    "Roles are granted to verified staff accounts. There is no self-service or simulated role.",
-  ],
-  ["Connect sources", "Each integration is connected individually by an authorised administrator."],
-];
-
-const PROTECTED = [
-  "User and role management",
-  "Ministry configuration",
-  "Integration credentials",
-  "Audit log",
-];
+const WORKSPACE_PREFIX = ["/api/v1/admin/workspace"];
+const ROLES = ["staff", "leadership", "admin"] as const;
+type Role = (typeof ROLES)[number];
+type AccessStatus = "active" | "suspended";
+const csrfRequest = (csrfToken: string | null) => ({
+  request: { headers: { "X-CSRF-Token": csrfToken ?? "" } },
+});
+const blankMinistry = { code: "", name: "", activeFrom: "", activeTo: "" };
+const blankService = {
+  ministryId: "",
+  serviceDate: "",
+  startAt: "",
+  capacity: "",
+  locationRef: "",
+  planExternalId: "",
+  specialEventRef: "",
+};
+const OFFSET_DATETIME_PATTERN = String.raw`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$`;
 
 export default function Administration() {
   usePageTitle("Administration");
-  const q = useGetFoundation();
-  const f = q.data;
+  const { user, enabled, isLoading: authLoading, csrfToken, refresh } = useAuth();
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const params = { page };
+  const q = useGetAdminWorkspace(params, {
+    query: {
+      enabled: user?.role === "admin",
+      queryKey: getGetAdminWorkspaceQueryKey(params),
+      staleTime: 30000,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const workspace = q.data;
+  const invalidateWorkspace = () => queryClient.invalidateQueries({ queryKey: WORKSPACE_PREFIX });
 
+  const invitationMutation = useCreateInvitation(csrfRequest(csrfToken));
+  const revokeMutation = useRevokeInvitation(csrfRequest(csrfToken));
+  const userMutation = useUpdateAccessUser(csrfRequest(csrfToken));
+  const ministryCreateMutation = useCreateMinistry(csrfRequest(csrfToken));
+  const ministryUpdateMutation = useUpdateMinistry(csrfRequest(csrfToken));
+  const serviceCreateMutation = useCreateServiceOccurrence(csrfRequest(csrfToken));
+  const serviceUpdateMutation = useUpdateServiceOccurrence(csrfRequest(csrfToken));
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<Role>("staff");
+  const [editingUser, setEditingUser] = useState<AccessUser | null>(null);
+  const [userRole, setUserRole] = useState<Role>("staff");
+  const [userStatus, setUserStatus] = useState<AccessStatus>("active");
+  const [ministryId, setMinistryId] = useState("");
+  const [ministry, setMinistry] = useState(blankMinistry);
+  const [serviceId, setServiceId] = useState("");
+  const [service, setService] = useState(blankService);
+  const serviceDateTimeValid =
+    new RegExp(OFFSET_DATETIME_PATTERN).test(service.startAt.trim()) &&
+    Number.isFinite(new Date(service.startAt.trim()).getTime());
+
+  const notifyMutationSuccess = () => {
+    void invalidateWorkspace();
+  };
+  const submitInvitation = (e: FormEvent) => {
+    e.preventDefault();
+    invitationMutation.mutate(
+      { data: { email: inviteEmail.trim(), role: inviteRole } },
+      {
+        onSuccess: () => {
+          setInviteEmail("");
+          setInviteRole("staff");
+          notifyMutationSuccess();
+        },
+      },
+    );
+  };
+  const submitUser = (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (
+      editingUser.id === user?.id &&
+      (userRole !== editingUser.role || userStatus !== editingUser.status) &&
+      !window.confirm("Changing your own access may end this session. Continue?")
+    )
+      return;
+    userMutation.mutate(
+      { id: editingUser.id, data: { role: userRole, status: userStatus } },
+      {
+        onSuccess: () => {
+          setEditingUser(null);
+          notifyMutationSuccess();
+          if (editingUser.id === user?.id) void refresh();
+        },
+      },
+    );
+  };
+  const toMinistryInput = (): MinistryInput => ({
+    code: ministry.code.trim(),
+    name: ministry.name.trim(),
+    activeFrom: ministry.activeFrom || null,
+    activeTo: ministry.activeTo || null,
+  });
+  const submitMinistry = (e: FormEvent) => {
+    e.preventDefault();
+    const data = toMinistryInput();
+    const onSuccess = () => {
+      setMinistryId("");
+      setMinistry(blankMinistry);
+      notifyMutationSuccess();
+    };
+    if (ministryId) ministryUpdateMutation.mutate({ id: ministryId, data }, { onSuccess });
+    else ministryCreateMutation.mutate({ data }, { onSuccess });
+  };
+  const beginEditMinistry = (item: MinistryRecord) => {
+    setMinistryId(item.id);
+    setMinistry({
+      code: item.code,
+      name: item.name,
+      activeFrom: item.activeFrom ?? "",
+      activeTo: item.activeTo ?? "",
+    });
+  };
+  const toServiceInput = (): ServiceInput => ({
+    ministryId: service.ministryId,
+    serviceDate: service.serviceDate,
+    startAt: new Date(service.startAt.trim()).toISOString(),
+    capacity: service.capacity.trim() === "" ? null : Number(service.capacity),
+    locationRef: service.locationRef.trim() || null,
+    planExternalId: service.planExternalId.trim() || null,
+    specialEventRef: service.specialEventRef.trim() || null,
+  });
+  const submitService = (e: FormEvent) => {
+    e.preventDefault();
+    if (!serviceDateTimeValid) return;
+    const data = toServiceInput();
+    const onSuccess = () => {
+      setServiceId("");
+      setService(blankService);
+      notifyMutationSuccess();
+    };
+    if (serviceId) serviceUpdateMutation.mutate({ id: serviceId, data }, { onSuccess });
+    else serviceCreateMutation.mutate({ data }, { onSuccess });
+  };
+  const beginEditService = (item: ServiceRecord) => {
+    setServiceId(item.id);
+    setService({
+      ministryId: item.ministryId,
+      serviceDate: item.serviceDate,
+      startAt: item.startAt,
+      capacity: item.capacity === null ? "" : String(item.capacity),
+      locationRef: item.locationRef ?? "",
+      planExternalId: item.planExternalId ?? "",
+      specialEventRef: item.specialEventRef ?? "",
+    });
+  };
+
+  if (authLoading)
+    return (
+      <>
+        <PageHeader
+          eyebrow="Access"
+          title="Administration"
+          description="Access and ministry configuration."
+        />
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </>
+    );
+  if (!enabled)
+    return (
+      <>
+        <PageHeader
+          eyebrow="Access"
+          title="Administration"
+          description="Access and ministry configuration."
+        />
+        <RestrictedState
+          title="Authentication is not enabled"
+          detail="Administrative configuration is unavailable until invite-only sign-in is enabled."
+        />
+      </>
+    );
+  if (!user)
+    return (
+      <>
+        <PageHeader
+          eyebrow="Restricted"
+          title="Administration"
+          description="Access and ministry configuration."
+        />
+        <RestrictedState
+          title="Log in to continue"
+          detail="This workspace is limited to verified Northpoint Austin staff. Invitations are issued by an administrator."
+        />
+      </>
+    );
+  if (user.role !== "admin")
+    return (
+      <>
+        <PageHeader
+          eyebrow="Restricted"
+          title="Administration"
+          description="Access and ministry configuration."
+        />
+        <RestrictedState
+          title="Administrator access required"
+          detail={`Signed in as ${user.email} · ${user.role}. Your current role does not have access to configuration.`}
+        />
+      </>
+    );
+
+  const mutationBusy =
+    invitationMutation.isPending ||
+    revokeMutation.isPending ||
+    userMutation.isPending ||
+    ministryCreateMutation.isPending ||
+    ministryUpdateMutation.isPending ||
+    serviceCreateMutation.isPending ||
+    serviceUpdateMutation.isPending;
   return (
     <>
       <PageHeader
-        eyebrow="Read-only"
+        eyebrow="Northpoint Austin · Admin"
         title="Administration"
-        description="Setup requirements and access status."
-        actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
+        description="Manage invited access, ministry records, service dates, and the configuration audit."
+        actions={<RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />}
       />
-      <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-        <Panel title="Setup sequence">
-          <ol className="divide-y">
-            {STEPS.map(([t, d], i) => (
-              <li key={t} className="flex gap-4 px-5 py-4">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border font-mono text-[11px] text-muted-foreground">
-                  {i + 1}
-                </span>
-                <div>
-                  <p className="text-[14px] font-medium">{t}</p>
-                  <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{d}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Panel>
-
-        <div className="flex flex-col gap-5">
-          <Panel title="Authentication" delay={60}>
-            {q.isError ? (
-              <div className="p-4">
-                <QueryError error={q.error} onRetry={() => q.refetch()} />
-              </div>
-            ) : q.isLoading || q.isFetching || !f ? (
-              <div className="space-y-3 p-5">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-full" />
-              </div>
-            ) : (
-              <dl>
-                <KV
-                  label="Enabled"
-                  value={f.auth.enabled ? "Yes" : "No"}
-                  testId="text-auth-enabled"
-                />
-                <KV label="Provider" value={f.auth.provider} mono testId="text-auth-provider" />
-                <KV
-                  label="Status"
-                  value={<StatusPill status={f.auth.status} label={humanize(f.auth.status)} />}
-                  testId="status-auth"
-                />
-              </dl>
-            )}
-          </Panel>
-
-          <Panel
-            title="Protected functions"
-            meta={<Lock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
-            delay={120}
+      {q.isRefetchError && workspace && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-950"
+        >
+          <span>
+            Refresh failed. Showing the last loaded admin data from{" "}
+            {formatDate(workspace.asOf, true)}.
+          </span>
+          <button
+            type="button"
+            onClick={() => void q.refetch()}
+            className="inline-flex h-8 items-center gap-2 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
           >
-            <ul className="divide-y">
-              {PROTECTED.map((p) => (
-                <li key={p} className="flex items-center justify-between px-5 py-3">
-                  <span className="text-[13px] text-muted-foreground">{p}</span>
-                  <button
-                    type="button"
-                    disabled
-                    aria-disabled
-                    title="Requires a verified, authorised session"
-                    className="h-7 cursor-not-allowed rounded-md border px-2.5 text-[12px] text-muted-foreground opacity-70"
-                    data-testid={`button-disabled-${p.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    Locked
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <Link
-            href="/administration/integrations"
-            data-testid="link-integrations"
-            className="group flex items-center justify-between rounded-xl border bg-card px-5 py-4 transition-colors hover:bg-secondary/60"
-          >
-            <span>
-              <span className="block text-[14px] font-medium">Integrations</span>
-              <span className="block text-[13px] text-muted-foreground">
-                Provider scaffolding and connection state
-              </span>
-            </span>
-            <ArrowRight
-              className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-              aria-hidden
-            />
-          </Link>
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+          </button>
         </div>
+      )}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-primary" aria-hidden />
+          <span className="text-[13px] font-medium">{user.email}</span>
+          <StatusPill status={user.role} label="Admin" />
+        </div>
+        <p className="text-[11.5px] text-muted-foreground">
+          {workspace
+            ? `Updated ${formatDate(workspace.asOf, true)} · Page ${workspace.page}`
+            : "Admin workspace"}
+        </p>
       </div>
+      {mutationBusy && (
+        <p role="status" className="sr-only">
+          Saving configuration changes
+        </p>
+      )}
+      {q.isError && !workspace ? (
+        <QueryError
+          title="Admin workspace unavailable"
+          error={q.error}
+          onRetry={() => void q.refetch()}
+        />
+      ) : q.isLoading || !workspace ? (
+        <div className="space-y-4">
+          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-60 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="space-y-5">
+            <Panel className="p-5 sm:p-6">
+              <SectionHeading
+                icon={Users}
+                title="User access"
+                detail="Edit active accounts. Suspension or role changes may revoke a session."
+              />
+              {workspace.users.length === 0 ? (
+                <EmptyRecord>There are no user accounts on this page.</EmptyRecord>
+              ) : (
+                <UserTable
+                  users={workspace.users}
+                  currentUserId={user.id}
+                  onEdit={(item) => {
+                    setEditingUser(item);
+                    setUserRole(item.role);
+                    setUserStatus(item.status);
+                  }}
+                />
+              )}
+              {editingUser && (
+                <form
+                  onSubmit={submitUser}
+                  className="mt-4 grid gap-3 rounded-lg border bg-muted/35 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                >
+                  <p className="sm:col-span-3 text-[12px] text-muted-foreground">
+                    Updating managed account:{" "}
+                    <strong className="text-foreground">{editingUser.email}</strong>
+                  </p>
+                  <SelectField
+                    name="managed-role"
+                    label="Managed account role"
+                    value={userRole}
+                    onChange={(v) => setUserRole(v as Role)}
+                  >
+                    {ROLES.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <SelectField
+                    name="managed-status"
+                    label="Account status"
+                    value={userStatus}
+                    onChange={(v) => setUserStatus(v as AccessStatus)}
+                  >
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                  </SelectField>
+                  <div className="flex gap-2">
+                    <SubmitButton pending={userMutation.isPending}>Save access</SubmitButton>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser(null)}
+                      className="h-9 rounded-md border px-3 text-[12px]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="sm:col-span-3 text-[11px] text-muted-foreground">
+                    This changes the selected account only; it does not change your current role.
+                  </p>
+                  <div className="sm:col-span-3">
+                    <FormError error={userMutation.error} />
+                  </div>
+                </form>
+              )}
+            </Panel>
+
+            <Panel className="p-5 sm:p-6">
+              <SectionHeading
+                icon={Mail}
+                title="Invitations"
+                detail="Invite a verified email address to staff, leadership, or admin access."
+              />
+              <form
+                onSubmit={submitInvitation}
+                className="grid gap-3 sm:grid-cols-[1.5fr_1fr_auto] sm:items-end"
+              >
+                <TextField
+                  name="invite-email"
+                  label="Email address"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={setInviteEmail}
+                  required
+                  placeholder="name@example.org"
+                />
+                <SelectField
+                  name="invite-role"
+                  label="Invitation role"
+                  value={inviteRole}
+                  onChange={(v) => setInviteRole(v as Role)}
+                >
+                  {ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </SelectField>
+                <SubmitButton pending={invitationMutation.isPending}>
+                  Create invitation
+                </SubmitButton>
+              </form>
+              <p className="mt-3 rounded-md bg-accent/55 px-3 py-2.5 text-[12px] leading-relaxed text-accent-foreground">
+                Invite reserves access; share dashboard link separately. No email is sent. An
+                invitation expires after 7 days.
+              </p>
+              <div className="mt-4">
+                <FormError error={invitationMutation.error} />
+              </div>
+              {workspace.invitations.length === 0 ? (
+                <EmptyRecord>No invitations on this page.</EmptyRecord>
+              ) : (
+                <div className="mt-4 divide-y border-t">
+                  {workspace.invitations.map((item) => (
+                    <InvitationRow
+                      key={item.id}
+                      item={item}
+                      busy={revokeMutation.isPending}
+                      onRevoke={() => {
+                        if (window.confirm(`Revoke the unused invitation for ${item.email}?`))
+                          revokeMutation.mutate(
+                            { id: item.id },
+                            { onSuccess: notifyMutationSuccess },
+                          );
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              <FormError error={revokeMutation.error} />
+            </Panel>
+
+            <Panel className="p-5 sm:p-6">
+              <SectionHeading
+                icon={ClipboardList}
+                title="Ministries"
+                detail="Keep records for history. Set an end date to archive a ministry."
+              />
+              <form onSubmit={submitMinistry} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <TextField
+                    name="ministry-code"
+                    label="Code"
+                    value={ministry.code}
+                    onChange={(v) => setMinistry({ ...ministry, code: v })}
+                    required
+                    pattern="^[a-z][a-z0-9-]{1,59}$"
+                    placeholder="care-team"
+                    hint="Lowercase; start with a letter, then letters, numbers, or hyphens."
+                  />
+                  <TextField
+                    name="ministry-name"
+                    label="Name"
+                    value={ministry.name}
+                    onChange={(v) => setMinistry({ ...ministry, name: v })}
+                    required
+                  />
+                  <TextField
+                    name="ministry-active-from"
+                    label="Active from"
+                    type="date"
+                    value={ministry.activeFrom}
+                    onChange={(v) => setMinistry({ ...ministry, activeFrom: v })}
+                  />
+                  <TextField
+                    name="ministry-active-to"
+                    label="Active to"
+                    type="date"
+                    value={ministry.activeTo}
+                    onChange={(v) => setMinistry({ ...ministry, activeTo: v })}
+                    hint="Use an end date to archive; records are not deleted."
+                  />
+                </div>
+                <FormError error={ministryCreateMutation.error || ministryUpdateMutation.error} />
+                <div className="flex gap-2">
+                  <SubmitButton
+                    pending={ministryCreateMutation.isPending || ministryUpdateMutation.isPending}
+                  >
+                    {ministryId ? "Save ministry" : "Add ministry"}
+                  </SubmitButton>
+                  {ministryId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMinistryId("");
+                        setMinistry(blankMinistry);
+                      }}
+                      className="h-9 rounded-md border px-3 text-[12px]"
+                    >
+                      Cancel edit
+                    </button>
+                  )}
+                </div>
+              </form>
+              {workspace.ministries.length === 0 ? (
+                <EmptyRecord>No ministries configured on this page.</EmptyRecord>
+              ) : (
+                <MinistryList ministries={workspace.ministries} onEdit={beginEditMinistry} />
+              )}
+            </Panel>
+
+            <Panel className="p-5 sm:p-6">
+              <SectionHeading
+                icon={CalendarDays}
+                title="Service occurrences"
+                detail="Add dated services explicitly. No recurring schedule or default time is assumed."
+              />
+              <form onSubmit={submitService} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <SelectField
+                    name="service-ministry"
+                    label="Configured ministry"
+                    value={service.ministryId}
+                    onChange={(v) => setService({ ...service, ministryId: v })}
+                  >
+                    {service.ministryId &&
+                      !workspace.ministries.some((m) => m.id === service.ministryId) && (
+                        <option value={service.ministryId}>
+                          Previously selected ministry (not on this page)
+                        </option>
+                      )}
+                    {workspace.ministries.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} · {item.code}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <TextField
+                    name="service-date"
+                    label="Service date"
+                    type="date"
+                    value={service.serviceDate}
+                    onChange={(v) => setService({ ...service, serviceDate: v })}
+                    required
+                  />
+                  <TextField
+                    name="service-start-at"
+                    label="Start time (ISO with offset)"
+                    value={service.startAt}
+                    onChange={(v) => setService({ ...service, startAt: v })}
+                    required
+                    placeholder="2026-11-08T09:00:00-06:00"
+                    pattern={OFFSET_DATETIME_PATTERN}
+                    hint="Chicago timezone. Enter an explicit UTC offset; do not use a browser-local time. Example: 2026-11-08T09:00:00-06:00"
+                  />
+                  <TextField
+                    name="service-capacity"
+                    label="Capacity"
+                    type="number"
+                    min={0}
+                    max={1000000}
+                    step={1}
+                    value={service.capacity}
+                    onChange={(v) => setService({ ...service, capacity: v })}
+                    placeholder="Leave blank if unknown"
+                  />
+                  <TextField
+                    name="service-location"
+                    label="Location reference"
+                    value={service.locationRef}
+                    onChange={(v) => setService({ ...service, locationRef: v })}
+                  />
+                  <TextField
+                    name="service-plan-id"
+                    label="Plan external ID"
+                    value={service.planExternalId}
+                    onChange={(v) => setService({ ...service, planExternalId: v })}
+                  />
+                  <TextField
+                    name="service-event-ref"
+                    label="Special event reference"
+                    value={service.specialEventRef}
+                    onChange={(v) => setService({ ...service, specialEventRef: v })}
+                  />
+                </div>
+                <FormError error={serviceCreateMutation.error || serviceUpdateMutation.error} />
+                <div className="flex gap-2">
+                  <SubmitButton
+                    pending={serviceCreateMutation.isPending || serviceUpdateMutation.isPending}
+                  >
+                    {serviceId ? "Save occurrence" : "Add occurrence"}
+                  </SubmitButton>
+                  {serviceId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServiceId("");
+                        setService(blankService);
+                      }}
+                      className="h-9 rounded-md border px-3 text-[12px]"
+                    >
+                      Cancel edit
+                    </button>
+                  )}
+                </div>
+                {service.startAt && !serviceDateTimeValid && (
+                  <p role="alert" className="text-[12px] text-destructive">
+                    Enter an ISO datetime with an explicit UTC offset.
+                  </p>
+                )}
+              </form>
+              {workspace.services.length === 0 ? (
+                <EmptyRecord>No dated service occurrences configured on this page.</EmptyRecord>
+              ) : (
+                <ServiceList
+                  services={workspace.services}
+                  ministries={workspace.ministries}
+                  onEdit={beginEditService}
+                />
+              )}
+            </Panel>
+
+            <Panel className="p-5 sm:p-6">
+              <SectionHeading
+                icon={ClipboardList}
+                title="Audit"
+                detail="Read-only activity log. No personal data snapshots are shown."
+              />
+              {workspace.audit.length === 0 ? (
+                <EmptyRecord>No audit entries on this page.</EmptyRecord>
+              ) : (
+                <AuditTable records={workspace.audit} users={workspace.users} />
+              )}
+            </Panel>
+          </div>
+          <div className="mt-5 flex items-center justify-between border-t pt-4">
+            <span className="text-[11px] text-muted-foreground">
+              Page {workspace.page} · {workspace.quality}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                data-testid="button-page-previous"
+                disabled={page <= 1 || q.isFetching}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="h-8 rounded-md border px-3 text-[12px] disabled:opacity-45"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                data-testid="button-page-next"
+                disabled={!workspace.hasMore || q.isFetching}
+                onClick={() => setPage((p) => p + 1)}
+                className="h-8 rounded-md border px-3 text-[12px] disabled:opacity-45"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

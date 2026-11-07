@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",
-    env: { NODE_ENV: "test", LOG_LEVEL: "silent" },
+    env: { NODE_ENV: "test", LOG_LEVEL: "silent", AUTH_PROVIDER: "disabled" },
     testTimeout: 10000,
   },
 });

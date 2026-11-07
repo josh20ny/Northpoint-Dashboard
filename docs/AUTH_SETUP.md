@@ -1,43 +1,66 @@
-# Authentication setup and explicit disabled boundary
+# Phase 1 authentication and admission
 
-## Current behavior
-`AUTH_PROVIDER=disabled` is the only accepted runtime value. No sign-in endpoint,
-session creation, role selector, fake Admin account, password form or user records
-exist. Requests cannot supply a role through headers, JSON, URLs or cookies.
-The public Phase 0 preview has only project specs and non-sensitive health/status.
-All operational `/api/v1` requests are denied. Provider auth is intentionally
-incomplete, not claimed secure because the shell exists.
+## Implemented boundary
+The API supports `AUTH_PROVIDER=disabled` (portable, fail-closed preview) or
+`AUTH_PROVIDER=replit` (server-side OIDC with local invite-only admission).
+Google Workspace remains a future adapter, not an enabled integration.
+There is no password form, self-assigned role, developer header, or fake Admin.
 
-## Replaceable contract
-`AuthProvider.authenticate(request)` must return `null` or a server-verified
-principal with a trusted subject, verified email, issuer/provider and locally
-assigned role. Replit OIDC and Google Workspace can implement this contract later;
-authorization code must depend on the contract, not browser claims.
+The owner approved invite-only admission. The first Admin invitation is stored
+only in the development database for the owner-provided email. Invitations expire
+after seven days. They reserve access; **no invitation email is sent**. Share the
+dashboard URL separately. Expired invitations can be replaced by an administrator.
 
-## Exact next configuration steps (before enabling)
-1. Choose initially Replit OIDC or approved Google Workspace OIDC. Replit OIDC can
-   use verified `openid-client` authorization code + S256 PKCE flow; the reference
-   implementation is available in the project's authentication guidance.
-2. Confirm an owner-approved invite/domain admission policy. No actual Northpoint
-   Google Workspace domain or initial Admin subject was supplied; do not infer
-   one from public website names or this project's owner.
-3. Provision server-only issuer, client identifier, registered absolute callback
-   and logout URLs and required secrets through the secrets manager. Google may
-   require a client secret; never put it in browser variables.
-4. Add versioned user, role, invite, session and audit migrations (Phase 1).
-   Link provider+subject uniquely. Assign roles in the database, never from user
-   input or an unverified email. Verify email and active invite/admission before
-   issuing a session. Re-check account status and roles on requests.
-5. Use a maintained OIDC library to verify signature, issuer, audience, state,
-   nonce, expiration and PKCE. Strictly allowlist redirect/callback origins.
-6. Use a shared durable server session store, secure/httpOnly/sameSite cookies,
-   expiry/rotation/revocation, session fixation protection, logout and
-   CSRF/origin checks for mutations. Do not store identity tokens in localStorage.
-7. Add provider and cross-role API/query/export/report/AI/cache tests, audit
-   access and admission denial tests. Review MFA and privacy before real records.
-8. Only after verification add the adapter, update allowed environment values
-   and replace `disabledAuthProvider` composition. Do not enable by just setting
-   a flag. The frontend must show the verified server session, not a fake role.
+## Sign-in and authorization
+1. Log in redirects to the identity provider. A ten-minute server-stored flow binds
+   state, nonce and S256 PKCE to an opaque secure cookie. Callbacks are single-use.
+2. `openid-client` verifies signature, issuer, audience, expiration, state, nonce
+   and code exchange. `email_verified` must be the boolean `true`. Missing or
+   unverified email fails closed; do not relax this if a provider omits the claim.
+3. A new identity must match an unexpired/unrevoked invitation by normalized email.
+   The role comes from that invitation, never browser input. Provider+subject is
+   unique. An email already bound to another subject/provider is not relinked.
+4. Existing users must still be active and retain the invited verified email.
+   Local role/status are loaded from PostgreSQL on every authenticated request.
+5. Session handles are random, stored as SHA-256 hashes, and sent only in secure,
+   httpOnly, sameSite=Lax cookies scoped to `/api`. No provider access/refresh tokens
+   are persisted. Session expiry is the earlier of ID token expiry and eight hours.
+6. Mutations require the exact configured Origin and a session-bound CSRF token.
+   Account role/status changes revoke all that account's sessions. Local Log out
+   revokes its session; it does not log the user out of their identity provider.
+7. Admin operations check role both at the route and again inside the database
+   transaction. Last-active-Admin removal is blocked under a shared lock.
 
-No live church authorization is required or requested in Phase 0. The test
-principals use `example.invalid` and exist solely inside automated tests.
+Authenticated Staff/Leadership cannot read administration, raw source payloads,
+or giving records. Even aggregate giving stays disabled pending suppression
+policy. Person-level attendance/child/group/serving views are not implemented.
+Unimplemented reports, exports and AI routes expose no operational records.
+
+## Runtime configuration
+- `AUTH_PROVIDER=replit`
+- `AUTH_ORIGIN`: exact HTTPS origin, no path or trailing slash. It fixes callback
+  construction; request Host/forwarded headers never choose the redirect origin.
+- `REPL_ID`: Replit-provided OIDC client identifier.
+- `DATABASE_URL`: server-only database secret.
+
+Development has the owner-confirmed preview origin configured. Production is not
+configured or authorized here. Obtain the actual published URL before configuring
+production callback origins. Independent hosting needs an approved OIDC provider
+registration/adapter; disabled preview still runs without Replit auth.
+
+The OIDC test harness may override `ISSUER_URL` only in non-production. This does
+not bypass signature verification or invitation checks. Production always uses the
+fixed issuer. No test identities or invitations are seeded on server startup.
+
+## Operating limits and production gates
+Login requests have a conservative per-process cap of 60 per ten minutes without
+retaining IP addresses; multi-instance deployment needs a shared limiter. Expired
+login flows are pruned on login. Sessions expire logically; a reviewed retention/
+cleanup job, MFA/provider policy, backups/restore, least-privilege database role,
+and production security review remain deployment gates.
+
+Audit rows record action, actor/target opaque IDs, outcome and timestamp, not email
+snapshots or payload contents. Database triggers reject audit/raw history changes,
+but database owners/superusers can alter DDL; this is not external tamper-proof
+storage. Raw RLS is defense in depth only with a non-owner, non-superuser runtime
+role. Person-level/financial data must not be loaded before privacy review.

@@ -1,6 +1,7 @@
 # Northpoint Dashboard 2.0
 
-**Status:** Phase 0 foundation — no live church data, authentication disabled.
+**Status:** Phase 1 implementation — invite-only sign-in and administration;
+no imported church data or operational metrics.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
 The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
 
@@ -17,20 +18,23 @@ One place for Northpoint staff to see ministry health, understand what is changi
 5. `docs/METRICS.md` and `docs/DATABASE.md` — definitions and storage contracts.
 6. `docs/HISTORICAL_MIGRATION.md` and `data/workbook_inventory.csv` — legacy spreadsheet inventory.
 
-## Implemented foundation
+## Implemented foundation and Phase 1
 
 - React/TypeScript web shell, ministry directory and reusable future-module placeholders.
 - Read-only administration/integration setup, documentation reader and system status.
 - Separate Express/TypeScript API; generated OpenAPI clients and response validation.
 - PostgreSQL infrastructure metadata, versioned SQL and explicit migration commands.
-- Replaceable auth contract, disabled provider and fail-closed operational API paths.
+- Replaceable auth contract, verified OIDC sign-in, invite-only admission and local roles.
+- Administration for invitations/access, ministries and dated service occurrences.
+- People/external-reference and immutable raw-source provenance schemas (empty).
+- Auditable configuration changes, append-only audit history and raw-source RLS.
 - Synthetic test-only principals, unit/API tests, optional database check, lint,
   TypeScript, formatting configuration, credential-pattern check and GitHub CI.
 
 No dashboards contain invented operational numbers. Unknown values are not zero.
-No live integration, user account, historical data import or ministry formula exists.
-The application is an unauthenticated **foundation preview**, not a secure staff
-session or a production-ready analytics release.
+No live integration, historical data import or ministry formula exists. Only
+invited, verified identities can create staff sessions. Public pages remain a
+no-data preview; this is not a production-ready analytics release.
 
 ## Architecture and repository
 
@@ -105,10 +109,9 @@ that a hosted CI run has passed. See `docs/PHASE_0_VERIFICATION.md`.
 logging. `PROJECT_ROOT` optionally sets the repository root for document loading;
 otherwise it is found by walking from the working directory.
 
-No secrets or live records are required in source. Do not enable sensitive data
-until Phase 1 admission, verified identity, roles and audit are implemented. Public
-Phase 0 specifications/readiness must be reviewed before any production release.
-See `docs/AUTH_SETUP.md` for the precise provider setup and missing admission policy.
+No secrets or live records are required in source. Public specifications/readiness
+must be reviewed before production release. See `docs/AUTH_SETUP.md` for provider
+setup, the approved invite-only policy and remaining production security gates.
 
 ## Migrations and hosting
 
@@ -121,8 +124,8 @@ application mechanism per database. No production release is authorized by this 
 
 ## Next roadmap slice
 
-Phase 1: verified sign-in plus owner-approved invitation/domain admission,
-database-backed roles, auditable access, and initial ministries/service schemas.
+Phase 1: verify the invited-owner login and administration walkthrough. Phase 2
+is the historical workbook import explorer with explicit mapping approval.
 Do not proceed into ingestion, metrics or later phases without approval.
 
 ## Non-negotiable standards

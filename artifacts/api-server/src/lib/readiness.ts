@@ -4,14 +4,22 @@ export async function databaseReadiness() {
   }
   try {
     const { pool } = await import("@workspace/db");
-    const result = await pool.query<{ version: string }>(
-      "SELECT version FROM foundation_metadata WHERE key = $1",
+    const result = await pool.query<{ version: string; schema_ready: boolean }>(
+      `SELECT version,
+        to_regclass('users') IS NOT NULL AND to_regclass('auth_sessions') IS NOT NULL
+        AND to_regclass('people') IS NOT NULL AND to_regclass('service_occurrences') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='audit_append_only' AND tgenabled<>'D')
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='raw_append_only' AND tgenabled<>'D')
+        AND EXISTS (SELECT 1 FROM pg_class WHERE oid=to_regclass('raw_source_records') AND relrowsecurity AND relforcerowsecurity)
+        AND EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('raw_source_records') AND polname='raw_admin_only')
+        AS schema_ready FROM foundation_metadata WHERE key = $1`,
       ["application"],
     );
+    const ready = result.rows[0]?.version === "phase-1" && result.rows[0]?.schema_ready;
     return {
-      status: result.rows[0]?.version === "phase-0" ? "ready" : "not_ready",
+      status: ready ? "ready" : "not_ready",
       connectivity: "connected",
-      migration: result.rows[0]?.version === "phase-0" ? "applied" : "pending",
+      migration: ready ? "applied" : "pending",
     };
   } catch (error) {
     // SQLSTATE only, never error.message (which can contain SQL or connection data).

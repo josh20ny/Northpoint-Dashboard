@@ -1,5 +1,14 @@
 # Logical Database Model (proposed; validate before migration generation)
 
+## Phase 1 implementation note
+The additive Phase 1 migration implements local users/access invitations/sessions,
+ministry/service reference records, people/external ID references, raw source
+revisions and audit history only. All other models below remain proposals for
+later phases. See `PHASE_1_IMPLEMENTATION.md` for implemented scope and verification.
+Raw/audit history triggers and raw-source RLS are custom SQL and must be preserved
+along with tables; database readiness checks their presence. Do not load sensitive
+records into a privileged development database.
+
 ## Core reference data
 - `users(id, auth_subject, email, role, status, created_at)`; unique trusted `auth_subject`.
 - `ministries(id, code, name, parent_id, active_from, active_to)`.

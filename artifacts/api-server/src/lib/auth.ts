@@ -14,6 +14,7 @@ export interface VerifiedIdentity {
 export interface Principal {
   identity: VerifiedIdentity;
   role: Role;
+  userId?: string;
 }
 
 export interface AuthProvider {
@@ -30,30 +31,50 @@ export const disabledAuthProvider: AuthProvider = {
   },
 };
 
+const requestPrincipals = new WeakMap<Request, Principal>();
+export function attachPrincipal(request: Request, principal: Principal) {
+  requestPrincipals.set(request, principal);
+}
+export const sessionAuthProvider: AuthProvider = {
+  name: "session",
+  enabled: true,
+  async authenticate(request) {
+    return requestPrincipals.get(request) ?? null;
+  },
+};
+
 export function hasPermission(principal: Principal | null, permission: Permission): boolean {
   if (!principal) return false;
   if (!["staff", "leadership", "admin"].includes(principal.role)) return false;
   if (permission === "attendance:aggregate") return true;
-  return principal.role === "admin";
+  if (permission === "giving:individual" || permission === "system:manage") {
+    return principal.role === "admin";
+  }
+  return false;
 }
 
 export function requirePermission(
   permission: Permission,
-  provider: AuthProvider = disabledAuthProvider,
+  provider: AuthProvider = sessionAuthProvider,
 ): RequestHandler {
   return async (req, res, next) => {
     const principal = await provider.authenticate(req);
     res.setHeader("Cache-Control", "no-store");
     if (!principal) {
       res.status(401).json({
-        error: "Authentication unavailable or required. Phase 0 does not expose church records.",
+        error: "Sign-in required",
       });
       return;
     }
     if (!hasPermission(principal, permission)) {
+      if (principal.userId) {
+        const { recordAudit } = await import("./audit");
+        await recordAudit(principal.userId, "access.denied", permission, null, "denied");
+      }
       res.status(403).json({ error: "Forbidden" });
       return;
     }
+    res.locals.principal = principal;
     next();
   };
 }

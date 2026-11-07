@@ -1,5 +1,19 @@
 # API Contract Skeleton
 
+## Phase 1 implemented surface
+The runtime contract is `lib/api-spec/openapi.yaml`. Auth endpoints are
+`GET /api/auth/user`, `GET /api/login`, `GET /api/callback`, and CSRF-protected
+`POST /api/logout`. `GET /api/v1/me` requires a verified local session.
+Admin-only `/api/v1/admin/workspace?page=1` returns 50 records per collection and
+`hasMore`; mutation routes manage invitations, account role/status, ministries
+and dated services. All mutations require exact Origin and `X-CSRF-Token`.
+Responses never include stored session/provider tokens or raw source payloads.
+Operational responses are `no-store`; configuration lists expose `asOf`/`quality`.
+
+The future endpoints in the skeleton below are not implemented merely because
+they are listed. Giving remains Admin-guarded and unavailable, including aggregate
+giving until suppression policy is approved; individual attendance remains unavailable.
+
 Version endpoints under `/api/v1`; generate typed clients and OpenAPI. All responses include `as_of`, `quality`, and relevant definition versions. Default-deny permissions enforced by middleware and data-access layer.
 
 | Method | Path | Purpose |

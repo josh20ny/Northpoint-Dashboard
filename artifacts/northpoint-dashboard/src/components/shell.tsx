@@ -10,7 +10,10 @@ import {
   ShieldCheck,
   Activity,
   X,
+  LogIn,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@workspace/replit-auth-web";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -85,17 +88,55 @@ function Wordmark() {
 }
 
 function SessionNote() {
+  const { user, enabled, isLoading, error, login, logout } = useAuth();
   return (
     <div
       className="rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-3"
       data-testid="status-session"
     >
       <div className="flex items-center gap-2 text-[12px] font-semibold text-sidebar-foreground">
-        <Lock className="h-3.5 w-3.5 text-sidebar-foreground/70" aria-hidden /> Preview access
+        <Lock className="h-3.5 w-3.5 text-sidebar-foreground/70" aria-hidden />
+        {isLoading
+          ? "Checking access"
+          : user
+            ? "Signed in"
+            : enabled
+              ? "Invite-only access"
+              : "Preview access"}
       </div>
-      <p className="mt-1 text-[11.5px] leading-relaxed text-sidebar-foreground/70">
-        Sign-in is disabled. Church records are not available.
+      <p className="mt-1 break-all text-[11.5px] leading-relaxed text-sidebar-foreground/70">
+        {user ? (
+          <>
+            {user.email}
+            <span className="block mt-0.5 capitalize">Role: {user.role}</span>
+          </>
+        ) : enabled ? (
+          "Northpoint Austin staff access is by invitation."
+        ) : (
+          "Authentication is not enabled."
+        )}
       </p>
+      {error && (
+        <p role="status" className="mt-2 text-[11px] text-amber-200">
+          {error}
+        </p>
+      )}
+      {!isLoading && (
+        <button
+          type="button"
+          onClick={() => (user ? void logout() : enabled ? login() : undefined)}
+          disabled={!user && !enabled}
+          data-testid={user ? "button-log-out" : "button-log-in"}
+          className="mt-3 inline-flex h-8 items-center gap-2 rounded-md border border-sidebar-border px-2.5 text-[12px] font-medium text-sidebar-foreground hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {user ? (
+            <LogOut className="h-3.5 w-3.5" aria-hidden />
+          ) : (
+            <LogIn className="h-3.5 w-3.5" aria-hidden />
+          )}
+          {user ? "Log out" : "Log in"}
+        </button>
+      )}
     </div>
   );
 }
@@ -103,6 +144,9 @@ function SessionNote() {
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [loc] = useLocation();
+  const [denied, setDenied] = useState(
+    () => new URLSearchParams(window.location.search).get("auth") === "denied",
+  );
   useEffect(() => {
     setOpen(false);
     window.scrollTo(0, 0);
@@ -182,7 +226,29 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <main id="main" className="lg:pl-[248px]">
-        <div className="mx-auto max-w-[1080px] px-5 py-8 sm:px-8 sm:py-10">{children}</div>
+        <div className="mx-auto max-w-[1080px] px-5 py-8 sm:px-8 sm:py-10">
+          {denied && (
+            <div
+              role="alert"
+              className="mb-6 flex items-start justify-between gap-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            >
+              <span>
+                <strong>Access was not granted.</strong> This dashboard is invite-only. Use a
+                verified email address with an active Northpoint invitation, or contact a Northpoint
+                administrator.
+              </span>
+              <button
+                type="button"
+                aria-label="Dismiss access message"
+                onClick={() => setDenied(false)}
+                className="shrink-0 rounded px-2 py-1 hover:bg-amber-100"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );

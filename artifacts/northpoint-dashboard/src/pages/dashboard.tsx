@@ -12,9 +12,11 @@ import {
   formatDate,
   usePageTitle,
 } from "@/components/kit";
+import { useAuth } from "@workspace/replit-auth-web";
 
 export default function Dashboard() {
   usePageTitle("Dashboard");
+  const { enabled } = useAuth();
   const q = useGetFoundation();
   const f = q.data;
   const loading = q.isLoading || q.isFetching;
@@ -93,7 +95,9 @@ export default function Dashboard() {
             <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">
               <Lock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <p className="flex-1 text-[13.5px] text-muted-foreground">
-                Preview only. Sign-in is disabled; no church records are shown.
+                {enabled
+                  ? "No weekly report is available yet."
+                  : "Authentication is not enabled. No church records are shown."}
               </p>
               <Link
                 href="/administration"

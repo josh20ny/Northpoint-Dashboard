@@ -1,5 +1,9 @@
 # Phase 0 implementation and architecture recommendation
 
+Historical Phase 0 record. Current Phase 1 work is documented in
+`PHASE_1_IMPLEMENTATION.md` and `AUTH_SETUP.md`; the Phase 0-only boundary below
+describes that earlier initialization, not the current authorized phase.
+
 ## Understanding and scope
 Northpoint Dashboard 2.0 is a long-term, permission-scoped ministry analytics
 platform. This iteration implements **Phase 0 only**. It does not publish metrics,

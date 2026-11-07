@@ -8,6 +8,235 @@
 import * as zod from 'zod';
 
 
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string(),
+  "role": zod.enum(['staff', 'leadership', 'admin'])
+}),zod.null()]),
+  "enabled": zod.boolean(),
+  "csrfToken": zod.string().nullable(),
+  "expiresAt": zod.string().nullable()
+})
+
+
+export const LoginResponse = zod.void()
+
+
+export const AuthCallbackResponse = zod.void()
+
+
+export const LogoutResponse = zod.void()
+
+
+export const GetMeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string(),
+  "role": zod.enum(['staff', 'leadership', 'admin'])
+})
+
+
+export const getAdminWorkspaceQueryPageDefault = 1;
+export const getAdminWorkspaceQueryPageMax = 10000;
+
+
+
+export const GetAdminWorkspaceQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(getAdminWorkspaceQueryPageMax).default(getAdminWorkspaceQueryPageDefault)
+})
+
+export const getAdminWorkspaceResponseMinistriesItemOneCodeRegExp = new RegExp('^[a-z][a-z0-9-]{1,59}$');
+export const getAdminWorkspaceResponseMinistriesItemOneNameMax = 100;
+
+export const getAdminWorkspaceResponseMinistriesItemOneActiveFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getAdminWorkspaceResponseMinistriesItemOneActiveToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getAdminWorkspaceResponseServicesItemOneServiceDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getAdminWorkspaceResponseServicesItemOneCapacityMin = 0;
+export const getAdminWorkspaceResponseServicesItemOneCapacityMax = 1000000;
+
+export const getAdminWorkspaceResponseServicesItemOneLocationRefMax = 100;
+
+export const getAdminWorkspaceResponseServicesItemOnePlanExternalIdMax = 100;
+
+export const getAdminWorkspaceResponseServicesItemOneSpecialEventRefMax = 100;
+
+
+
+export const GetAdminWorkspaceResponse = zod.object({
+  "users": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string(),
+  "role": zod.enum(['staff', 'leadership', 'admin'])
+}).and(zod.object({
+  "status": zod.enum(['active', 'suspended'])
+}))),
+  "invitations": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string(),
+  "role": zod.enum(['staff', 'leadership', 'admin']),
+  "expiresAt": zod.string(),
+  "consumedAt": zod.string().nullable(),
+  "revokedAt": zod.string().nullable()
+})),
+  "ministries": zod.array(zod.object({
+  "code": zod.string().regex(getAdminWorkspaceResponseMinistriesItemOneCodeRegExp),
+  "name": zod.string().min(1).max(getAdminWorkspaceResponseMinistriesItemOneNameMax),
+  "activeFrom": zod.string().regex(getAdminWorkspaceResponseMinistriesItemOneActiveFromRegExp).nullable(),
+  "activeTo": zod.string().regex(getAdminWorkspaceResponseMinistriesItemOneActiveToRegExp).nullable()
+}).and(zod.object({
+  "id": zod.string().uuid()
+}))),
+  "services": zod.array(zod.object({
+  "ministryId": zod.string().uuid(),
+  "serviceDate": zod.string().regex(getAdminWorkspaceResponseServicesItemOneServiceDateRegExp),
+  "startAt": zod.coerce.date(),
+  "capacity": zod.number().int().min(getAdminWorkspaceResponseServicesItemOneCapacityMin).max(getAdminWorkspaceResponseServicesItemOneCapacityMax).nullable(),
+  "locationRef": zod.string().max(getAdminWorkspaceResponseServicesItemOneLocationRefMax).nullable(),
+  "planExternalId": zod.string().max(getAdminWorkspaceResponseServicesItemOnePlanExternalIdMax).nullable(),
+  "specialEventRef": zod.string().max(getAdminWorkspaceResponseServicesItemOneSpecialEventRefMax).nullable()
+}).and(zod.object({
+  "id": zod.string().uuid(),
+  "timezone": zod.string()
+}))),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "actorUserId": zod.string().nullable(),
+  "action": zod.string(),
+  "targetType": zod.string(),
+  "targetId": zod.string().nullable(),
+  "outcome": zod.string(),
+  "timestamp": zod.string()
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean(),
+  "asOf": zod.string(),
+  "quality": zod.string()
+})
+
+
+export const createInvitationBodyEmailMax = 254;
+
+
+
+export const CreateInvitationBody = zod.object({
+  "email": zod.string().email().max(createInvitationBodyEmailMax),
+  "role": zod.enum(['staff', 'leadership', 'admin'])
+})
+
+export const CreateInvitationResponse = zod.void()
+
+
+export const RevokeInvitationParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const RevokeInvitationResponse = zod.void()
+
+
+export const UpdateAccessUserParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateAccessUserBody = zod.object({
+  "role": zod.enum(['staff', 'leadership', 'admin']),
+  "status": zod.enum(['active', 'suspended'])
+})
+
+export const UpdateAccessUserResponse = zod.void()
+
+
+export const createMinistryBodyCodeRegExp = new RegExp('^[a-z][a-z0-9-]{1,59}$');
+export const createMinistryBodyNameMax = 100;
+
+export const createMinistryBodyActiveFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createMinistryBodyActiveToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const CreateMinistryBody = zod.object({
+  "code": zod.string().regex(createMinistryBodyCodeRegExp),
+  "name": zod.string().min(1).max(createMinistryBodyNameMax),
+  "activeFrom": zod.string().regex(createMinistryBodyActiveFromRegExp).nullable(),
+  "activeTo": zod.string().regex(createMinistryBodyActiveToRegExp).nullable()
+})
+
+export const CreateMinistryResponse = zod.void()
+
+
+export const UpdateMinistryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateMinistryBodyCodeRegExp = new RegExp('^[a-z][a-z0-9-]{1,59}$');
+export const updateMinistryBodyNameMax = 100;
+
+export const updateMinistryBodyActiveFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateMinistryBodyActiveToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const UpdateMinistryBody = zod.object({
+  "code": zod.string().regex(updateMinistryBodyCodeRegExp),
+  "name": zod.string().min(1).max(updateMinistryBodyNameMax),
+  "activeFrom": zod.string().regex(updateMinistryBodyActiveFromRegExp).nullable(),
+  "activeTo": zod.string().regex(updateMinistryBodyActiveToRegExp).nullable()
+})
+
+export const UpdateMinistryResponse = zod.void()
+
+
+export const createServiceOccurrenceBodyServiceDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createServiceOccurrenceBodyCapacityMin = 0;
+export const createServiceOccurrenceBodyCapacityMax = 1000000;
+
+export const createServiceOccurrenceBodyLocationRefMax = 100;
+
+export const createServiceOccurrenceBodyPlanExternalIdMax = 100;
+
+export const createServiceOccurrenceBodySpecialEventRefMax = 100;
+
+
+
+export const CreateServiceOccurrenceBody = zod.object({
+  "ministryId": zod.string().uuid(),
+  "serviceDate": zod.string().regex(createServiceOccurrenceBodyServiceDateRegExp),
+  "startAt": zod.coerce.date(),
+  "capacity": zod.number().int().min(createServiceOccurrenceBodyCapacityMin).max(createServiceOccurrenceBodyCapacityMax).nullable(),
+  "locationRef": zod.string().max(createServiceOccurrenceBodyLocationRefMax).nullable(),
+  "planExternalId": zod.string().max(createServiceOccurrenceBodyPlanExternalIdMax).nullable(),
+  "specialEventRef": zod.string().max(createServiceOccurrenceBodySpecialEventRefMax).nullable()
+})
+
+export const CreateServiceOccurrenceResponse = zod.void()
+
+
+export const UpdateServiceOccurrenceParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateServiceOccurrenceBodyServiceDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateServiceOccurrenceBodyCapacityMin = 0;
+export const updateServiceOccurrenceBodyCapacityMax = 1000000;
+
+export const updateServiceOccurrenceBodyLocationRefMax = 100;
+
+export const updateServiceOccurrenceBodyPlanExternalIdMax = 100;
+
+export const updateServiceOccurrenceBodySpecialEventRefMax = 100;
+
+
+
+export const UpdateServiceOccurrenceBody = zod.object({
+  "ministryId": zod.string().uuid(),
+  "serviceDate": zod.string().regex(updateServiceOccurrenceBodyServiceDateRegExp),
+  "startAt": zod.coerce.date(),
+  "capacity": zod.number().int().min(updateServiceOccurrenceBodyCapacityMin).max(updateServiceOccurrenceBodyCapacityMax).nullable(),
+  "locationRef": zod.string().max(updateServiceOccurrenceBodyLocationRefMax).nullable(),
+  "planExternalId": zod.string().max(updateServiceOccurrenceBodyPlanExternalIdMax).nullable(),
+  "specialEventRef": zod.string().max(updateServiceOccurrenceBodySpecialEventRefMax).nullable()
+})
+
+export const UpdateServiceOccurrenceResponse = zod.void()
+
+
 /**
  * @summary Public non-sensitive Phase 0 foundation status
  */

@@ -1,4 +1,3 @@
-import { disabledAuthProvider } from "./auth";
 import { databaseReadiness } from "./readiness";
 import { reportingWeekEnding, REPORTING_TIMEZONE } from "./reporting-calendar";
 
@@ -34,16 +33,16 @@ const integrations = [
 export async function foundationStatus() {
   const now = new Date();
   return {
-    phase: 0,
+    phase: 1,
     mode: "foundation_only",
     timezone: REPORTING_TIMEZONE,
     weekEnding: reportingWeekEnding(now),
     asOf: now.toISOString(),
     quality: "no_live_data",
     auth: {
-      enabled: disabledAuthProvider.enabled,
-      provider: disabledAuthProvider.name,
-      status: "setup_required",
+      enabled: process.env.AUTH_PROVIDER === "replit",
+      provider: process.env.AUTH_PROVIDER === "replit" ? "replit" : "disabled",
+      status: process.env.AUTH_PROVIDER === "replit" ? "invite_only" : "setup_required",
     },
     database: await databaseReadiness(),
     ministries,

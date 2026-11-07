@@ -1,6 +1,6 @@
 # Northpoint Dashboard 2.0
 
-Phase 0 foundation for a portable internal ministry analytics platform.
+Phase 1 implementation of a portable internal ministry analytics platform.
 Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
 
 ## Run & Operate
@@ -32,17 +32,18 @@ All supplied planning documents are retained under their original paths.
 
 ## Architecture decisions
 
-- Phase 0 only; do not advance roadmap phases without explicit approval.
+- Phase 1 authorized; do not advance into Phase 2+ without explicit approval.
 - Vite/Express retained instead of introducing proposed Next.js; recommendation
   and alternatives in `docs/IMPLEMENTATION.md`, not recorded as owner-approved.
-- No live accounts or production credentials in initialization.
+- Invite-only verified staff access; no inferred domain admission.
 - Disabled auth means no authorized users, not a permissive fake admin.
 - Operational routes fail closed; public preview is non-sensitive infrastructure/specs.
 
 ## Product
 
-Read-only foundation shell, ministry placeholders, integration scaffolding,
-documentation reader, and infrastructure health. No operational metrics.
+Foundation shell, invite-only OIDC/local roles, Admin access/ministry/service
+configuration, audit log, reference schemas, documentation and health. No
+operational metrics, imports or individual attendance/giving views.
 
 ## User preferences
 

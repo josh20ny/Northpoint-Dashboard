@@ -1,10 +1,12 @@
 # Execution Roadmap — Release Gates
 
 ## Current implementation status
-Phase 0 scaffold is implemented and development checks are passing; see `IMPLEMENTATION.md` for boundaries and
-`PHASE_0_VERIFICATION.md` for actual checks and outstanding configuration.
-Live authentication remains disabled until the verified provider/admission work is
-complete. No Phase 1 or later ministry-data functionality is implied by navigation.
+Phase 0 is retained. Phase 1 implementation adds invite-only verified sign-in,
+local roles, ministry/service configuration, people/source reference schemas and
+append-only audit history. See `PHASE_1_IMPLEMENTATION.md` for scope, verification
+and release limits; `AUTH_SETUP.md` for admission and runtime configuration.
+No source imports, person-level views, operational metrics or Phase 2+ features
+are enabled. Later phases require explicit authorization.
 
 | Phase | Build | Exit gate |
 |---|---|---|
