@@ -164,6 +164,13 @@ release gate remains open. The offline attendance interpretation is not a
 substitute for raw staging or authenticated Admin review. Do not use synthetic
 identities or direct database writes to fabricate those approvals.
 
+The owner subsequently verified the January 4, 11 and 18 sample counts
+(service pairs 446/464, 462/448 and 421/410; totals 910, 910 and 831).
+No verification basis was supplied, so this is owner confirmation rather than
+documented independent corroboration. The owner also confirmed the workbook is
+not imported yet. These chat confirmations are recorded in `DECISIONS.md`;
+they do not create authenticated mapping or evidence approvals in the app.
+
 - 53 unit/API checks pass, including the supplied workbook's fingerprint and
   inspection counts, separate formula caches, date systems, unknown values,
   unsafe integer precision, protected exports and cross-role route denial.

@@ -64,6 +64,23 @@ said needed correction. Migration impact: none; offline labels/exports only.
 Tests: exact source names, derived total, explicit zero, unknown inputs,
 and no implied mapping of SPD L to the derived total.
 
+## Owner-verified attendance sample counts
+
+**CONFIRMED**, owner: product owner. In response to the sample-count review,
+the owner selected “I verified these counts” for the selected legacy workbook:
+
+| Sunday | adult_service_1 | adult_service_2 | adult_services_total |
+|---|---:|---:|---:|
+| 2026-01-04 | 446 | 464 | 910 |
+| 2026-01-11 | 462 | 448 | 910 |
+| 2026-01-18 | 421 | 410 | 831 |
+
+No verification basis or corrections were supplied. Record this as owner
+confirmation, not an independently documented source comparison or an
+authenticated application approval. The owner also confirmed the workbook
+has not yet been imported. Import, mapping review, staging and application
+reconciliation approvals remain outstanding; Phase 2 is not closed.
+
 ## Attendance blank/zero date rule
 
 **CONFIRMED**, owner: product owner. Blank or zero attendance entries in the
