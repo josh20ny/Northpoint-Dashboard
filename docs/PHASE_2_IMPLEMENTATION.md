@@ -143,6 +143,27 @@ the least-privilege runtime and privacy/retention production gates from Phase 1
 still apply. All import UI/API/download/export paths are Admin-only and audited.
 
 ## Verification completed in development
+### Latest Phase 2 closing checks
+
+The current pass found development schema drift: the declarative upload table
+already existed, but migration history stopped before its custom constraints,
+history triggers and policy restoration. The pending upload migration now
+reconciles pre-existing tables, keys and policies without dropping records,
+and avoids duplicate linked-attempt backfills. The normal development migration
+command applied the pending migrations successfully. No production changes
+were attempted.
+
+After repair: 64 unit/API/offline-review tests and 19 rollback-only database
+tests pass; workspace typecheck and lint pass. Before repair, three database
+checks failed (Admin RLS access and immutable upload history). These are now
+passing without weakening their assertions.
+
+A read-only check of the selected workbook fingerprint and 2026-11-06 snapshot
+found zero cataloged batches, mappings or weekly approvals. The real-workbook
+release gate remains open. The offline attendance interpretation is not a
+substitute for raw staging or authenticated Admin review. Do not use synthetic
+identities or direct database writes to fabricate those approvals.
+
 - 53 unit/API checks pass, including the supplied workbook's fingerprint and
   inspection counts, separate formula caches, date systems, unknown values,
   unsafe integer precision, protected exports and cross-role route denial.

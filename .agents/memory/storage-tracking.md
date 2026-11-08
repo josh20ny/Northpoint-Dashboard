@@ -23,3 +23,14 @@ alone do not capture protections added only through custom SQL.
 **How to apply:** Check both actual database protection metadata and declarative
 schema when changing confidential source tables; generated migrations alone are
 not proof that privacy guards survive schema updates.
+
+Declarative schema synchronization can create a new table before its custom
+migration is recorded. A table's existence is not proof the migration ran.
+
+**Why:** Closing checks found an existing upload table with migration history
+behind it and without its custom guards; attempting a plain CREATE TABLE would
+block the pending migration rather than restore the protections.
+
+**How to apply:** Compare the migration journal and actual constraints/policies/
+triggers. Reconcile pre-existing objects non-destructively through the supported
+development migration path; never drop confidential history to make it migrate.
