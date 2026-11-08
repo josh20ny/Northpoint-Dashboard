@@ -119,14 +119,32 @@ describe("reporting calendar (not a metric calculation)", () => {
 
 describe("environment validation", () => {
   it("defaults authentication to disabled", () => {
-    expect(validateEnvironment({}).AUTH_PROVIDER).toBe("disabled");
+    expect(validateEnvironment({ PCO_TOKEN_ENCRYPTION_KEY: "1".repeat(64) }).AUTH_PROVIDER).toBe(
+      "disabled",
+    );
   });
   it("rejects unimplemented auth providers", () => {
     expect(() => validateEnvironment({ AUTH_PROVIDER: "google" })).toThrow("AUTH_PROVIDER");
   });
   it("rejects invalid ports without printing inputs", () => {
-    expect(() => validateEnvironment({ PORT: "SECRET_VALUE" })).toThrow(
-      "Invalid environment fields: PORT",
-    );
+    expect(() =>
+      validateEnvironment({ PORT: "SECRET_VALUE", PCO_TOKEN_ENCRYPTION_KEY: "1".repeat(64) }),
+    ).toThrow("Invalid environment fields: PORT");
+  });
+  it.each([undefined, "", "bad", "a".repeat(63), "a".repeat(65), "z".repeat(64)])(
+    "rejects missing or invalid token encryption keys without disclosing inputs",
+    (key) => {
+      expect(() => validateEnvironment({ PCO_TOKEN_ENCRYPTION_KEY: key })).toThrow(
+        /^Invalid environment fields: PCO_TOKEN_ENCRYPTION_KEY$/,
+      );
+    },
+  );
+  it("validates the persistent key without returning it as application configuration", () => {
+    const input = { PCO_TOKEN_ENCRYPTION_KEY: "A".repeat(64) };
+    const config = validateEnvironment(input);
+    expect(config).not.toHaveProperty("PCO_TOKEN_ENCRYPTION_KEY");
+    expect(input.PCO_TOKEN_ENCRYPTION_KEY).toBe("A".repeat(64));
+    expect(validateEnvironment(input)).toEqual(config);
+    expect(() => validateEnvironment({})).toThrow("PCO_TOKEN_ENCRYPTION_KEY");
   });
 });

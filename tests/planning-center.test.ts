@@ -63,6 +63,24 @@ describe("Planning Center secure transport and source contract", () => {
     parts[2] = Buffer.alloc(16).toString("base64url");
     expect(() => decrypt(parts.join("."), "tokens:1")).toThrow(/cannot be decrypted/);
   });
+  it("requires the original persistent key to recover both OAuth tokens", () => {
+    const tokens = {
+      accessToken: "synthetic-access-token",
+      refreshToken: "synthetic-refresh-token",
+      expiresAt: 123456789,
+      scopes: ["people", "services", "check_ins"],
+    };
+    const ciphertext = encrypt(tokens, "tokens:1");
+    expect(ciphertext).not.toContain(tokens.accessToken);
+    expect(ciphertext).not.toContain(tokens.refreshToken);
+    vi.stubEnv("PCO_TOKEN_ENCRYPTION_KEY", "2".repeat(64));
+    expect(() => decrypt(ciphertext, "tokens:1")).toThrow(/restore the encryption key/);
+    vi.stubEnv("PCO_TOKEN_ENCRYPTION_KEY", "");
+    expect(() => encrypt(tokens, "tokens:1")).toThrow(/configuration is incomplete/);
+    expect(() => decrypt(ciphertext, "tokens:1")).toThrow(/configuration is incomplete/);
+    vi.stubEnv("PCO_TOKEN_ENCRYPTION_KEY", "1".repeat(64));
+    expect(decrypt(ciphertext, "tokens:1")).toEqual(tokens);
+  });
   it("allowlists provider paths and reasserts sparse fields on every page", () => {
     const url = pagePath(
       { path: "/people/v2/people?offset=100&include=background_checks", type: "Person" },

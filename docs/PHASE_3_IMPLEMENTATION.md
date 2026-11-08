@@ -44,6 +44,13 @@ Phase 3 is not complete or approved for a live-data release.
    characters. Generate privately and store securely; never paste values in chat,
    documentation, source, screenshots or logs. Do not replace the encryption key
    while encrypted tokens exist without an explicit migration/reconnect plan.
+   This is application-owned infrastructure, not a Planning Center-issued value.
+   `PCO_TOKEN_ENCRYPTION_KEY` is the only supported name; do not configure a second
+   `TOKEN_ENCRYPTION_KEY` alias. The API refuses to start if this key is missing or
+   is not exactly 64 hexadecimal characters, even before OAuth is configured.
+   Startup never generates or replaces it. AES-256-GCM encrypts the access and
+   refresh tokens together before PostgreSQL persistence; decryption occurs only
+   on the server for provider requests, refresh or revocation.
 4. Click **Connect Planning Center**. Consent requests exactly `people services
    check_ins`. These are product scopes, not provider read-only scopes; our
    adapters only perform allowlisted GETs. No Giving/Groups/OIDC scope is requested.

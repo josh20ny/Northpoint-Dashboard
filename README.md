@@ -108,7 +108,11 @@ that a hosted CI run has passed. See `docs/PHASE_0_VERIFICATION.md`.
 
 ## Environment and security
 
-`.env.example` documents safe defaults only. Required for database readiness:
+`.env.example` documents safe defaults only. API startup also requires the
+application-owned `PCO_TOKEN_ENCRYPTION_KEY` Secret: provision 32 cryptographically
+random bytes encoded as 64 hexadecimal characters once, and retain it across
+restarts/deploys. Missing or malformed keys stop startup; no replacement is generated.
+Never commit or log the key. Required for database readiness:
 `DATABASE_URL`. API startup requires `PORT`; managed frontend also requires
 `BASE_PATH`. Auth is disabled by default and unsupported values fail validation.
 `REPORTING_TIMEZONE` is fixed to `America/Chicago`; `LOG_LEVEL` controls structured

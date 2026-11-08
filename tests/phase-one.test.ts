@@ -138,6 +138,7 @@ describe("verified identity and configuration", () => {
         AUTH_PROVIDER: "replit",
         AUTH_ORIGIN: "https://example.invalid",
         REPL_ID: "id",
+        PCO_TOKEN_ENCRYPTION_KEY: "1".repeat(64),
       }).AUTH_PROVIDER,
     ).toBe("replit");
   });

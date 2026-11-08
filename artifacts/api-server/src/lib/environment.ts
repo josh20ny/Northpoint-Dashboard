@@ -32,10 +32,15 @@ const environmentSchema = z
 // Never include Zod's input values in errors: env inputs may contain credentials.
 export function validateEnvironment(input: Record<string, string | undefined>) {
   const result = environmentSchema.safeParse(input);
-  if (!result.success) {
-    throw new Error(
-      `Invalid environment fields: ${result.error.issues.map((issue) => issue.path.join(".")).join(", ")}`,
-    );
-  }
+  const invalidFields = result.success
+    ? []
+    : result.error.issues.map((issue) => issue.path.join("."));
+  // Persistent infrastructure, provisioned once outside the running application.
+  // Never generate a replacement or include this secret in returned configuration.
+  if (!/^[a-f0-9]{64}$/i.test(input.PCO_TOKEN_ENCRYPTION_KEY ?? ""))
+    invalidFields.push("PCO_TOKEN_ENCRYPTION_KEY");
+  if (invalidFields.length)
+    throw new Error(`Invalid environment fields: ${invalidFields.join(", ")}`);
+  if (!result.success) throw new Error("Invalid environment");
   return result.data;
 }
