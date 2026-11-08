@@ -49,12 +49,57 @@ rejected/flagged. Non-Sunday dates, future weeks, errors, duplicate weeks,
 merged cells, external dependencies and forecast/derived source tabs are flagged.
 
 Reports compare sources only when candidate, unit and ministry match. Values
-are never summed across sources. A weekly evidence group can be approved only
-after at least two distinct source cells match without blocking QA flags.
+are never summed across sources. A two-source weekly review requires at least
+two distinct source cells to match without blocking QA flags.
 Formula caches remain labeled unverified even after a review. The Admin note
 must explain their review. Evidence hashes bind approvals to exact mapping
 versions and staged values; new versions invalidate previous approvals.
 Approval is not metric publication or approval of an unresolved business formula.
+
+### Owner-confirmed review
+
+The owner approved an additional, explicitly labelled review method for
+`adult_service_1` and `adult_service_2` with unit `attendance_count`.
+In Reconciliation, select **Owner-confirmed review**, acknowledge that the owner
+verified the exact values displayed, provide the verification basis (at least
+20 characters), and click **Record owner confirmation**.
+
+This requires current Admin access and CSRF, known nonnegative integer counts,
+and an unchanged evidence hash. It waives only the missing second-source
+requirement; missing values, future or invalid dates, conflicting evidence,
+external dependencies, unresolved shared formulas and other existing quality
+blockers still prevent approval. Raw stage values are unchanged: offline
+blank-to-zero interpretation does not silently replace missing staged evidence.
+
+An approved card shows **Owner confirmed**, its note, reviewer identifier and
+review time after reload. The missing-comparison-source flag remains visible:
+owner confirmation is not independent two-source verification. Protected
+weekly/conflict CSV and HTML exports retain the method and review metadata.
+The Approved weeks count includes both review methods and counts a date only
+when all its staged candidate groups have current approvals.
+
+Additive migration `0006` adds `review_method` with a database constraint.
+Existing reviews default to `two_source`; review history remains immutable,
+and existing evidence hashes are unchanged by adding review metadata.
+Readiness checks the new column and constraint. Only development was migrated.
+No real weekly evidence has been automatically approved; Phase 2 stays open
+until the authenticated Admin completes the sample reviews.
+
+Verification for this addition: 80 unit/API/offline-review tests and 20
+rollback-only database checks pass; workspace typecheck and lint pass.
+New checks cover explicit acknowledgement, note length, zero versus unknown,
+unchanged two-source requirements, blocked QA flags, metadata serialization,
+reviewer-bound audit events, escaped exports and stale-evidence invalidation.
+Development readiness returns HTTP 200 with migrations applied.
+
+The signed-in browser pass could not proceed: the supported test OIDC flow
+returned to a screen reporting authentication disabled rather than an Admin
+workspace. No workbook was uploaded or reviewed by that pass. Its synthetic
+account was suspended and session revoked; normal workflows were restored.
+After restoration the real auth endpoint reports enabled and the signed-out
+imports page renders its expected login gate. The new signed-in controls are
+therefore not browser-verified; backend behavior and serialized response/export
+metadata are covered by automated tests.
 
 Protected exports: `mapping_approved.csv`, `row_errors.csv`,
 `source_conflicts.csv`, `reconciled_weekly.csv`, `variance_report.html`.

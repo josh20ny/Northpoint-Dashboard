@@ -377,7 +377,13 @@ export const GetImportReportResponse = zod.object({
   "variance": zod.number().nullable(),
   "flags": zod.array(zod.string()),
   "evidenceHash": zod.string(),
-  "approved": zod.boolean()
+  "approved": zod.boolean(),
+  "approval": zod.union([zod.object({
+  "method": zod.enum(['two_source', 'owner_confirmed']),
+  "note": zod.string(),
+  "reviewedBy": zod.string(),
+  "reviewedAt": zod.coerce.date()
+}),zod.null()]).optional()
 })),
   "stagedRows": zod.number().int(),
   "flaggedRows": zod.number().int(),
@@ -399,7 +405,9 @@ export const approveImportWeekBodyNoteMax = 1000;
 export const ApproveImportWeekBody = zod.object({
   "week": zod.string().regex(approveImportWeekBodyWeekRegExp),
   "evidenceHash": zod.string().regex(approveImportWeekBodyEvidenceHashRegExp),
-  "note": zod.string().min(approveImportWeekBodyNoteMin).max(approveImportWeekBodyNoteMax)
+  "note": zod.string().min(approveImportWeekBodyNoteMin).max(approveImportWeekBodyNoteMax),
+  "method": zod.enum(['two_source', 'owner_confirmed']).optional(),
+  "ownerConfirmed": zod.boolean().optional()
 })
 
 export const ApproveImportWeekResponse = zod.void()

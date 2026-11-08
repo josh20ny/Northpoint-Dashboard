@@ -43,6 +43,13 @@
       "when": 1794085265648,
       "tag": "0005_square_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794104708320,
+      "tag": "0006_steady_spitfire",
+      "breakpoints": true
     }
   ]
 }

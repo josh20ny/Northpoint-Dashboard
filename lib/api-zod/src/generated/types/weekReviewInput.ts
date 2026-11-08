@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ImportReviewMethod } from './importReviewMethod';
 
 export interface WeekReviewInput {
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
@@ -16,4 +17,6 @@ export interface WeekReviewInput {
      * @maxLength 1000
      */
   note: string;
+  method?: ImportReviewMethod;
+  ownerConfirmed?: boolean;
 }

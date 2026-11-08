@@ -5,6 +5,7 @@ import {
   useApproveImportWeek,
   useGetImportReport,
   type ImportWeek,
+  type ImportReviewMethod,
 } from "@workspace/api-client-react";
 import { Scale } from "lucide-react";
 import { Panel, QueryError, StatusPill } from "@/components/kit";
@@ -36,6 +37,11 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
   const invalidate = useInvalidateImports();
   const approve = useApproveImportWeek(csrfRequest(csrfToken));
   const [note, setNote] = useState("");
+  const [method, setMethod] = useState<ImportReviewMethod>("two_source");
+  const [confirmed, setConfirmed] = useState(false);
+  const ownerReview = method === "owner_confirmed";
+  const ownerEligible =
+    ["adult_service_1", "adult_service_2"].includes(w.target) && w.unit === "attendance_count";
   const key = `${w.week}-${w.target}-${w.ministry}`;
   return (
     <li className="rounded-lg border bg-card p-3.5" data-testid={`card-week-${key}`}>
@@ -46,7 +52,13 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
         </p>
         <StatusPill
           status={w.approved ? "current" : "pending"}
-          label={w.approved ? "Evidence approved" : "Unreviewed"}
+          label={
+            w.approved
+              ? w.approval?.method === "owner_confirmed"
+                ? "Owner confirmed"
+                : "Two-source review approved"
+              : "Unreviewed"
+          }
         />
       </div>
       <div className="mt-2 overflow-x-auto">
@@ -92,13 +104,49 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
       </p>
       {!w.approved && (
         <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="block text-[12px] font-medium sm:col-span-2">
+            Review method
+            <select
+              value={method}
+              onChange={(e) => {
+                setMethod(e.target.value as ImportReviewMethod);
+                setConfirmed(false);
+              }}
+              disabled={disabled || approve.isPending}
+              className={`${inputCls} mt-1`}
+              data-testid={`select-review-method-${key}`}
+            >
+              <option value="two_source">Two-source comparison</option>
+              {ownerEligible && <option value="owner_confirmed">Owner-confirmed review</option>}
+            </select>
+          </label>
+          {ownerReview && (
+            <div className="space-y-2 sm:col-span-2">
+              <Note>
+                Owner confirmation is not independent two-source verification. Missing, conflicting,
+                future or invalid evidence still blocks approval.
+              </Note>
+              <label className="flex items-start gap-2 text-[12px]">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  disabled={disabled || approve.isPending}
+                  data-testid={`checkbox-owner-confirmed-${key}`}
+                />
+                I confirm the owner verified the exact attendance values shown above.
+              </label>
+            </div>
+          )}
           <label className="block text-[12px] font-medium">
-            Approval note (10 characters minimum)
+            {ownerReview
+              ? "Owner verification basis (20 characters minimum)"
+              : "Approval note (10 characters minimum)"}
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={1000}
-              disabled={disabled}
+              disabled={disabled || approve.isPending}
               className={`${inputCls} mt-1`}
               data-testid={`input-week-note-${key}`}
             />
@@ -106,12 +154,23 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
           <button
             type="button"
             className={btnPrimary}
-            disabled={disabled || note.trim().length < 10 || approve.isPending}
+            disabled={
+              disabled ||
+              note.trim().length < (ownerReview ? 20 : 10) ||
+              (ownerReview && !confirmed) ||
+              approve.isPending
+            }
             onClick={() =>
               approve.mutate(
                 {
                   id: batchId,
-                  data: { week: w.week, evidenceHash: w.evidenceHash, note: note.trim() },
+                  data: {
+                    week: w.week,
+                    evidenceHash: w.evidenceHash,
+                    note: note.trim(),
+                    method,
+                    ownerConfirmed: ownerReview && confirmed,
+                  },
                 },
                 {
                   onSuccess: () => {
@@ -123,8 +182,25 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
             }
             data-testid={`button-approve-week-${key}`}
           >
-            {approve.isPending ? "Saving" : "Approve this evidence"}
+            {approve.isPending
+              ? "Saving"
+              : ownerReview
+                ? "Record owner confirmation"
+                : "Approve this evidence"}
           </button>
+        </div>
+      )}
+      {w.approval && (
+        <div className="mt-3 space-y-1 rounded-md border bg-muted/25 p-3 text-[12px]">
+          <p className="font-medium">
+            {w.approval.method === "owner_confirmed"
+              ? "Owner-confirmed review — not independent two-source verification"
+              : "Two-source comparison review"}
+          </p>
+          <p className="whitespace-pre-wrap">{w.approval.note}</p>
+          <p className="break-all text-muted-foreground">
+            Reviewed by {w.approval.reviewedBy} · {new Date(w.approval.reviewedAt).toLocaleString()}
+          </p>
         </div>
       )}
       <div className="mt-2">
@@ -159,7 +235,8 @@ export function ImportReportPanel({ batchId, disabled }: { batchId: string; disa
       </div>
       <Note>
         Approval records that you reviewed this exact evidence hash. It does not publish metrics. If
-        evidence changes, the week needs a new review.
+        evidence changes, the week needs a new review. Approved-week counts include explicitly
+        owner-confirmed reviews; these are not independent two-source verification.
       </Note>
       {disabled ? (
         <div className="mt-3">

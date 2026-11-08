@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import { randomUUID } from "node:crypto";
 import type { Principal } from "../artifacts/api-server/src/lib/auth";
 import { syntheticWorkbook, mappingInput } from "./fixtures/workbook";
+import { GetImportReportResponse } from "../lib/api-zod/src/generated/api";
 
 vi.mock("../artifacts/api-server/src/lib/import-storage", () => ({
   importStorageReady: () => true,
@@ -163,6 +164,90 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         repo.approveWeek(p, batchId, w.week, w.evidenceHash, "Old evidence cannot be approved"),
       ).rejects.toMatchObject({ status: 409 });
       expect((await repo.exportReport(p, batchId, "mappings")).content).not.toContain(a.id);
+    });
+    it("records an explicit owner-confirmed review, audit and exports without bypassing source gates", async () => {
+      const input = { ...mappingInput, target: "adult_service_1", unit: "attendance_count" };
+      const m = await repo.createMapping(p, batchId, input);
+      await repo.reviewMapping(p, batchId, m.id, "approved", "Synthetic owner review fixture");
+      await repo.stageMapping(p, batchId, m.id);
+      const group = (await repo.importReport(p, batchId)).weeks[0]!;
+      const note = "Owner verified this exact synthetic attendance value <script> & =";
+      await expect(
+        repo.approveWeek(p, batchId, group.week, group.evidenceHash, note),
+      ).rejects.toMatchObject({ status: 409 });
+      await expect(
+        repo.approveWeek(
+          p,
+          batchId,
+          group.week,
+          group.evidenceHash,
+          note,
+          "owner_confirmed",
+          false,
+        ),
+      ).rejects.toMatchObject({ status: 400 });
+      await repo.approveWeek(
+        p,
+        batchId,
+        group.week,
+        group.evidenceHash,
+        note,
+        "owner_confirmed",
+        true,
+      );
+      const report = await repo.importReport(p, batchId);
+      expect(report.approvedWeeks).toBe(1);
+      expect(report.weeks[0]!.approval).toMatchObject({
+        method: "owner_confirmed",
+        note,
+        reviewedBy: p.userId,
+      });
+      expect(report.weeks[0]!.approval!.reviewedAt.toISOString()).toMatch(/Z$/);
+      const response = JSON.parse(JSON.stringify(GetImportReportResponse.parse(report)));
+      expect(response.weeks[0].approval.reviewedAt).toMatch(/Z$/);
+      expect(response.weeks[0].approval.method).toBe("owner_confirmed");
+      expect(report.weeks[0]!.flags).toContain("insufficient_comparison_sources");
+      expect(
+        (
+          await c.query(
+            "SELECT action FROM audit_events WHERE target_id=$1 AND action='import.week_owner_confirmed' AND actor_user_id=$2",
+            [batchId, p.userId],
+          )
+        ).rowCount,
+      ).toBe(1);
+      const stored = await c.query(
+        "SELECT review_method,note,reviewed_by FROM import_week_reviews WHERE batch_id=$1",
+        [batchId],
+      );
+      expect(stored.rows[0]).toMatchObject({
+        review_method: "owner_confirmed",
+        reviewed_by: p.userId,
+        note,
+      });
+      const html = (await repo.exportReport(p, batchId, "report")).content;
+      expect(html).toContain("not independent two-source verification");
+      expect(html).not.toContain("<script>");
+      expect(html).toContain("&lt;script&gt;");
+      const csv = (await repo.exportReport(p, batchId, "weekly")).content;
+      expect(csv).toContain("owner_confirmed");
+      expect(csv).toContain("reviewed_by");
+      const replacement = await repo.createMapping(p, batchId, {
+        ...input,
+        supersedes: m.id,
+        semantics: "New version of synthetic owner review",
+      });
+      await repo.reviewMapping(
+        p,
+        batchId,
+        replacement.id,
+        "approved",
+        "Changed synthetic evidence version",
+      );
+      await repo.stageMapping(p, batchId, replacement.id);
+      expect((await repo.importReport(p, batchId)).approvedWeeks).toBe(0);
+      await expect(
+        repo.approveWeek(p, batchId, group.week, group.evidenceHash, note, "owner_confirmed", true),
+      ).rejects.toMatchObject({ status: 409 });
     });
     it("withdraws without deleting, rejects work until restored and does not revive on re-import", async () => {
       await repo.changeImportState(p, batchId, "withdrawn", "Synthetic rollback check");

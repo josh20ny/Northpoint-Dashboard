@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ImportEvidence } from './importEvidence';
+import type { ImportEvidenceReview } from './importEvidenceReview';
 
 export interface ImportWeek {
   week: string;
@@ -18,4 +19,5 @@ export interface ImportWeek {
   flags: string[];
   evidenceHash: string;
   approved: boolean;
+  approval?: ImportEvidenceReview | null;
 }

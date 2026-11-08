@@ -281,6 +281,21 @@ export interface ImportEvidence {
   flags: string[];
 }
 
+export type ImportReviewMethod = typeof ImportReviewMethod[keyof typeof ImportReviewMethod];
+
+
+export const ImportReviewMethod = {
+  two_source: 'two_source',
+  owner_confirmed: 'owner_confirmed',
+} as const;
+
+export interface ImportEvidenceReview {
+  method: ImportReviewMethod;
+  note: string;
+  reviewedBy: string;
+  reviewedAt: string;
+}
+
 export interface ImportWeek {
   week: string;
   target: string;
@@ -292,6 +307,7 @@ export interface ImportWeek {
   flags: string[];
   evidenceHash: string;
   approved: boolean;
+  approval?: ImportEvidenceReview | null;
 }
 
 export interface ImportReport {
@@ -311,6 +327,8 @@ export interface WeekReviewInput {
      * @maxLength 1000
      */
   note: string;
+  method?: ImportReviewMethod;
+  ownerConfirmed?: boolean;
 }
 
 export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];

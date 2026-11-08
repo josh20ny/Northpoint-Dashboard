@@ -28,6 +28,10 @@ export async function databaseReadiness() {
         AND EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('import_upload_attempts') AND polname='import_admin_only')
         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('import_upload_attempts') AND tgname='import_no_delete' AND tgenabled<>'D')
         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('import_upload_attempts') AND tgname='import_upload_provenance' AND tgenabled<>'D')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='import_week_reviews' AND column_name='review_method')
+        AND EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('import_week_reviews')
+          AND conname='import_review_method')
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_immutable' AND tgenabled<>'D' AND tgrelid IN
           (to_regclass('import_cells'),to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=3
         AS schema_ready FROM foundation_metadata WHERE key = $1`,

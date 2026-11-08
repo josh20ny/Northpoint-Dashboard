@@ -1,0 +1,2 @@
+ALTER TABLE "import_week_reviews" ADD COLUMN "review_method" text DEFAULT 'two_source' NOT NULL;--> statement-breakpoint
+ALTER TABLE "import_week_reviews" ADD CONSTRAINT "import_review_method" CHECK ("import_week_reviews"."review_method" IN ('two_source','owner_confirmed'));

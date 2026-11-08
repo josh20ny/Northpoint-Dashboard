@@ -1,4 +1,13 @@
-import { pgTable, pgPolicy, uuid, text, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  pgPolicy,
+  uuid,
+  text,
+  timestamp,
+  jsonb,
+  uniqueIndex,
+  check,
+} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { usersTable } from "./access";
@@ -74,13 +83,18 @@ export const importReviewsTable = pgTable(
       .references(() => importBatchesTable.id),
     week: text("week").notNull(),
     evidenceHash: text("evidence_hash").notNull(),
+    reviewMethod: text("review_method").notNull().default("two_source"),
     note: text("note").notNull(),
     reviewedBy: uuid("reviewed_by")
       .notNull()
       .references(() => usersTable.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("import_week_evidence").on(t.batchId, t.week, t.evidenceHash), adminOnly()],
+  (t) => [
+    uniqueIndex("import_week_evidence").on(t.batchId, t.week, t.evidenceHash),
+    check("import_review_method", sql`${t.reviewMethod} IN ('two_source','owner_confirmed')`),
+    adminOnly(),
+  ],
 ).enableRLS();
 export const insertImportBatchSchema = createInsertSchema(importBatchesTable);
 // Durable intent is committed before storage; terminal attempts are never rewritten.

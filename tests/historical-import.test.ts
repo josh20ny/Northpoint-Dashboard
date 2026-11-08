@@ -8,7 +8,12 @@ import {
   stageRows,
   digest,
 } from "../artifacts/api-server/src/lib/workbook";
-import { buildReport, csv, escapeHtml } from "../artifacts/api-server/src/lib/imports";
+import {
+  buildReport,
+  csv,
+  escapeHtml,
+  validateWeekReview,
+} from "../artifacts/api-server/src/lib/imports";
 import { createImportRouter } from "../artifacts/api-server/src/routes/imports";
 import { syntheticWorkbook, mappingInput } from "./fixtures/workbook";
 describe("historical workbook discovery and raw-only staging", () => {
@@ -118,6 +123,110 @@ describe("historical workbook discovery and raw-only staging", () => {
   it("escapes exported formulas and HTML rather than activating workbook content", () => {
     expect(csv([['=HYPERLINK("evil")', null, "0"]])).toContain(`"'=HYPERLINK(""evil"")"`);
     expect(escapeHtml("<script>&")).toBe("&lt;script&gt;&amp;");
+  });
+  const ownerGroup = () =>
+    buildReport(
+      [
+        {
+          mappingId: "one",
+          definition: { ...mappingInput, target: "adult_service_1", unit: "attendance_count" },
+          data: {
+            ...stageRows(
+              mappingInput,
+              readWorkbook(syntheticWorkbook()).cells.map((c) => c.cell),
+              readWorkbook(syntheticWorkbook()),
+              "2026-10-01",
+            )[0]!,
+            flags: ["date_formula_unverified"],
+          },
+        },
+      ],
+      [],
+    ).weeks[0]!;
+  it("allows explicit owner confirmation of a single known attendance source, not default approval", () => {
+    const group = ownerGroup();
+    expect(group.flags).toContain("insufficient_comparison_sources");
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "two_source"),
+    ).toThrow();
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "owner_confirmed", false),
+    ).toThrow();
+    expect(() => validateWeekReview(group, "short", "owner_confirmed", true)).toThrow();
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "owner_confirmed", true),
+    ).not.toThrow();
+    group.evidence[0]!.value = 0;
+    expect(() =>
+      validateWeekReview(group, "Owner verified zero attendance", "owner_confirmed", true),
+    ).not.toThrow();
+    group.evidence[0]!.value = null;
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "owner_confirmed", true),
+    ).toThrow();
+  });
+  it.each([
+    "source_conflict",
+    "missing_value",
+    "future_relative_to_snapshot",
+    "spreadsheet_error",
+    "external_dependency",
+    "shared_formula_unresolved",
+    "duplicate_source_cell",
+    "non_numeric_value",
+    "missing_or_invalid_date",
+    "non_sunday_date",
+    "merged_or_shifted_cell",
+    "legacy_derived_or_forecast",
+    "unsafe_numeric_precision",
+    "date_missing_formula_cache",
+  ])("owner confirmation cannot bypass %s", (flag) => {
+    const group = ownerGroup();
+    group.flags.push(flag);
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "owner_confirmed", true),
+    ).toThrow();
+  });
+  it("rejects unsupported measures and never reports owner review as independent evidence", () => {
+    const group = ownerGroup();
+    group.target = "giving";
+    expect(() =>
+      validateWeekReview(group, "Owner verified this exact count", "owner_confirmed", true),
+    ).toThrow();
+    const workbook = readWorkbook(syntheticWorkbook());
+    const rows = [
+      {
+        mappingId: "one",
+        definition: { ...mappingInput, target: "adult_service_1", unit: "attendance_count" },
+        data: stageRows(
+          mappingInput,
+          workbook.cells.map((c) => c.cell),
+          workbook,
+          "2026-10-01",
+        )[0]!,
+      },
+    ];
+    const initial = buildReport(rows, []);
+    const review = {
+      week: initial.weeks[0]!.week,
+      evidenceHash: initial.weeks[0]!.evidenceHash,
+      method: "owner_confirmed" as const,
+      note: "Owner personally verified the count",
+      reviewedBy: "synthetic-reviewer",
+      reviewedAt: new Date("2026-11-07T00:00:00.000Z"),
+    };
+    const result = buildReport(rows, [review]);
+    expect(result.approvedWeeks).toBe(1);
+    expect(result.weeks[0]!.approval).toMatchObject({
+      method: "owner_confirmed",
+      note: review.note,
+      reviewedBy: review.reviewedBy,
+      reviewedAt: review.reviewedAt,
+    });
+    expect(result.weeks[0]!.evidenceHash).toBe(initial.weeks[0]!.evidenceHash);
+    expect(result.weeks[0]!.flags).toContain("insufficient_comparison_sources");
+    rows[0]!.data = { ...rows[0]!.data, value: 13 };
+    expect(buildReport(rows, [review]).weeks[0]).toMatchObject({ approved: false, approval: null });
   });
 });
 describe("Admin-only import boundary", () => {

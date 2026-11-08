@@ -6,6 +6,8 @@ import type {
   ImportReport,
   ImportWeek,
   StagedImportRow,
+  ImportReviewMethod,
+  ImportEvidenceReview,
 } from "@workspace/api-zod";
 import type { Principal } from "./auth";
 import { adminTransaction, AccessError, validCalendarDate } from "./administration";
@@ -339,7 +341,7 @@ export type EvidenceRow = {
 };
 export function buildReport(
   rows: EvidenceRow[],
-  approvals: { week: string; evidenceHash: string }[],
+  approvals: ({ week: string; evidenceHash: string } & Partial<ImportEvidenceReview>)[],
 ): ImportReport {
   const groups = new Map<string, ImportWeek>();
   for (const { mappingId, definition: d, data } of rows) {
@@ -386,7 +388,18 @@ export function buildReport(
       (a, b) => a.mappingId.localeCompare(b.mappingId) || a.coordinate.localeCompare(b.coordinate),
     );
     g.evidenceHash = digest(JSON.stringify({ ...g, evidenceHash: "", approved: false }));
-    g.approved = approvals.some((a) => a.week === g.week && a.evidenceHash === g.evidenceHash);
+    // Hash only source evidence, never review metadata: retain historical hashes.
+    const review = approvals.find((a) => a.week === g.week && a.evidenceHash === g.evidenceHash);
+    g.approved = !!review;
+    g.approval =
+      review?.reviewedBy && review.reviewedAt && review.note
+        ? {
+            method: review.method ?? "two_source",
+            note: review.note,
+            reviewedBy: review.reviewedBy,
+            reviewedAt: review.reviewedAt,
+          }
+        : null;
   }
   const weekDates = [...new Set(weeks.map((w) => w.week))];
   return {
@@ -405,8 +418,10 @@ async function evidence(c: PoolClient, id: string) {
     ORDER BY m.id,r.source_row::int`,
     [id],
   );
-  const a = await c.query<{ week: string; evidenceHash: string }>(
-    'SELECT week,evidence_hash AS "evidenceHash" FROM import_week_reviews WHERE batch_id=$1',
+  const a = await c.query<{ week: string; evidenceHash: string } & ImportEvidenceReview>(
+    `SELECT week,evidence_hash AS "evidenceHash",review_method AS method,note,
+      reviewed_by AS "reviewedBy",created_at AS "reviewedAt"
+      FROM import_week_reviews WHERE batch_id=$1 ORDER BY created_at,id`,
     [id],
   );
   return { rows: r.rows, report: buildReport(r.rows, a.rows) };
@@ -421,29 +436,62 @@ export async function importReport(p: Principal, id: string) {
 }
 const blocking =
   /missing|invalid|future|external|error|non_numeric|non_sunday|merged|forecast|duplicate|conflict|insufficient|shared_formula|unsafe_numeric/;
+export function validateWeekReview(
+  group: ImportWeek,
+  note: string,
+  method: ImportReviewMethod = "two_source",
+  ownerConfirmed = false,
+) {
+  if (method !== "two_source" && method !== "owner_confirmed")
+    throw new AccessError(400, "Choose a supported review method");
+  if (note.trim().length < (method === "owner_confirmed" ? 20 : 10) || note.length > 1000)
+    throw new AccessError(400, "Explain the review basis (20 characters for owner confirmation)");
+  if (method === "owner_confirmed") {
+    if (!ownerConfirmed)
+      throw new AccessError(400, "Explicitly confirm the owner verified these exact values");
+    if (
+      !["adult_service_1", "adult_service_2"].includes(group.target) ||
+      group.unit !== "attendance_count"
+    )
+      throw new AccessError(409, "Owner confirmation is enabled only for adult service attendance");
+    if (
+      !group.evidence.length ||
+      group.evidence.some((e) => e.value === null || !Number.isSafeInteger(e.value) || e.value < 0)
+    )
+      throw new AccessError(409, "Owner confirmation requires known nonnegative attendance counts");
+    if (group.flags.some((f) => f !== "insufficient_comparison_sources" && blocking.test(f)))
+      throw new AccessError(409, "Resolve flagged evidence before owner confirmation");
+    // Only the missing second-source requirement is waived, never a conflict.
+    if (group.variance !== null && group.variance !== 0)
+      throw new AccessError(409, "Resolve conflicting sources before owner confirmation");
+  } else if (group.variance !== 0 || group.flags.some((f) => blocking.test(f))) {
+    throw new AccessError(
+      409,
+      "Resolve flagged sources and compare at least two distinct source cells before approving",
+    );
+  }
+}
 export async function approveWeek(
   p: Principal,
   id: string,
   week: string,
   evidenceHash: string,
   note: string,
+  method: ImportReviewMethod = "two_source",
+  ownerConfirmed = false,
 ) {
   await adminTransaction(p, async (c) => {
     await batch(c, id);
     const e = await evidence(c, id);
     const group = e.report.weeks.find((w) => w.week === week && w.evidenceHash === evidenceHash);
     if (!group) throw new AccessError(409, "Evidence changed; reload the report before reviewing");
-    if (group.variance !== 0 || group.flags.some((f) => blocking.test(f)))
-      throw new AccessError(
-        409,
-        "Resolve flagged sources and compare at least two distinct source cells before approving",
-      );
+    validateWeekReview(group, note, method, ownerConfirmed);
     await c.query(
-      `INSERT INTO import_week_reviews(batch_id,week,evidence_hash,note,reviewed_by)
-      VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
-      [id, week, evidenceHash, note, p.userId],
+      `INSERT INTO import_week_reviews(batch_id,week,evidence_hash,note,reviewed_by,review_method)
+      VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+      [id, week, evidenceHash, note.trim(), p.userId, method],
     );
-    await audit(c, p, "week_approved", id);
+    await audit(c, p, method === "owner_confirmed" ? "week_owner_confirmed" : "week_approved", id);
   });
 }
 export function csv(rows: unknown[][]) {
@@ -473,7 +521,26 @@ export async function exportReport(p: Principal, id: string, kind: string) {
     await audit(c, p, "report_exported", id);
     if (kind === "report") {
       const html = `<!doctype html><html><head><meta charset="utf-8"><title>Historical source reconciliation</title><style>body{font:15px system-ui;margin:32px;color:#223242}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px;text-align:left}small{display:block}</style></head><body><h1>Historical source reconciliation</h1><p>Review-only staging. No metrics published. ${report.approvedWeeks} complete reviewed weeks; ${report.flaggedRows} flagged rows.</p><table><tr><th>Sunday</th><th>Candidate</th><th>Source evidence</th><th>Variance</th><th>Review / flags</th></tr>${report.weeks.map((w) => `<tr><td>${escapeHtml(w.week)}</td><td>${escapeHtml(w.target)}<small>${escapeHtml(w.unit)} / ${escapeHtml(w.ministry)}</small></td><td>${w.evidence.map((e) => `${escapeHtml(e.sheet)}!${escapeHtml(e.coordinate)}: ${escapeHtml(e.value ?? "unknown")}`).join("<br>")}</td><td>${escapeHtml(w.variance ?? "not comparable")}</td><td>${w.approved ? "Approved evidence" : "Unreviewed"}<small>${escapeHtml(w.flags.join(", "))}</small></td></tr>`).join("")}</table></body></html>`;
-      return { content: html, type: "text/html; charset=utf-8", filename: "variance_report.html" };
+      const reviews = report.weeks
+        .filter((w) => w.approval)
+        .map((w) => {
+          const review = w.approval!;
+          return `<section><h3>${escapeHtml(w.week)} — ${escapeHtml(w.target)}</h3>
+          <p>${
+            review.method === "owner_confirmed"
+              ? "Owner-confirmed review — not independent two-source verification"
+              : "Two-source comparison review"
+          }</p>
+          <p>${escapeHtml(review.note)}</p>
+          <p>Reviewer: ${escapeHtml(review.reviewedBy)} · ${escapeHtml(review.reviewedAt.toISOString())}</p>
+          <p>Evidence: ${escapeHtml(w.evidenceHash)}</p></section>`;
+        })
+        .join("");
+      return {
+        content: html.replace("</body>", `<h2>Recorded reviews</h2>${reviews}</body>`),
+        type: "text/html; charset=utf-8",
+        filename: "variance_report.html",
+      };
     }
     let output: unknown[][];
     let filename: string;
@@ -544,6 +611,10 @@ export async function exportReport(p: Principal, id: string, kind: string) {
           "approved",
           "flags",
           "source_evidence",
+          "review_method",
+          "review_note",
+          "reviewed_by",
+          "reviewed_at",
         ],
         ...report.weeks
           .filter(
@@ -563,6 +634,10 @@ export async function exportReport(p: Principal, id: string, kind: string) {
             w.evidence
               .map((e) => `${e.sheet}!${e.coordinate}=${e.value ?? "unknown"} [${e.mappingId}]`)
               .join(";"),
+            w.approval?.method ?? "",
+            w.approval?.note ?? "",
+            w.approval?.reviewedBy ?? "",
+            w.approval?.reviewedAt.toISOString() ?? "",
           ]),
       ];
     }

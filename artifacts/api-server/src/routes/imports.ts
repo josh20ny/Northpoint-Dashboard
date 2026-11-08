@@ -196,6 +196,8 @@ export function createImportRouter(provider: AuthProvider = sessionAuthProvider)
       b.data.week,
       b.data.evidenceHash,
       b.data.note.trim(),
+      b.data.method ?? "two_source",
+      b.data.ownerConfirmed ?? false,
     );
     res.status(204).end();
   });

@@ -637,6 +637,21 @@ components:
         flags: { type: array, items: { type: string } }
         evidenceHash: { type: string }
         approved: { type: boolean }
+        approval:
+          anyOf:
+            - $ref: "#/components/schemas/ImportEvidenceReview"
+            - type: "null"
+    ImportReviewMethod:
+      type: string
+      enum: [two_source, owner_confirmed]
+    ImportEvidenceReview:
+      type: object
+      required: [method, note, reviewedBy, reviewedAt]
+      properties:
+        method: { $ref: "#/components/schemas/ImportReviewMethod" }
+        note: { type: string }
+        reviewedBy: { type: string }
+        reviewedAt: { type: string, format: date-time }
     ImportReport:
       type: object
       required: [weeks, stagedRows, flaggedRows, approvedWeeks]
@@ -652,6 +667,8 @@ components:
         week: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
         evidenceHash: { type: string, pattern: "^[a-f0-9]{64}$" }
         note: { type: string, minLength: 10, maxLength: 1000 }
+        method: { $ref: "#/components/schemas/ImportReviewMethod" }
+        ownerConfirmed: { type: boolean }
     AuthUser:
       type: object
       required: [id, email, role]

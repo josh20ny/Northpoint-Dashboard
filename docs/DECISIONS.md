@@ -64,6 +64,34 @@ said needed correction. Migration impact: none; offline labels/exports only.
 Tests: exact source names, derived total, explicit zero, unknown inputs,
 and no implied mapping of SPD L to the derived total.
 
+## Owner-confirmed attendance review — 2026-11-07
+
+**APPROVED**, owner: product owner. Add an explicit owner-confirmed review
+option alongside the existing two-source comparison. This is an intentional
+approval-policy change: an authenticated Admin may record owner verification
+of exact adult service attendance values with an explicit acknowledgement and
+a review-basis note. It is not independent two-source verification.
+
+Initially limited to `adult_service_1` and `adult_service_2` with unit
+`attendance_count`. Require known, nonnegative integer evidence, a note of at
+least 20 characters, and the current evidence hash. Waive only the missing
+second-source requirement. Conflicts, missing values, invalid/future dates,
+external dependencies, unresolved shared formulas and other existing blocking
+quality flags remain blockers. Informational flags remain visible.
+
+Preserve the review method, note, authenticated reviewer, timestamp and exact
+evidence binding in immutable history and protected reports/exports. Existing
+reviews remain two-source reviews; changing evidence invalidates either method.
+Owner-confirmed reviews count toward reviewed weeks, but the method must remain
+visible and must never imply independent corroboration or metric publication.
+No automatic approvals, real-data test approvals or canonical metrics.
+
+Alternative: obtain a second independent attendance source and retain only the
+existing comparison policy. Migration impact: additive review-method column
+and constraint, with existing reviews defaulting to `two_source`. Tests:
+explicit acknowledgement, note length, source quality, stale evidence,
+immutable review identity/method, protected exports and authorization.
+
 ## Imported workbook review cutoff
 
 **APPROVED**, owner: product owner. After the supplied workbook was imported
