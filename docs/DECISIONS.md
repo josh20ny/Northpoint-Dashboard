@@ -64,6 +64,19 @@ said needed correction. Migration impact: none; offline labels/exports only.
 Tests: exact source names, derived total, explicit zero, unknown inputs,
 and no implied mapping of SPD L to the derived total.
 
+## Imported workbook review cutoff
+
+**APPROVED**, owner: product owner. After the supplied workbook was imported
+with snapshot 2026-11-07 rather than the earlier 2026-11-06 review date, the owner
+said “either date is fine.” Use the existing 2026-11-07 batch and cutoff for
+ongoing review; do not require another upload or change immutable provenance.
+This accepts the review cutoff, not a new claim about the file's export time.
+The actual fingerprint matches the reviewed source. No adult service dates
+fall between the two cutoffs, so past/future classifications are unchanged.
+No mapping or weekly application approvals are implied. Alternative: another
+import dated November 6. Migration impact: none. Verify that the dated review
+has identical adult classifications and preserves source values.
+
 ## Owner-verified attendance sample counts
 
 **CONFIRMED**, owner: product owner. In response to the sample-count review,
@@ -89,7 +102,7 @@ cancelled. Future blank or zero entries have not happened yet and must not
 be recorded as actual attendance. This supersedes the prior assumption that
 all past blank attendance inputs are unknown.
 
-For this immutable workbook review, use the confirmed 2026-11-06 snapshot as
+For this immutable workbook review, use the accepted imported 2026-11-07 cutoff as
 the as-of cutoff (on/before is historical; later is future). Keep original
 cells separate from interpreted attendance and retain all future source rows.
 Apply only to explicitly mapped attendance inputs with matching valid dates,

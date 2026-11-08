@@ -27,7 +27,7 @@ below. See `DECISIONS.md`.
 - Future blank/zero entries are not yet recorded; exclude them from actuals.
 - For a historical snapshot use its confirmed as-of date, not today's date,
   so old exports do not gradually turn future placeholders into zeroes.
-- The offline adult review uses matching SPD/Dash dates and 2026-11-06 as its
+- The offline adult review uses matching SPD/Dash dates and 2026-11-07 as its
   inclusive historical cutoff. Original F/I values remain separate.
 - Missing formula caches, spreadsheet errors, invalid values and unconfirmed
   dates remain unresolved; this rule does not apply to other numeric measures.

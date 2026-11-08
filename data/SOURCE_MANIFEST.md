@@ -21,6 +21,9 @@ snapshot date below; source equivalence and historical mappings remain unapprove
 ## Owner-selected review input and snapshot — 2026-11-07
 The owner selected the supplied legacy working copy for review, including all
 data, and reported its export/last-updated date as “yesterday.” Relative to
-2026-11-07 in America/Chicago, its confirmed snapshot date is **2026-11-06**.
+2026-11-07 in America/Chicago, the initial review date was **2026-11-06**.
+The workbook was subsequently imported with **2026-11-07**; the owner said
+“either date is fine.” Use that existing batch and accepted cutoff for ongoing
+review without changing immutable provenance or asserting a new export time.
 This selects a review input and date; it does not establish byte equivalence to
 the earlier manifest, source authority or approval of any metric/mapping/week.

@@ -128,7 +128,8 @@ application mechanism per database. No production release is authorized by this 
 
 ## Next roadmap slice
 
-Phase 2: the selected legacy working copy has a confirmed 2026-11-06 snapshot.
+Phase 2: the selected legacy working copy is imported with the owner-accepted
+2026-11-07 review cutoff (superseding the earlier November 6 offline cutoff).
 Approve explicit source mappings and reconcile several selected weeks in the
 import workspace; the different original-manifest fingerprint remains documented.
 Do not proceed into Phase 3 ingestion, metrics or later phases without approval.

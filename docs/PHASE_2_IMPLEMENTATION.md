@@ -187,21 +187,24 @@ they do not create authenticated mapping or evidence approvals in the app.
 - Synthetic batch remains withdrawn to retain audit/source history. The test
   account is suspended and sessions revoked. No real mappings were approved.
 
-The real source is not yet cataloged. Its snapshot date has now been confirmed
-as 2026-11-06; source mappings and weekly approvals remain outstanding.
+The real source is now cataloged with snapshot 2026-11-07 and a matching
+fingerprint. The owner accepted either November 6 or November 7; ongoing
+review uses the existing November 7 batch without another upload.
+Source mappings and weekly approvals remain outstanding.
 Several owner-approved real weeks have not reconciled, so the roadmap's Phase 2
 exit gate is not yet met. No Phase 3 work, canonical metric publication or
 production release is claimed.
 
 ## Owner-selected offline review — 2026-11-07
 The owner chose to finish Phase 2 before Phase 3 and selected the supplied legacy
-workbook, including all data, as the review input. The snapshot was subsequently
-confirmed as 2026-11-06; equivalence to the original manifest remains unproven.
+workbook, including all data, as the review input. The initial review used
+2026-11-06; the owner subsequently accepted the imported 2026-11-07 cutoff.
+Equivalence to the original manifest remains unproven.
 
 Reproduce a discovery-only review with:
 ```sh
 pnpm exec tsx scripts/src/prepare-legacy-review.mjs \
-  'data/NP Dashboard - 2026 (orignal source-legacy).xlsx' 2026-11-06
+  'data/NP Dashboard - 2026 (orignal source-legacy).xlsx' 2026-11-07
 ```
 The command makes no database/storage/provider calls, evaluates no formulas,
 and does not import, approve or publish. Its digest-scoped HTML/CSV outputs in
@@ -226,7 +229,7 @@ with no 2026 dates. Other historical grids still need explicit mapping review.
 The offline-review tests cover complete column discovery, zero versus
 missing values, date mismatch, copied-cache status, CSV/HTML escaping and the
 unapproved/offline report boundary, explicit snapshot dates and inclusive
-future-week checks. With the owner's confirmed snapshot of 2026-11-06,
+future-week checks. With the owner's accepted imported cutoff of 2026-11-07,
 snapshot checks apply to the adult date axis; the remaining columns need
 approved date mappings before equivalent checks can run. Future rows remain
 in the packet, not silently removed. Outputs are versioned by digest and date.
@@ -259,7 +262,7 @@ attendance,” superseding the prior unknown interpretation. The interpreted
 distinct from incomplete cached comparisons and authenticated approvals.
 This is not a cancellation confirmation. April 12, 19, 26 and May 3 have
 blank F/I inputs and interpreted zero attendance under the owner's date rule.
-Future attendance stays unrecorded, not zero actuals, using the 2026-11-06
+Future attendance stays unrecorded, not zero actuals, using the 2026-11-07
 snapshot cutoff. Original inputs and their raw arithmetic sum remain separate
 in both HTML and CSV. Formula failures and missing caches are not blank literals
 and remain unresolved. Undated or mismatched-date inputs are not zero-filled.
