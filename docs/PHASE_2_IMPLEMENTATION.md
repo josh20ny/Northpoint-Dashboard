@@ -195,7 +195,7 @@ the count definition or establish independent evidence: Dash C points to SPD L.
 All Raw Data's interpreted column-A dates cover 2013-01-06 through 2023-12-31,
 with no 2026 dates. Other historical grids still need explicit mapping review.
 
-The four offline-review tests cover complete column discovery, zero versus
+The offline-review tests cover complete column discovery, zero versus
 missing values, date mismatch, copied-cache status, CSV/HTML escaping and the
 unapproved/offline report boundary, explicit snapshot dates and inclusive
 future-week checks. With the owner's confirmed snapshot of 2026-11-06,
@@ -205,7 +205,8 @@ in the packet, not silently removed. Outputs are versioned by digest and date.
 Of the 52 adult rows, 44 are on/before the snapshot and eight later weeks are
 flagged as future. Five on/before-snapshot weeks are incomplete: 2026-01-25,
 2026-04-12, 2026-04-19, 2026-04-26 and 2026-05-03. No cancellation, zero-attendance
-or other explanation is inferred for these gaps.
+or other explanation is inferred for the four blank-input weeks. For January 25,
+the owner clarified attendance was zero, with ice-storm context.
 Admin mapping approval and sample-week reconciliation remain open. Cataloging
 must use the authenticated Admin flow; offline discovery does not impersonate
 an Admin or write approval/audit records on the owner's behalf.
@@ -220,6 +221,11 @@ comparison columns with unconfirmed meanings, not sources automatically assigned
 to `adult_services_total`. Earlier report labels are superseded by the corrected
 packet. No canonical metric, app mapping approval or weekly approval is implied.
 Source-input completeness is separate from cached-comparison completeness:
-January 25 has explicit zeroes in F/I and therefore a zero review sum, while
-L/Dash caches are missing. April 12, 19, 26 and May 3 have missing F/I inputs and
-unknown sums. The report does not infer what the January zeroes signify.
+January 25 has explicit zeroes in F/I and a preserved raw arithmetic sum of zero,
+while L/Dash caches are missing. The owner clarified “technically it was 0
+attendance,” superseding the prior unknown interpretation. The interpreted
+`adult_services_total` is zero, with ice-storm context; source inputs remain
+distinct from incomplete cached comparisons and authenticated approvals.
+This is not a cancellation confirmation. April 12, 19, 26 and May 3 have
+missing F/I inputs and unknown sums.
+No canonical values or authenticated approvals were written.

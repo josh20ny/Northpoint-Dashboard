@@ -75,14 +75,14 @@ content_type = "text/csv"
 id = "RTuaTTeEls2tyeghsccNM"
 uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/owner-named-adult-sources/source-review.html"
 type = "html"
-title = "Workbook review — corrected adult source names"
-description = "Uses adult_service_1, adult_service_2 and adult_services_total. Source completeness is separate from cached comparisons; weekly values remain unapproved."
+title = "Updated workbook review"
+description = "January 25 is marked not recorded due to the ice storm; original workbook zeroes are preserved, not treated as observed zero attendance."
 logical_id = "b848e4b7-b1b1-4d4b-8861-30e3c5b168b9"
-content_hash = "sha256:9dd9d9e35e40a7a723271b30d710a140eee7503c5464883b84422f82aed0cde4"
-size = 24471
-mtime_ms = 1794096287482
-storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b848e4b7-b1b1-4d4b-8861-30e3c5b168b9/452811c8-587f-437d-94c6-1aba60518c10"
-storage_version_token = "1794096294425266"
+content_hash = "sha256:c441e3a934944a1ff342d1503dc281e5227c7806d83edb831c0ac786fdcee5c7"
+size = 25993
+mtime_ms = 1794101911170
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b848e4b7-b1b1-4d4b-8861-30e3c5b168b9/d079e483-2e9d-42cc-9d94-419271ac0d6d"
+storage_version_token = "1794101916406654"
 content_type = "text/html"
 
 [[outputs]]

@@ -54,6 +54,38 @@ describe("offline source review (never an approval)", () => {
     w.cells.find((x) => x.sheet === "SPD" && x.cell.column === "A")!.cell.value = "46033";
     expect(buildReview(w, excelDate).adult[0].status).toBe("DATE_MISMATCH");
   });
+  it("preserves zero attendance with owner context without approving other values", () => {
+    const w = readWorkbook(
+      syntheticWorkbook(
+        '<row><c r="A3"><v>46047</v></c><c r="F3"><v>0</v></c><c r="I3"><v>0</v></c></row>',
+      ),
+    );
+    const cells = w.cells;
+    w.cells = [
+      ...cells.map((x) => ({ sheet: "SPD", cell: { ...x.cell } })),
+      ...cells
+        .filter((x) => x.cell.column === "A")
+        .map((x) => ({ sheet: "Dash", cell: { ...x.cell } })),
+    ];
+    const before = JSON.stringify(w);
+    const review = buildReview(w, excelDate, "2026-11-06", {
+      "2026-01-25":
+        "The owner clarified that in-person attendance was zero; ice-storm context retained.",
+    });
+    expect(review.adult[0]).toMatchObject({
+      date: "2026-01-25",
+      adult_service_1: 0,
+      adult_service_2: 0,
+      adult_services_total: 0,
+      sourceArithmeticSum: 0,
+      sourceStatus: "INPUTS_PRESENT_UNAPPROVED",
+      status: "INCOMPLETE",
+    });
+    expect(JSON.stringify(w)).toBe(before);
+    expect(buildReview(w, excelDate).adult[0].adult_services_total).toBe(0);
+    expect(renderReview(review, source)).toContain("in-person attendance was zero");
+    expect(renderReview(review, source)).not.toContain("NOT_RECORDED");
+  });
   it("checks the explicit snapshot boundary without changing or removing source rows", () => {
     const w = readWorkbook(syntheticWorkbook());
     const dateCell = w.cells.find((x) => x.cell.column === "A")!.cell;

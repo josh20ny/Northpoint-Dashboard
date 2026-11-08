@@ -51,7 +51,7 @@ export function csv(rows) {
 }
 
 // Discovery only: never calls a repository, storage, evaluator or approval API.
-export function buildReview(workbook, excelDate, snapshotDate = null) {
+export function buildReview(workbook, excelDate, snapshotDate = null, ownerNotes = {}) {
   if (
     snapshotDate !== null &&
     (!/^\d{4}-\d{2}-\d{2}$/.test(snapshotDate) ||
@@ -113,6 +113,7 @@ export function buildReview(workbook, excelDate, snapshotDate = null) {
     const totalValue = numeric(total),
       dashValue = numeric(dash);
     const spdDate = excelDate(raw(get("SPD", `A${row}`)), workbook.dateSystem);
+    const ownerNote = spdDate === date ? (ownerNotes[date] ?? "") : "";
     const complete = [adultServicesTotal, totalValue, dashValue].every((v) => v !== null);
     adult.push({
       date,
@@ -121,6 +122,8 @@ export function buildReview(workbook, excelDate, snapshotDate = null) {
       adult_service_1: firstValue,
       adult_service_2: secondValue,
       adult_services_total: adultServicesTotal,
+      sourceArithmeticSum: adultServicesTotal,
+      ownerNote,
       sourceStatus:
         spdDate !== date
           ? "DATE_MISMATCH"
@@ -229,6 +232,13 @@ These names do not approve weekly values or publish a canonical metric.
 SPD L and Dash C remain raw cached comparison columns with unconfirmed meanings.
 Dash formulas reference SPD L; matching caches are not independent corroboration.
 Workbook formulas have not been evaluated.</li>
+${review.adult
+  .filter((r) => r.ownerNote)
+  .map(
+    (r) =>
+      `<li>${escapeHtml(r.date)}: ${escapeHtml(r.ownerNote)} Original F/I values and their arithmetic sum are preserved. Owner context does not approve other weeks or establish whether services were cancelled.</li>`,
+  )
+  .join("")}
 <li>Of ${review.adult.length} 2026 adult rows,
 ${review.adult.filter((r) => r.status === "MATCHED_COPIES_UNAPPROVED").length}
 have matching caches and diagnostic service-count sums;
@@ -295,6 +305,8 @@ ${table(
     "adult_service_1 (SPD F)",
     "adult_service_2 (SPD I)",
     "adult_services_total (F + I)",
+    "Original F + I arithmetic",
+    "Owner context",
     "SPD L cache — meaning unconfirmed",
     "Dash C cache — meaning unconfirmed",
     "Dash − SPD",
@@ -306,6 +318,8 @@ ${table(
     r.adult_service_1,
     r.adult_service_2,
     r.adult_services_total,
+    r.sourceArithmeticSum,
+    r.ownerNote,
     r.total,
     r.dash,
     r.variance,
@@ -341,8 +355,16 @@ async function main() {
     await import("../../artifacts/api-server/src/lib/workbook.ts");
   const bytes = await fs.readFile(filename),
     workbook = readWorkbook(bytes);
-  const sha256 = digest(bytes),
-    review = buildReview(workbook, excelDate, snapshotDate);
+  const sha256 = digest(bytes);
+  // Owner context applies only to the reviewed immutable workbook, not other uploads.
+  const ownerNotes =
+    sha256 === "c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3"
+      ? {
+          "2026-01-25":
+            "The owner clarified that in-person attendance was zero; ice-storm context retained.",
+        }
+      : {};
+  const review = buildReview(workbook, excelDate, snapshotDate, ownerNotes);
   const source = { filename: path.basename(filename), sha256, dateSystem: workbook.dateSystem };
   const directory = path.join(
     "generated-artifacts",
@@ -420,6 +442,8 @@ async function main() {
         "snapshot_date",
         "snapshot_status",
         "source_status",
+        "source_arithmetic_sum",
+        "owner_context",
       ],
       ...review.adult.map((r) => [
         r.date,
@@ -437,6 +461,8 @@ async function main() {
         snapshotDate,
         r.snapshotStatus,
         r.sourceStatus,
+        r.sourceArithmeticSum,
+        r.ownerNote,
       ]),
     ]),
   );

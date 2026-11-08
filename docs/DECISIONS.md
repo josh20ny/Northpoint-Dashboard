@@ -63,6 +63,16 @@ said needed correction. Migration impact: none; offline labels/exports only.
 Tests: exact source names, derived total, explicit zero, unknown inputs,
 and no implied mapping of SPD L to the derived total.
 
+## January 25 attendance context
+
+**CONFIRMED**, owner: product owner. For 2026-01-25, the owner initially said
+attendance was not recorded because of an ice storm, then clarified:
+“technically it was 0 attendance.” The clarification supersedes the unknown
+interpretation: preserve SPD F/I zeroes and `adult_services_total = 0`, with
+ice-storm context. This does not confirm service cancellation, approve other
+weeks, or constitute an authenticated mapping/publication approval.
+Offline review context is scoped to the reviewed workbook fingerprint.
+
 ## Phase 2 authorization — 2026-11-07
 **APPROVED**, owner: product owner. Proceed with the roadmap's historical
 workbook explorer, explicit mapping review, raw-only staging and reconciliation.
