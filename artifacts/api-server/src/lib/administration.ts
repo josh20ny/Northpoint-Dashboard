@@ -11,11 +11,14 @@ export class AccessError extends Error {
     super(message);
   }
 }
-export function assertAdmin(p: Principal | null): asserts p is Principal & { userId: string } {
+// Background work uses an explicit persisted Admin delegation, not a fabricated
+// OIDC identity or a browser session. Every transaction still checks local access.
+export type AdminActor = Pick<Principal, "userId" | "role">;
+export function assertAdmin(p: AdminActor | null): asserts p is AdminActor & { userId: string } {
   if (!p?.userId || p.role !== "admin") throw new AccessError(403, "Forbidden");
 }
 export async function adminTransaction<T>(
-  p: Principal,
+  p: AdminActor,
   fn: (c: PoolClient) => Promise<T>,
   connection?: PoolClient,
 ) {

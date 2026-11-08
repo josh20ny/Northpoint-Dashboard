@@ -1,8 +1,10 @@
 # Northpoint Dashboard 2.0
 
 **Status:** Phase 2 sample-review gate met; Phase 3 direct Planning Center
-connection and manual, resumable source ingestion implemented. OAuth application
-configuration and live verification are still required. No published operational metrics.
+connection and resumable source ingestion with opt-in server-side run-to-completion
+processing implemented. Development OAuth consent and organization confirmation
+are complete; full live-backfill validation is still required.
+No published operational metrics.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
 The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
 
@@ -38,7 +40,8 @@ Admin-only historical workbook exploration/staging is available at
 limits, source fingerprint discrepancy and remaining release gates.
 Planning Center authorization and source staging are available under
 `/administration/integrations`; see `docs/PHASE_3_IMPLEMENTATION.md`.
-No live provider connection has been authorized, and no published dataset or ministry formula exists. Only
+The development Planning Center organization is connected; full live-data
+acceptance remains outstanding. No published dataset or ministry formula exists. Only
 invited, verified identities can create staff sessions. Public pages remain a
 no-data preview; this is not a production-ready analytics release.
 
@@ -138,8 +141,9 @@ Phase 3 is authorized. Phase 2's January 4, 11 and 18 sample weeks have current
 owner-confirmed approvals for both adult services (six exact-evidence approvals).
 This is not independent two-source or full-year verification. The imported
 workbook retains its accepted 2026-11-07 cutoff and original fingerprint caveat.
-Configure and authorize Planning Center, confirm the organization, and verify the
-three product backfills/revision syncs. Unattended scheduling, deletion discovery
+Planning Center authorization and organization confirmation are complete in
+development. Verify the three product backfills/revision syncs; opt-in
+run-to-completion can resume existing partial runs. Recurring scheduling, deletion discovery
 and live release acceptance remain unfinished. Metrics and later phases remain out of scope.
 
 ## Non-negotiable standards

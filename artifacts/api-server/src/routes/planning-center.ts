@@ -8,6 +8,9 @@ import {
   AdvancePlanningCenterSyncParams,
   AdvancePlanningCenterSyncResponse,
   CancelPlanningCenterSyncParams,
+  SetPlanningCenterAutomationParams,
+  SetPlanningCenterAutomationBody,
+  SetPlanningCenterAutomationResponse,
 } from "@workspace/api-zod";
 import { requirePermission, sessionAuthProvider, type AuthProvider } from "../lib/auth";
 import { requireCsrf, SESSION_COOKIE } from "../lib/security";
@@ -127,6 +130,22 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
       res.json(
         AdvancePlanningCenterSyncResponse.parse(
           await pco.advanceSync(res.locals.principal, q.data.id),
+        ),
+      );
+    }),
+  );
+  r.post(
+    `${base}/syncs/:id/automation`,
+    safe(async (req, res) => {
+      const q = SetPlanningCenterAutomationParams.safeParse(req.params);
+      const b = SetPlanningCenterAutomationBody.strict().safeParse(req.body);
+      if (!q.success || !b.success) {
+        res.status(400).json({ error: "Invalid automatic processing request" });
+        return;
+      }
+      res.json(
+        SetPlanningCenterAutomationResponse.parse(
+          await pco.setAutomation(res.locals.principal, q.data.id, b.data.enabled),
         ),
       );
     }),

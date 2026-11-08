@@ -13,10 +13,11 @@ three approved weeks). This is not independent two-source or full-year verificat
 See `PHASE_2_IMPLEMENTATION.md`.
 
 Phase 3 is authorized and in progress. Direct OAuth/PKCE, organization confirmation,
-encrypted token refresh/revocation and manual resumable People/Services/Check-Ins
-source ingestion are implemented. Configuration, real account/permission checks,
-live reconciliation and unattended scheduling remain outstanding. No live connection
-or metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
+encrypted token refresh/revocation and resumable People/Services/Check-Ins
+source ingestion with opt-in background run-to-completion are implemented.
+Development OAuth configuration and organization confirmation are complete.
+Full live coverage/reconciliation and recurring scheduling remain outstanding.
+No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
 
 | Phase | Build | Exit gate |
 |---|---|---|

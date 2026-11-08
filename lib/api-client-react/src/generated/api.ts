@@ -50,6 +50,7 @@ import type {
   MappingReviewInput,
   MinistryInput,
   PlanningCenterAuthorization,
+  PlanningCenterAutomationInput,
   PlanningCenterConfirmation,
   PlanningCenterSync,
   PlanningCenterSyncInput,
@@ -645,6 +646,89 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAdvancePlanningCenterSyncMutationOptions(options), queryClient);
+    }
+
+export const getSetPlanningCenterAutomationUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/planning-center/syncs/${id}/automation`
+}
+
+export const setPlanningCenterAutomation = async (id: string,
+    planningCenterAutomationInput: PlanningCenterAutomationInput, options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterSync> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlanningCenterSync>(getSetPlanningCenterAutomationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(planningCenterAutomationInput)
+  }
+);}
+
+
+
+
+
+export const getSetPlanningCenterAutomationMutationKey = () => ['setPlanningCenterAutomation'] as const;
+
+export const getSetPlanningCenterAutomationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlanningCenterAutomation>>, TError,SetPlanningCenterAutomationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPlanningCenterAutomation>>, TError,SetPlanningCenterAutomationMutationVariables, TContext> => {
+
+const mutationKey = getSetPlanningCenterAutomationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPlanningCenterAutomation>>, SetPlanningCenterAutomationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setPlanningCenterAutomation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPlanningCenterAutomationMutationResult = NonNullable<Awaited<ReturnType<typeof setPlanningCenterAutomation>>>
+    export type SetPlanningCenterAutomationMutationBody = BodyType<PlanningCenterAutomationInput>
+    export type SetPlanningCenterAutomationMutationError = ErrorType<unknown>
+    export type SetPlanningCenterAutomationMutationVariables = {id: string;data: BodyType<PlanningCenterAutomationInput>}
+
+    export const useSetPlanningCenterAutomation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlanningCenterAutomation>>, TError,SetPlanningCenterAutomationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setPlanningCenterAutomation>>,
+        TError,
+        SetPlanningCenterAutomationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetPlanningCenterAutomationMutationOptions(options), queryClient);
     }
 
 export const getCancelPlanningCenterSyncUrl = (id: string,) => {

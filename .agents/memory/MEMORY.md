@@ -2,3 +2,4 @@
 - [Historical source review](historical-source-review.md) — matching inventory counts do not prove workbook equivalence; confirm actual source and snapshot date.
 - [Confidential upload tracking](storage-tracking.md) — commit intents before storage; unknown is not absent, and declarative RLS must match custom migrations.
 - [OAuth key ownership](oauth-key-ownership.md) — application owns its persistent encryption key; never ask Planning Center to provide it or regenerate on startup.
+- [Workspace test isolation](workspace-test-isolation.md) — mock the shared pool instance, not only its package alias; assert the stub is used before mutation tests.

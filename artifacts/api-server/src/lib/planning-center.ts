@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { PlanningCenterSync } from "@workspace/api-zod";
 import type { Principal } from "./auth";
-import { adminTransaction, AccessError } from "./administration";
+import { adminTransaction, AccessError, type AdminActor } from "./administration";
 import { recordAudit } from "./audit";
 import { hashToken } from "./security";
 import * as provider from "./planning-center-client";
@@ -37,6 +37,9 @@ interface Run {
   finished_at: Date | null;
   retry_at: Date | null;
   error: string | null;
+  automatic: boolean;
+  automatic_requested_by: string | null;
+  last_automatic_at: Date | null;
 }
 const iso = (v: Date | null) => v?.toISOString() ?? null;
 function syncView(r: Run): PlanningCenterSync {
@@ -53,6 +56,8 @@ function syncView(r: Run): PlanningCenterSync {
     finishedAt: iso(r.finished_at),
     retryAt: iso(r.retry_at),
     error: r.error,
+    automatic: r.automatic,
+    lastAutomaticAt: iso(r.last_automatic_at),
   };
 }
 async function connection(c: PoolClient) {
@@ -296,7 +301,7 @@ export async function disconnect(p: Principal) {
       "UPDATE pco_connections SET state='disconnected',token_ciphertext=NULL,error=NULL,updated_at=now() WHERE id='planning_center'",
     );
     await c.query(
-      `UPDATE pco_sync_runs SET status='cancelled',finished_at=now(),error='Authorization disconnected'
+      `UPDATE pco_sync_runs SET status='cancelled',automatic=false,finished_at=now(),error='Authorization disconnected'
       WHERE account_ref=$1 AND status IN ('running','retry')`,
       [v.account_ref],
     );
@@ -344,146 +349,177 @@ export async function startSync(
     return syncView(run.rows[0]!);
   });
 }
-export async function advanceSync(p: Principal, id: string) {
-  provider.requireConfiguration();
+export async function setAutomation(p: Principal, id: string, enabled: boolean) {
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
-    connected(v);
-    const r = (
-      await c.query<Run>("SELECT * FROM pco_sync_runs WHERE id=$1 AND account_ref=$2 FOR UPDATE", [
-        id,
-        v.account_ref,
-      ])
-    ).rows[0];
-    if (!r) throw new AccessError(404, "Sync not found");
-    if (!["running", "retry"].includes(r.status))
-      throw new AccessError(409, "This sync is no longer active");
-    if (r.retry_at && r.retry_at.getTime() > Date.now())
-      throw new AccessError(409, "Wait until the recorded retry time");
-    let pageStarted = false;
-    try {
-      const t = await tokens(c, v); // Persist any rotation even when a later page fails.
-      await c.query("SAVEPOINT pco_page");
-      pageStarted = true;
-      const page = r.queue[0];
-      if (!page || r.pages >= 100_000) throw new provider.ProviderError(422);
-      const path = pagePath(page, r.product);
-      if (r.visited.includes(path)) throw new provider.ProviderError(422);
-      const payload = await provider.apiGet(path, t.accessToken, r.product);
-      const parsed = parsePage(payload, page, r.product);
-      let revised = 0;
-      for (const entity of parsed.entities) {
-        const object = `${r.product}:${entity.type}`;
-        const hash = sourceHash(entity);
-        const inserted = await c.query<{ id: string }>(
-          `INSERT INTO raw_source_records(provider,account_ref,object_type,external_id,payload_json,payload_hash,source_updated_at)
+    if (enabled) connected(v);
+    if (!v) throw new AccessError(404, "Connection not found");
+    const r = await c.query<Run>(
+      `UPDATE pco_sync_runs SET automatic=$3,automatic_requested_by=CASE WHEN $3 THEN $4 ELSE automatic_requested_by END
+       WHERE id=$1 AND account_ref=$2 AND status IN ('running','retry') RETURNING *`,
+      [id, v.account_ref, enabled, p.userId],
+    );
+    if (!r.rows[0]) throw new AccessError(409, "Sync is absent or no longer active");
+    await recordAudit(
+      p.userId!,
+      enabled ? "planning_center.automation_enabled" : "planning_center.automation_paused",
+      "sync_run",
+      id,
+      "success",
+      c,
+    );
+    return syncView(r.rows[0]);
+  });
+}
+
+export async function advanceSync(p: Principal, id: string) {
+  provider.requireConfiguration();
+  return adminTransaction(p, (c) => advancePage(c, p, id, false));
+}
+
+// Called only inside a transaction holding the same Admin advisory lock.
+// Each page (including its durable cursor) commits before the worker loops.
+export async function advancePage(c: PoolClient, p: AdminActor, id: string, automatic: boolean) {
+  provider.requireConfiguration();
+  const v = await connection(c);
+  connected(v);
+  const r = (
+    await c.query<Run>("SELECT * FROM pco_sync_runs WHERE id=$1 AND account_ref=$2 FOR UPDATE", [
+      id,
+      v.account_ref,
+    ])
+  ).rows[0];
+  if (!r) throw new AccessError(404, "Sync not found");
+  if (!["running", "retry"].includes(r.status))
+    throw new AccessError(409, "This sync is no longer active");
+  if (r.automatic !== automatic || (automatic && r.automatic_requested_by !== p.userId))
+    throw new AccessError(409, "Pause automatic processing before advancing manually");
+  if (r.retry_at && r.retry_at.getTime() > Date.now())
+    throw new AccessError(409, "Wait until the recorded retry time");
+  let pageStarted = false;
+  try {
+    const t = await tokens(c, v); // Persist any rotation even when a later page fails.
+    await c.query("SAVEPOINT pco_page");
+    pageStarted = true;
+    const page = r.queue[0];
+    if (!page || r.pages >= 100_000) throw new provider.ProviderError(422);
+    const path = pagePath(page, r.product);
+    if (r.visited.includes(path)) throw new provider.ProviderError(422);
+    const payload = await provider.apiGet(path, t.accessToken, r.product);
+    const parsed = parsePage(payload, page, r.product);
+    let revised = 0;
+    for (const entity of parsed.entities) {
+      const object = `${r.product}:${entity.type}`;
+      const hash = sourceHash(entity);
+      const inserted = await c.query<{ id: string }>(
+        `INSERT INTO raw_source_records(provider,account_ref,object_type,external_id,payload_json,payload_hash,source_updated_at)
            VALUES ('planning_center',$1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING id`,
-          [
-            v.account_ref,
-            object,
-            entity.id,
-            JSON.stringify(entity),
-            hash,
-            entity.attributes.updated_at ?? null,
-          ],
-        );
-        const rawId =
-          inserted.rows[0]?.id ??
-          (
-            await c.query<{ id: string }>(
-              `SELECT id FROM raw_source_records WHERE provider='planning_center' AND account_ref=$1
+        [
+          v.account_ref,
+          object,
+          entity.id,
+          JSON.stringify(entity),
+          hash,
+          entity.attributes.updated_at ?? null,
+        ],
+      );
+      const rawId =
+        inserted.rows[0]?.id ??
+        (
+          await c.query<{ id: string }>(
+            `SELECT id FROM raw_source_records WHERE provider='planning_center' AND account_ref=$1
            AND object_type=$2 AND external_id=$3 AND payload_hash=$4`,
-              [v.account_ref, object, entity.id, hash],
-            )
-          ).rows[0]!.id;
-        if (inserted.rowCount) revised++;
-        // Do not overwrite a newer provider version with an older page.
-        await c.query(
-          `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,normalized)
+            [v.account_ref, object, entity.id, hash],
+          )
+        ).rows[0]!.id;
+      if (inserted.rowCount) revised++;
+      // Do not overwrite a newer provider version with an older page.
+      await c.query(
+        `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,normalized)
           VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_ref,product,object_type,external_id)
           DO UPDATE SET raw_id=excluded.raw_id,sync_run_id=excluded.sync_run_id,normalized=excluded.normalized,seen_at=now()
           WHERE coalesce((excluded.normalized->'attributes'->>'updated_at')::timestamptz,'-infinity') >=
                 coalesce((pco_source_entities.normalized->'attributes'->>'updated_at')::timestamptz,'-infinity')`,
-          [
-            v.account_ref,
-            r.product,
-            entity.type,
-            entity.id,
-            rawId,
-            r.id,
-            JSON.stringify(normalized(entity, new URL(path, provider.PCO_ORIGIN).pathname)),
-          ],
-        );
-      }
-      const visited = [...r.visited, path];
-      const queue = [...r.queue.slice(1), ...parsed.nextPages];
-      const unique = new Map<string, Page>();
-      for (const q of queue) {
-        const k = pagePath(q, r.product);
-        if (!visited.includes(k)) unique.set(k, q);
-      }
-      if (unique.size > 100_000) throw new provider.ProviderError(422);
-      const updated = (
-        await c.query<Run>(
-          `UPDATE pco_sync_runs SET queue=$2,visited=$3,fetched=fetched+$4,
-        revised=revised+$5,pages=pages+1,status=$6,error=NULL,retry_at=NULL,
-        finished_at=CASE WHEN $6='complete' THEN now() ELSE NULL END WHERE id=$1 RETURNING *`,
-          [
-            id,
-            JSON.stringify([...unique.values()]),
-            JSON.stringify(visited),
-            parsed.entities.length,
-            revised,
-            unique.size ? "running" : "complete",
-          ],
-        )
-      ).rows[0]!;
-      if (!unique.size)
-        await c.query(
-          "UPDATE pco_connections SET last_success_at=now(),error=NULL,updated_at=now() WHERE id='planning_center'",
-        );
-      await recordAudit(
-        p.userId!,
-        unique.size ? "planning_center.page_staged" : "planning_center.sync_completed",
-        "sync_run",
-        id,
-        "success",
-        c,
+        [
+          v.account_ref,
+          r.product,
+          entity.type,
+          entity.id,
+          rawId,
+          r.id,
+          JSON.stringify(normalized(entity, new URL(path, provider.PCO_ORIGIN).pathname)),
+        ],
       );
-      await c.query("RELEASE SAVEPOINT pco_page");
-      return syncView(updated);
-    } catch (error) {
-      if (pageStarted) await c.query("ROLLBACK TO SAVEPOINT pco_page");
-      await providerFailure(c, error);
-      const e = error instanceof provider.ProviderError ? error : null;
-      if (!e) throw error;
-      const retry = e.status === 429 || e.status >= 500;
-      const updated = (
-        await c.query<Run>(
-          `UPDATE pco_sync_runs SET status=$2,error=$3,
+    }
+    const visited = [...r.visited, path];
+    const queue = [...r.queue.slice(1), ...parsed.nextPages];
+    const unique = new Map<string, Page>();
+    for (const q of queue) {
+      const k = pagePath(q, r.product);
+      if (!visited.includes(k)) unique.set(k, q);
+    }
+    if (unique.size > 100_000) throw new provider.ProviderError(422);
+    const updated = (
+      await c.query<Run>(
+        `UPDATE pco_sync_runs SET queue=$2,visited=$3,fetched=fetched+$4,
+        revised=revised+$5,pages=pages+1,status=$6,error=NULL,retry_at=NULL,
+        automatic=automatic AND $6 IN ('running','retry'),
+        finished_at=CASE WHEN $6='complete' THEN now() ELSE NULL END WHERE id=$1 RETURNING *`,
+        [
+          id,
+          JSON.stringify([...unique.values()]),
+          JSON.stringify(visited),
+          parsed.entities.length,
+          revised,
+          unique.size ? "running" : "complete",
+        ],
+      )
+    ).rows[0]!;
+    if (!unique.size)
+      await c.query(
+        "UPDATE pco_connections SET last_success_at=now(),error=NULL,updated_at=now() WHERE id='planning_center'",
+      );
+    await recordAudit(
+      p.userId!,
+      unique.size ? "planning_center.page_staged" : "planning_center.sync_completed",
+      "sync_run",
+      id,
+      "success",
+      c,
+    );
+    await c.query("RELEASE SAVEPOINT pco_page");
+    return syncView(updated);
+  } catch (error) {
+    if (pageStarted) await c.query("ROLLBACK TO SAVEPOINT pco_page");
+    await providerFailure(c, error);
+    const e = error instanceof provider.ProviderError ? error : null;
+    if (!e) throw error;
+    const retry = e.status === 429 || e.status >= 500;
+    const updated = (
+      await c.query<Run>(
+        `UPDATE pco_sync_runs SET status=$2,error=$3,automatic=automatic AND $2='retry',
         retry_at=CASE WHEN $2='retry' THEN now()+($4::double precision * interval '1 second') ELSE NULL END,
         finished_at=CASE WHEN $2='failed' THEN now() ELSE NULL END WHERE id=$1 RETURNING *`,
-          [id, retry ? "retry" : "failed", e.message, e.retrySeconds],
-        )
-      ).rows[0]!;
-      await recordAudit(
-        p.userId!,
-        "planning_center.sync_interrupted",
-        "sync_run",
-        id,
-        retry ? "retry" : "failed",
-        c,
-      );
-      return syncView(updated);
-    }
-  });
+        [id, retry ? "retry" : "failed", e.message, e.retrySeconds],
+      )
+    ).rows[0]!;
+    await recordAudit(
+      p.userId!,
+      "planning_center.sync_interrupted",
+      "sync_run",
+      id,
+      retry ? "retry" : "failed",
+      c,
+    );
+    return syncView(updated);
+  }
 }
 export async function cancelSync(p: Principal, id: string) {
   await adminTransaction(p, async (c) => {
     const v = await connection(c);
     if (!v) throw new AccessError(404, "Connection not found");
     const r = await c.query(
-      `UPDATE pco_sync_runs SET status='cancelled',finished_at=now(),error=NULL,retry_at=NULL
+      `UPDATE pco_sync_runs SET status='cancelled',automatic=false,finished_at=now(),error=NULL,retry_at=NULL
       WHERE id=$1 AND account_ref=$2 AND status IN ('running','retry') RETURNING id`,
       [id, v.account_ref],
     );

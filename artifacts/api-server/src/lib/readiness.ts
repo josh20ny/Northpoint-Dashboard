@@ -41,6 +41,9 @@ export async function databaseReadiness() {
            to_regclass('pco_sync_runs'),to_regclass('pco_source_entities')))=4
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='pco_no_delete' AND tgenabled<>'D'
           AND tgrelid IN (to_regclass('pco_connections'),to_regclass('pco_source_entities'),to_regclass('pco_sync_runs')))=3
+         AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'
+           AND table_name='pco_sync_runs'
+           AND column_name IN ('automatic','automatic_requested_by','last_automatic_at'))=3
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_immutable' AND tgenabled<>'D' AND tgrelid IN
           (to_regclass('import_cells'),to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=3
         AS schema_ready FROM foundation_metadata WHERE key = $1`,

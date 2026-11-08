@@ -58,6 +58,7 @@ export * from './ministryInput';
 export * from './ministryPlaceholder';
 export * from './ministryRecord';
 export * from './planningCenterAuthorization';
+export * from './planningCenterAutomationInput';
 export * from './planningCenterConfirmation';
 export * from './planningCenterConnection';
 export * from './planningCenterConnectionState';

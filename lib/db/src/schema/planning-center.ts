@@ -9,6 +9,7 @@ import {
   jsonb,
   uniqueIndex,
   check,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { usersTable } from "./access";
@@ -77,6 +78,9 @@ export const pcoSyncRuns = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     error: text("error"),
     retryAt: timestamp("retry_at", { withTimezone: true }),
+    automatic: boolean("automatic").notNull().default(false),
+    automaticRequestedBy: uuid("automatic_requested_by").references(() => usersTable.id),
+    lastAutomaticAt: timestamp("last_automatic_at", { withTimezone: true }),
   },
   (t) => [
     admin(),

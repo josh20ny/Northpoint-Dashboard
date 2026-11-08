@@ -35,7 +35,9 @@ export const GetPlanningCenterResponse = zod.object({
   "startedAt": zod.string(),
   "finishedAt": zod.string().nullable(),
   "error": zod.string().nullable(),
-  "retryAt": zod.string().nullable()
+  "retryAt": zod.string().nullable(),
+  "automatic": zod.boolean(),
+  "lastAutomaticAt": zod.string().nullable()
 })),
   "sourceRecords": zod.number().int(),
   "asOf": zod.string()
@@ -83,7 +85,9 @@ export const StartPlanningCenterSyncResponse = zod.object({
   "startedAt": zod.string(),
   "finishedAt": zod.string().nullable(),
   "error": zod.string().nullable(),
-  "retryAt": zod.string().nullable()
+  "retryAt": zod.string().nullable(),
+  "automatic": zod.boolean(),
+  "lastAutomaticAt": zod.string().nullable()
 })
 
 
@@ -103,7 +107,35 @@ export const AdvancePlanningCenterSyncResponse = zod.object({
   "startedAt": zod.string(),
   "finishedAt": zod.string().nullable(),
   "error": zod.string().nullable(),
-  "retryAt": zod.string().nullable()
+  "retryAt": zod.string().nullable(),
+  "automatic": zod.boolean(),
+  "lastAutomaticAt": zod.string().nullable()
+})
+
+
+export const SetPlanningCenterAutomationParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const SetPlanningCenterAutomationBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const SetPlanningCenterAutomationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "mode": zod.enum(['backfill', 'incremental']),
+  "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
+  "fetched": zod.number().int(),
+  "revised": zod.number().int(),
+  "pages": zod.number().int(),
+  "pendingPages": zod.number().int(),
+  "startedAt": zod.string(),
+  "finishedAt": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "retryAt": zod.string().nullable(),
+  "automatic": zod.boolean(),
+  "lastAutomaticAt": zod.string().nullable()
 })
 
 

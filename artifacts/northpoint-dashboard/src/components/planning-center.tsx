@@ -10,6 +10,7 @@ import {
   useDisconnectPlanningCenter,
   useGetPlanningCenter,
   useStartPlanningCenterSync,
+  useSetPlanningCenterAutomation,
   type PlanningCenterSync,
   type PlanningCenterSyncInputMode,
   type PlanningCenterSyncInputProduct,
@@ -263,8 +264,9 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
   const opts = { ...csrfRequest(csrfToken), mutation: { onSettled: () => void invalidate() } };
   const advance = useAdvancePlanningCenterSync(opts);
   const cancel = useCancelPlanningCenterSync(opts);
+  const automation = useSetPlanningCenterAutomation(opts);
   const open = s.status === "running" || s.status === "retry";
-  const busy = advance.isPending || cancel.isPending;
+  const busy = advance.isPending || cancel.isPending || automation.isPending;
   const retryWait = s.status === "retry" && s.retryAt && new Date(s.retryAt).getTime() > Date.now();
   return (
     <li className="rounded-lg border bg-card p-3.5" data-testid={`card-sync-${s.id}`}>
@@ -314,6 +316,14 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
         {s.finishedAt && ` · Finished ${fmt(s.finishedAt)}`}
         {s.retryAt && ` · Retry after ${fmt(s.retryAt)}`}
       </p>
+      {open && (
+        <p className="mt-2 text-[12px]" role="status">
+          {s.automatic
+            ? "Automatic processing is enabled. You can close this tab; progress is saved after each page."
+            : "Automatic processing is paused. Saved progress is retained."}
+          {s.lastAutomaticAt && ` Last automatic page attempt ${fmt(s.lastAutomaticAt)}.`}
+        </p>
+      )}
       {s.error && (
         <div className="mt-2">
           <Note tone="warn">{s.error}</Note>
@@ -328,7 +338,20 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
             <button
               type="button"
               className={btnPrimary}
-              disabled={busy || !!retryWait}
+              disabled={busy}
+              onClick={() => automation.mutate({ id: s.id, data: { enabled: !s.automatic } })}
+              data-testid={`button-automatic-${s.id}`}
+            >
+              {automation.isPending
+                ? "Saving"
+                : s.automatic
+                  ? "Pause automatic processing"
+                  : "Run to completion"}
+            </button>
+            <button
+              type="button"
+              className={btnPrimary}
+              disabled={busy || !!retryWait || s.automatic}
               onClick={() => advance.mutate({ id: s.id })}
               data-testid={`button-advance-${s.id}`}
             >
@@ -349,6 +372,7 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
       <div className="mt-2 space-y-1">
         <FormError error={advance.error} />
         <FormError error={cancel.error} />
+        <FormError error={automation.error} />
       </div>
     </li>
   );
@@ -374,12 +398,14 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
       <SectionHeading
         icon={RefreshCcw}
         title="Syncs"
-        detail="Manual and resumable. Each Advance processes one page."
+        detail="Run to completion or process one page at a time."
       />
       <div className="space-y-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
         <p>
-          There is no scheduled or automatic sync. Nothing runs unless an administrator advances it
-          here.
+          Run to completion continues a sync on the server, even after you close this tab. You can
+          pause and resume without losing saved pages. Processing resumes when the API is running;
+          closing the tab does not keep a sleeping workspace awake. No recurring sync schedule is
+          enabled.
         </p>
         <p>
           <strong className="text-foreground">Backfill</strong> reads all history the connection can

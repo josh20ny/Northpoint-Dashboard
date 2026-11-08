@@ -1,6 +1,6 @@
 # Northpoint Dashboard 2.0
 
-Phase 2 historical import workspace for a portable internal ministry analytics platform.
+Phase 3 source integration workspace for a portable internal ministry analytics platform.
 Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
 
 ## Run & Operate
@@ -32,7 +32,8 @@ All supplied planning documents are retained under their original paths.
 
 ## Architecture decisions
 
-- Phase 2 authorized; do not advance into Phase 3+ without explicit approval.
+- Phase 3 authorized for Planning Center People, Services and Check-Ins.
+  Giving, Groups and operational metric publication remain out of scope.
 - Vite/Express retained instead of introducing proposed Next.js; recommendation
   and alternatives in `docs/IMPLEMENTATION.md`, not recorded as owner-approved.
 - Invite-only verified staff access; no inferred domain admission.
@@ -43,8 +44,9 @@ All supplied planning documents are retained under their original paths.
 
 Foundation shell, invite-only OIDC/local roles, Admin access/ministry/service
 configuration, audit log, historical workbook exploration/raw staging,
-reference schemas, documentation and health. No operational metrics,
-source integrations or individual attendance/giving views.
+reference schemas, documentation and health. Planning Center OAuth and restricted
+source ingestion support manual pages or opt-in run-to-completion on the API.
+No recurring sync scheduler, operational metrics or individual attendance/giving views.
 
 ## User preferences
 

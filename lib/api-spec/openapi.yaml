@@ -74,6 +74,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PlanningCenterSync" }
+  /v1/admin/planning-center/syncs/{id}/automation:
+    post:
+      operationId: setPlanningCenterAutomation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanningCenterAutomationInput" }
+      responses:
+        "200":
+          description: Automatic processing enabled or paused; saved progress retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterSync" }
   /v1/admin/planning-center/syncs/{id}/cancel:
     post:
       operationId: cancelPlanningCenterSync
@@ -530,9 +546,14 @@ components:
       properties:
         product: { type: string, enum: [people, services, check_ins] }
         mode: { type: string, enum: [backfill, incremental] }
+    PlanningCenterAutomationInput:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
     PlanningCenterSync:
       type: object
-      required: [id, product, mode, status, fetched, revised, pages, pendingPages, startedAt, finishedAt, error, retryAt]
+      required: [id, product, mode, status, fetched, revised, pages, pendingPages, startedAt, finishedAt, error, retryAt, automatic, lastAutomaticAt]
       properties:
         id: { type: string, format: uuid }
         product: { type: string, enum: [people, services, check_ins] }
@@ -546,6 +567,8 @@ components:
         finishedAt: { type: ["string", "null"] }
         error: { type: ["string", "null"] }
         retryAt: { type: ["string", "null"] }
+        automatic: { type: boolean }
+        lastAutomaticAt: { type: ["string", "null"] }
     PlanningCenterConnection:
       type: object
       required: [accountRef, accountName, state, scopes, connectedBy, updatedAt, lastSuccessAt, error]

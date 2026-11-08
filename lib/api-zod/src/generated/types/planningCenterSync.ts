@@ -25,4 +25,7 @@ export interface PlanningCenterSync {
   error: string | null;
   /** @nullable */
   retryAt: string | null;
+  automatic: boolean;
+  /** @nullable */
+  lastAutomaticAt: string | null;
 }

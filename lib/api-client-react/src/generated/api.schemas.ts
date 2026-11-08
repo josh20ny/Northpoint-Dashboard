@@ -39,6 +39,10 @@ export interface PlanningCenterSyncInput {
   mode: PlanningCenterSyncInputMode;
 }
 
+export interface PlanningCenterAutomationInput {
+  enabled: boolean;
+}
+
 export type PlanningCenterSyncProduct = typeof PlanningCenterSyncProduct[keyof typeof PlanningCenterSyncProduct];
 
 
@@ -83,6 +87,9 @@ export interface PlanningCenterSync {
   error: string | null;
   /** @nullable */
   retryAt: string | null;
+  automatic: boolean;
+  /** @nullable */
+  lastAutomaticAt: string | null;
 }
 
 export type PlanningCenterConnectionState = typeof PlanningCenterConnectionState[keyof typeof PlanningCenterConnectionState];

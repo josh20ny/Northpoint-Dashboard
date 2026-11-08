@@ -90,6 +90,58 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         ],
       );
     }
+    it("automatically resumes saved pages, pauses and finishes without a browser session", async () => {
+      await seed();
+      const worker = await import("../artifacts/api-server/src/lib/planning-center-worker");
+      const run = await pco.startSync(p, "people", "backfill");
+      const f = vi
+        .fn()
+        .mockResolvedValueOnce(
+          response({ data: [payload()], links: { next: "/people/v2/people?offset=100" } }),
+        )
+        .mockResolvedValueOnce(response({ data: [payload("2")] }));
+      vi.stubGlobal("fetch", f);
+      await pco.advanceSync(p, run.id);
+      await pco.setAutomation(p, run.id, true);
+      await expect(pco.advanceSync(p, run.id)).rejects.toThrow(/Pause automatic/);
+      await pco.setAutomation(p, run.id, false);
+      expect(await worker.processAutomaticPage()).toBe(false);
+      expect(f).toHaveBeenCalledTimes(1);
+      await pco.setAutomation(p, run.id, true);
+      expect(await worker.processAutomaticPage()).toBe(true);
+      const ws = GetPlanningCenterResponse.parse(await pco.workspace(p));
+      expect(ws.syncs[0]).toMatchObject({
+        status: "complete",
+        automatic: false,
+        fetched: 2,
+        revised: 2,
+        pages: 2,
+        pendingPages: 0,
+      });
+      expect(ws.syncs[0]!.lastAutomaticAt).not.toBeNull();
+      expect(await worker.processAutomaticPage()).toBe(false);
+      expect(f).toHaveBeenCalledTimes(2);
+    });
+    it("keeps rate-limited automatic work durable and revokes inactive Admin delegation", async () => {
+      await seed();
+      const worker = await import("../artifacts/api-server/src/lib/planning-center-worker");
+      const run = await pco.startSync(p, "people", "backfill");
+      const f = vi.fn(async () => response({}, 429, { "retry-after": "60" }));
+      vi.stubGlobal("fetch", f);
+      await pco.setAutomation(p, run.id, true);
+      expect(await worker.processAutomaticPage()).toBe(true);
+      const ws = GetPlanningCenterResponse.parse(await pco.workspace(p));
+      expect(ws.syncs[0]).toMatchObject({ automatic: true, status: "retry", pages: 0, fetched: 0 });
+      expect(await worker.processAutomaticPage()).toBe(false);
+      expect(f).toHaveBeenCalledTimes(1);
+      await c.query("UPDATE users SET status='suspended' WHERE id=$1", [p.userId]);
+      expect(await worker.processAutomaticPage()).toBe(false);
+      expect(
+        (await c.query("SELECT automatic FROM pco_sync_runs WHERE id=$1", [run.id])).rows[0]
+          .automatic,
+      ).toBe(false);
+      expect(f).toHaveBeenCalledTimes(1);
+    });
     it("persists only public status fields and enforces forced RLS and retained history", async () => {
       await seed();
       const result = GetPlanningCenterResponse.parse(await pco.workspace(p));

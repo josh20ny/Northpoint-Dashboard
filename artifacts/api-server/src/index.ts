@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { validateEnvironment } from "./lib/environment";
+import { startPlanningCenterWorker } from "./lib/planning-center-worker";
 
 validateEnvironment(process.env);
 
@@ -24,9 +25,11 @@ const server = app.listen(port, "0.0.0.0", (err?: Error) => {
 
   logger.info({ port }, "Server listening");
 });
+const stopPlanningCenterWorker = startPlanningCenterWorker();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
+    stopPlanningCenterWorker();
     server.close(() => {
       process.exit(0);
     });

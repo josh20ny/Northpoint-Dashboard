@@ -274,6 +274,7 @@ describe("Planning Center HTTP permission boundary", () => {
         ["post", "/syncs"],
         ["post", "/syncs/00000000-0000-4000-8000-000000000000/advance"],
         ["post", "/syncs/00000000-0000-4000-8000-000000000000/cancel"],
+        ["post", "/syncs/00000000-0000-4000-8000-000000000000/automation"],
       ] as const) {
         const response = await request(app)[method](`/api/v1/admin/planning-center${path}`);
         expect(response.status).toBe(role ? 403 : 401);
@@ -303,5 +304,10 @@ describe("Planning Center HTTP permission boundary", () => {
       .send({ product: "giving", mode: "backfill" });
     expect(response.status).toBe(403);
     expect(response.body.error).toBe("Request verification failed");
+    const automatic = await request(app)
+      .post("/api/v1/admin/planning-center/syncs/00000000-0000-4000-8000-000000000000/automation")
+      .send({ enabled: true });
+    expect(automatic.status).toBe(403);
+    expect(automatic.body.error).toBe("Request verification failed");
   });
 });

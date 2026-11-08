@@ -27,8 +27,10 @@ owner's registered OAuth application and explicit consent.
 
 ## Delivery status
 
-The first Phase 3 slice is implemented. The migration is applied in development
-only. Provider configuration/consent and real-data acceptance remain outstanding;
+The Phase 3 connection and opt-in background page executor are implemented.
+Migrations are applied in development only. Provider configuration, consent and
+organization confirmation have been completed in development. Complete backfill
+coverage, replay validation and real-data acceptance remain outstanding;
 Phase 3 is not complete or approved for a live-data release.
 
 ### Administration flow
@@ -57,7 +59,11 @@ Phase 3 is not complete or approved for a live-data release.
 5. Review the returned organization name and ID, acknowledge that it is correct,
    and click **Confirm organization**. The server checks each actual product
    collection before enabling ingestion. No records are ingested by confirmation.
-6. Start **Backfill** for a product. **Process next page** performs one bounded
+6. Start **Backfill** for a product. Choose **Run to completion** to process
+   its saved queue automatically on the API server. Existing partial runs resume
+   without restarting. **Pause automatic processing** retains every committed
+   page and allows manual advancement or later resumption.
+   Alternatively, **Process next page** performs one bounded
    request and atomically persists its page, source revisions, normalized source
    references, counts and continuation queue. Reloading resumes from the saved
    queue. Requests are serialized; two administrators cannot claim the same page.
@@ -71,9 +77,23 @@ Phase 3 is not complete or approved for a live-data release.
    and cancelling open runs. Disconnect before reauthorizing, including a pending
    or expired connection. Retained source data is never deleted by disconnect.
 
-There is **no unattended scheduler or background automatic sync** in this slice.
-An Admin explicitly processes each page. Rate-limit responses preserve the queue
-and expose the earliest retry time; transient failures can retry from that point.
+There is **no recurring sync scheduler** in this slice. Automatic processing only
+executes an existing run after an authenticated Admin explicitly enables it.
+A durable database flag and Admin delegation survive API restarts. The executor
+processes at most one page per tick with a two-second delay between attempts;
+the same transaction-scoped advisory lock used by manual/Admin operations
+coordinates replicas and serializes pages. No in-memory-only claim or browser
+loop owns progress. Each page and its continuation commit atomically.
+
+The delegating user must remain an active Admin. Revoked authority pauses work
+and is audited. Pause, cancel and disconnect take effect between page transactions.
+The current page may finish before a requested pause is acknowledged. Terminal
+runs disable automatic processing. Closing the tab is safe, but the API must be
+running; a sleeping workspace does not process pages. On restart, enabled work
+resumes without starting another backfill.
+
+Rate-limit responses preserve the queue and expose the earliest retry time;
+the worker waits until then. Transient failures retry from the saved page.
 Authorization/permission errors require reconnecting; malformed data fails the run
 without committing part of a page. Last successful sync is not advanced on failure.
 
@@ -125,12 +145,26 @@ review feature; no authentication bypass or real-user impersonation was added.
 ### Remaining Phase 3 exit checks
 
 - Owner configures the confidential OAuth application and grants consent.
+  Completed in development; no production release authorization is implied.
 - Verify actual organization permissions and sparse-field/API-version compatibility.
 - Review real backfill coverage, page counts and replay idempotency for each product.
 - Agree on refresh cadence, then add durable unattended scheduling/claims and
   appropriate delta filtering where the provider documents/supports it.
+  Explicit run-to-completion processing is implemented; recurring run creation
+  remains deferred.
 - Validate deletion discovery, retention and any broader identity handling before
   claiming full synchronized coverage. No live records should be committed to Git.
+
+### Automatic processing verification
+
+Synthetic executor/control tests cover explicit delegation, pause without cursor
+loss, manual/automatic exclusion, retry deadlines, transaction-lock contention,
+rollback, safe error logging, restart selection and current Admin authority.
+The existing database fixtures were extended to cover automatic completion,
+pause/resume, rate limits and authority revocation. Run those fixtures only in an
+isolated database without a real Planning Center connection; do not overwrite a
+live connection or use it for synthetic tests. Signed-in controls and complete
+real-account background processing still require live acceptance.
 
 ### Provider documentation checked
 
