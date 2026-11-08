@@ -75,14 +75,14 @@ content_type = "text/csv"
 id = "RTuaTTeEls2tyeghsccNM"
 uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/owner-named-adult-sources/source-review.html"
 type = "html"
-title = "Updated workbook review"
-description = "January 25 is marked not recorded due to the ice storm; original workbook zeroes are preserved, not treated as observed zero attendance."
+title = "Attendance review — past zeroes and future weeks"
+description = "Applies the attendance date rule: five historical zero-attendance weeks and eight future weeks left unrecorded, preserving original workbook inputs."
 logical_id = "b848e4b7-b1b1-4d4b-8861-30e3c5b168b9"
-content_hash = "sha256:c441e3a934944a1ff342d1503dc281e5227c7806d83edb831c0ac786fdcee5c7"
-size = 25993
-mtime_ms = 1794101911170
-storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b848e4b7-b1b1-4d4b-8861-30e3c5b168b9/d079e483-2e9d-42cc-9d94-419271ac0d6d"
-storage_version_token = "1794101916406654"
+content_hash = "sha256:b8fdd45aab1c8b3d4083381dd1feda50fbd9522993ba8e6009fdec2c16326087"
+size = 27782
+mtime_ms = 1794102208425
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b848e4b7-b1b1-4d4b-8861-30e3c5b168b9/ee06ce4b-4574-491b-8957-df1b97f3b54d"
+storage_version_token = "1794102217449620"
 content_type = "text/html"
 
 [[outputs]]

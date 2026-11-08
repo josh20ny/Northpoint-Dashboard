@@ -205,8 +205,11 @@ in the packet, not silently removed. Outputs are versioned by digest and date.
 Of the 52 adult rows, 44 are on/before the snapshot and eight later weeks are
 flagged as future. Five on/before-snapshot weeks are incomplete: 2026-01-25,
 2026-04-12, 2026-04-19, 2026-04-26 and 2026-05-03. No cancellation, zero-attendance
-or other explanation is inferred for the four blank-input weeks. For January 25,
-the owner clarified attendance was zero, with ice-storm context.
+or specific explanation is inferred from the comparison caches. The owner
+subsequently confirmed that past blank/zero attendance inputs mean no services
+or cancelled services, so those four blank-input weeks are interpreted as zero
+attendance. January 25 is also zero, with ice-storm context. Cached comparisons
+remain incomplete; this does not imply missing attendance after applying the rule.
 Admin mapping approval and sample-week reconciliation remain open. Cataloging
 must use the authenticated Admin flow; offline discovery does not impersonate
 an Admin or write approval/audit records on the owner's behalf.
@@ -214,7 +217,7 @@ an Admin or write approval/audit records on the owner's behalf.
 ## Corrected adult source names — 2026-11-07
 Owner correction: SPD F = `adult_service_1`, SPD I = `adult_service_2`,
 and the former `diagnostic_sum` = `adult_services_total`. The latter remains
-the review sum of F/I with unknown preserved if either input is absent.
+the review sum of F/I after applying the owner-confirmed attendance date rule.
 HTML/CSV outputs use these exact names; the column inventory identifies only
 F/I as owner-named, with values still unapproved. SPD L/Dash C remain cached
 comparison columns with unconfirmed meanings, not sources automatically assigned
@@ -227,5 +230,9 @@ attendance,” superseding the prior unknown interpretation. The interpreted
 `adult_services_total` is zero, with ice-storm context; source inputs remain
 distinct from incomplete cached comparisons and authenticated approvals.
 This is not a cancellation confirmation. April 12, 19, 26 and May 3 have
-missing F/I inputs and unknown sums.
+blank F/I inputs and interpreted zero attendance under the owner's date rule.
+Future attendance stays unrecorded, not zero actuals, using the 2026-11-06
+snapshot cutoff. Original inputs and their raw arithmetic sum remain separate
+in both HTML and CSV. Formula failures and missing caches are not blank literals
+and remain unresolved. Undated or mismatched-date inputs are not zero-filled.
 No canonical values or authenticated approvals were written.

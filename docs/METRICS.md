@@ -7,19 +7,30 @@
 - Rolling 4-week complete: last four completed Sunday-ending weeks (DRAFT; separate from rolling calendar month).
 - Rolling month: previous calendar-month-length interval relative to today, or 30 days? **TBD**; show both available options until signed off.
 - YoY: align 52-week / same Sunday vs nearest-date same-weekday policy **TBD**; explicitly handle 53-week years and holiday movements.
-- Missing, delayed or partial weeks: `quality_status` and denominator; do not display as zero.
+- Missing, delayed or partial weeks: `quality_status` and denominator; do not display as zero except for the owner-confirmed attendance rule below.
 
 ## Attendance
 ### Owner-confirmed legacy review names (2026-11-07)
 - `SPD!F` → `adult_service_1`.
 - `SPD!I` → `adult_service_2`.
 - The review's former `diagnostic_sum` → `adult_services_total`
-  (`adult_service_1 + adult_service_2`, unknown if either input is missing).
+  (`adult_service_1 + adult_service_2`, after applying the owner-confirmed
+  attendance date rule below).
 
 These are approved source/review names for the selected workbook, not publication
 or weekly-value approval. They do not approve `SPD!L`/`Dash!C` semantics, unique
 attendee interpretation, ministry/time mappings or the draft canonical metrics
 below. See `DECISIONS.md`.
+
+### Owner-confirmed attendance date rule
+- Past blank/zero attendance inputs mean zero attendance: no service or cancelled service.
+- Future blank/zero entries are not yet recorded; exclude them from actuals.
+- For a historical snapshot use its confirmed as-of date, not today's date,
+  so old exports do not gradually turn future placeholders into zeroes.
+- The offline adult review uses matching SPD/Dash dates and 2026-11-06 as its
+  inclusive historical cutoff. Original F/I values remain separate.
+- Missing formula caches, spreadsheet errors, invalid values and unconfirmed
+  dates remain unresolved; this rule does not apply to other numeric measures.
 
 ### Canonical definitions
 - `adult_in_person_attendance`: sum of verified adult manual per-service headcounts for Sunday; aggregate observations must be marked as such (DRAFT).

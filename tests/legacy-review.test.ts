@@ -78,7 +78,7 @@ describe("offline source review (never an approval)", () => {
       adult_service_2: 0,
       adult_services_total: 0,
       sourceArithmeticSum: 0,
-      sourceStatus: "INPUTS_PRESENT_UNAPPROVED",
+      sourceStatus: "ZERO_ATTENDANCE_NO_SERVICE_OR_CANCELLED",
       status: "INCOMPLETE",
     });
     expect(JSON.stringify(w)).toBe(before);
@@ -102,6 +102,58 @@ describe("offline source review (never an approval)", () => {
     expect(() => buildReview(w, excelDate, "2026-02-30")).toThrow("valid");
     expect(() => buildReview(w, excelDate, "yesterday")).toThrow("valid");
     expect(renderReview(boundary, source)).toContain("Snapshot date: 2026-01-04");
+  });
+  it("interprets dated past blanks as zero, future zeroes as unrecorded, and never fills formula failures", () => {
+    const w = readWorkbook(
+      syntheticWorkbook('<row><c r="A3"><v>46026</v></c><c r="F3"><v>0</v></c></row>'),
+    );
+    const cells = w.cells;
+    w.cells = [
+      ...cells.map((x) => ({ sheet: "SPD", cell: { ...x.cell } })),
+      ...cells
+        .filter((x) => x.cell.column === "A")
+        .map((x) => ({ sheet: "Dash", cell: { ...x.cell } })),
+    ];
+    const before = JSON.stringify(w);
+    const past = buildReview(w, excelDate, "2026-01-04").adult[0];
+    expect(past).toMatchObject({
+      adult_service_1: 0,
+      adult_service_2: 0,
+      adult_services_total: 0,
+      rawAdultService1: 0,
+      rawAdultService2: null,
+      sourceArithmeticSum: null,
+      sourceStatus: "ZERO_ATTENDANCE_NO_SERVICE_OR_CANCELLED",
+      status: "INCOMPLETE",
+    });
+    expect(buildReview(w, excelDate, "2026-01-03").adult[0]).toMatchObject({
+      adult_service_1: null,
+      adult_service_2: null,
+      adult_services_total: null,
+      rawAdultService1: 0,
+      sourceStatus: "FUTURE_NOT_RECORDED",
+    });
+    expect(buildReview(w, excelDate).adult[0].adult_services_total).toBeNull();
+    expect(JSON.stringify(w)).toBe(before);
+    const first = w.cells.find((x) => x.sheet === "SPD" && x.cell.column === "F")!.cell;
+    w.cells.push({
+      sheet: "SPD",
+      cell: {
+        ...first,
+        coordinate: "I3",
+        column: "I",
+        formula: "SUM(Z3)",
+        value: null,
+        cachedValue: null,
+        flags: ["missing_formula_cache"],
+      },
+    });
+    expect(buildReview(w, excelDate, "2026-11-06").adult[0].adult_services_total).toBeNull();
+    const failed = w.cells.at(-1)!.cell;
+    failed.formula = null;
+    failed.value = "#REF!";
+    failed.flags = ["spreadsheet_error"];
+    expect(buildReview(w, excelDate, "2026-11-06").adult[0].adult_services_total).toBeNull();
   });
   it("escapes HTML and CSV; report is offline and explicitly unapproved", () => {
     const report = renderReview(buildReview(readWorkbook(syntheticWorkbook()), excelDate), source);

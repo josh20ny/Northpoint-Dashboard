@@ -27,6 +27,12 @@ const numeric = (cell) => {
   const number = Number(value);
   return Number.isSafeInteger(number) ? number : null;
 };
+// Missing literal cells qualify; failed formulas and error cells do not.
+const literalBlank = (cell) =>
+  !cell ||
+  (cell.formula === null &&
+    !cell.flags.includes("spreadsheet_error") &&
+    (cell.value === null || String(cell.value).trim() === ""));
 export const escapeHtml = (value) =>
   String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -106,30 +112,46 @@ export function buildReview(workbook, excelDate, snapshotDate = null, ownerNotes
       dash = get("Dash", `C${row}`);
     const firstValue = numeric(first),
       secondValue = numeric(second);
-    const adultServicesTotal =
+    const sourceArithmeticSum =
       firstValue !== null && secondValue !== null && Number.isSafeInteger(firstValue + secondValue)
         ? firstValue + secondValue
         : null;
     const totalValue = numeric(total),
       dashValue = numeric(dash);
     const spdDate = excelDate(raw(get("SPD", `A${row}`)), workbook.dateSystem);
+    const dated = snapshotDate !== null && spdDate === date;
+    const future = dated && date > snapshotDate;
+    const attendance = (cell, value) => (future ? null : dated && literalBlank(cell) ? 0 : value);
+    const service1 = attendance(first, firstValue);
+    const service2 = attendance(second, secondValue);
+    const adultServicesTotal =
+      service1 !== null && service2 !== null && Number.isSafeInteger(service1 + service2)
+        ? service1 + service2
+        : null;
+    const pastZero = dated && !future && adultServicesTotal === 0;
     const ownerNote = spdDate === date ? (ownerNotes[date] ?? "") : "";
     const complete = [adultServicesTotal, totalValue, dashValue].every((v) => v !== null);
     adult.push({
       date,
       row,
       spdDate,
-      adult_service_1: firstValue,
-      adult_service_2: secondValue,
+      adult_service_1: service1,
+      adult_service_2: service2,
+      rawAdultService1: firstValue,
+      rawAdultService2: secondValue,
       adult_services_total: adultServicesTotal,
-      sourceArithmeticSum: adultServicesTotal,
+      sourceArithmeticSum,
       ownerNote,
       sourceStatus:
         spdDate !== date
           ? "DATE_MISMATCH"
-          : adultServicesTotal === null
-            ? "MISSING_INPUTS"
-            : "INPUTS_PRESENT_UNAPPROVED",
+          : future
+            ? "FUTURE_NOT_RECORDED"
+            : pastZero
+              ? "ZERO_ATTENDANCE_NO_SERVICE_OR_CANCELLED"
+              : adultServicesTotal === null
+                ? "MISSING_INPUTS"
+                : "INPUTS_PRESENT_UNAPPROVED",
       total: totalValue,
       dash: dashValue,
       variance: totalValue !== null && dashValue !== null ? dashValue - totalValue : null,
@@ -296,7 +318,11 @@ ${table(
 <p>Dates are workbook calendar dates (America/Chicago reporting convention), not
 timestamps. Source names follow the owner's correction; additional counting
 semantics and weekly values remain unapproved. SPD L/Dash C are comparison caches only.
-Blank or invalid values remain unknown. Zero is preserved only when explicit.</p>
+Owner rule: on or before the snapshot date, blank or zero attendance inputs mean
+zero attendance (no service or cancelled service). Future attendance is not yet
+recorded and is excluded from actuals. Original inputs are retained separately.
+Without a confirmed snapshot or matching source date, blanks remain unknown.
+Formula failures, missing formula caches and invalid values remain unknown.</p>
 <p>For row r, columns are SPD!Fr, SPD!Ir, SPD!Lr and Dash!Cr.
 SPD!Ar must agree with Dash!Ar; their shared row number alone is not a valid join.</p>
 ${table(
@@ -306,6 +332,8 @@ ${table(
     "adult_service_2 (SPD I)",
     "adult_services_total (F + I)",
     "Original F + I arithmetic",
+    "Raw SPD F",
+    "Raw SPD I",
     "Owner context",
     "SPD L cache — meaning unconfirmed",
     "Dash C cache — meaning unconfirmed",
@@ -319,6 +347,8 @@ ${table(
     r.adult_service_2,
     r.adult_services_total,
     r.sourceArithmeticSum,
+    r.rawAdultService1,
+    r.rawAdultService2,
     r.ownerNote,
     r.total,
     r.dash,
@@ -444,6 +474,8 @@ async function main() {
         "source_status",
         "source_arithmetic_sum",
         "owner_context",
+        "raw_spd_F",
+        "raw_spd_I",
       ],
       ...review.adult.map((r) => [
         r.date,
@@ -463,6 +495,8 @@ async function main() {
         r.sourceStatus,
         r.sourceArithmeticSum,
         r.ownerNote,
+        r.rawAdultService1,
+        r.rawAdultService2,
       ]),
     ]),
   );

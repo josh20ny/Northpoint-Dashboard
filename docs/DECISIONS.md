@@ -55,13 +55,30 @@ unknown snapshot handling and preservation of all source rows.
 **APPROVED**, owner: product owner. “SPD F = adult_service_1, SPD I =
 adult_service_2, diagnostic_sum= adult_services_total”.
 Use these exact names for the selected workbook review. The existing review
-sum of F and I is named `adult_services_total`; keep missing inputs unknown.
+sum of F and I is named `adult_services_total`; apply the subsequently confirmed
+attendance date rule below to blank inputs.
 This does not name SPD L or Dash C, approve weekly values, establish unique-person
 counting, set service times or publish a canonical metric.
 Alternative: the earlier tentative adult attendance terminology, which the owner
 said needed correction. Migration impact: none; offline labels/exports only.
 Tests: exact source names, derived total, explicit zero, unknown inputs,
 and no implied mapping of SPD L to the derived total.
+
+## Attendance blank/zero date rule
+
+**CONFIRMED**, owner: product owner. Blank or zero attendance entries in the
+past are zero-attendance days because there were no services or services were
+cancelled. Future blank or zero entries have not happened yet and must not
+be recorded as actual attendance. This supersedes the prior assumption that
+all past blank attendance inputs are unknown.
+
+For this immutable workbook review, use the confirmed 2026-11-06 snapshot as
+the as-of cutoff (on/before is historical; later is future). Keep original
+cells separate from interpreted attendance and retain all future source rows.
+Apply only to explicitly mapped attendance inputs with matching valid dates,
+not giving, other metrics, formula failures, invalid values or missing formula
+caches. Do not choose a specific cancellation reason for each zero without
+evidence. Raw staging and authenticated publication approvals remain unchanged.
 
 ## January 25 attendance context
 
