@@ -1,0 +1,122 @@
+import { sql } from "drizzle-orm";
+import {
+  pgTable,
+  pgPolicy,
+  text,
+  uuid,
+  timestamp,
+  integer,
+  jsonb,
+  uniqueIndex,
+  check,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { usersTable } from "./access";
+import { rawSourceRecordsTable } from "./source-records";
+
+const admin = () =>
+  pgPolicy("pco_admin_only", {
+    using: sql`current_setting('np.role',true) = 'admin'`,
+    withCheck: sql`current_setting('np.role',true) = 'admin'`,
+  });
+export const pcoConnections = pgTable(
+  "pco_connections",
+  {
+    id: text("id").primaryKey().default("planning_center"),
+    accountRef: text("account_ref").notNull(),
+    accountName: text("account_name").notNull(),
+    state: text("state").notNull(),
+    scopes: jsonb("scopes").notNull(),
+    tokenCiphertext: text("token_ciphertext"),
+    connectedBy: uuid("connected_by")
+      .notNull()
+      .references(() => usersTable.id),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+    error: text("error"),
+  },
+  (t) => [
+    admin(),
+    check("pco_single_connection", sql`${t.id} = 'planning_center'`),
+    check(
+      "pco_connection_state",
+      sql`${t.state} IN ('pending','connected','reconnect_required','disconnected')`,
+    ),
+  ],
+).enableRLS();
+export const pcoFlows = pgTable(
+  "pco_oauth_flows",
+  {
+    stateHash: text("state_hash").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => usersTable.id),
+    sessionHash: text("session_hash").notNull(),
+    verifierCiphertext: text("verifier_ciphertext").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  () => [admin()],
+).enableRLS();
+export const pcoSyncRuns = pgTable(
+  "pco_sync_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountRef: text("account_ref").notNull(),
+    product: text("product").notNull(),
+    mode: text("mode").notNull(),
+    status: text("status").notNull().default("running"),
+    queue: jsonb("queue").notNull(),
+    visited: jsonb("visited").notNull().default([]),
+    fetched: integer("fetched").notNull().default(0),
+    revised: integer("revised").notNull().default(0),
+    pages: integer("pages").notNull().default(0),
+    startedBy: uuid("started_by")
+      .notNull()
+      .references(() => usersTable.id),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    error: text("error"),
+    retryAt: timestamp("retry_at", { withTimezone: true }),
+  },
+  (t) => [
+    admin(),
+    check("pco_sync_product", sql`${t.product} IN ('people','services','check_ins')`),
+    check("pco_sync_mode", sql`${t.mode} IN ('backfill','incremental')`),
+    check(
+      "pco_sync_status",
+      sql`${t.status} IN ('running','retry','complete','failed','cancelled')`,
+    ),
+    uniqueIndex("pco_one_active_sync")
+      .on(t.accountRef, t.product)
+      .where(sql`${t.status} IN ('running','retry')`),
+  ],
+).enableRLS();
+// An explicit, minimized normalized projection with immutable source lineage.
+// No display names, contact details, health notes, security codes or metric publication.
+export const pcoSourceEntities = pgTable(
+  "pco_source_entities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountRef: text("account_ref").notNull(),
+    product: text("product").notNull(),
+    objectType: text("object_type").notNull(),
+    externalId: text("external_id").notNull(),
+    rawId: uuid("raw_id")
+      .notNull()
+      .references(() => rawSourceRecordsTable.id),
+    syncRunId: uuid("sync_run_id")
+      .notNull()
+      .references(() => pcoSyncRuns.id),
+    normalized: jsonb("normalized").notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    admin(),
+    uniqueIndex("pco_entity_identity").on(t.accountRef, t.product, t.objectType, t.externalId),
+  ],
+).enableRLS();
+export const insertPcoSyncSchema = createInsertSchema(pcoSyncRuns).omit({
+  id: true,
+  startedAt: true,
+});
+export type PcoSyncRun = typeof pcoSyncRuns.$inferSelect;

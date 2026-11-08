@@ -7,8 +7,16 @@ append-only audit history. See `PHASE_1_IMPLEMENTATION.md` for scope, verificati
 and release limits; `AUTH_SETUP.md` for admission and runtime configuration.
 Phase 2 adds the Admin-only historical workbook explorer, explicit mapping
 review, raw staging and reconciliation reports. Source values are not published
-to metrics. See `PHASE_2_IMPLEMENTATION.md`; the exit gate still requires several
-owner-approved real weeks to reconcile. Phase 3+ requires explicit authorization.
+to metrics. The Phase 2 sample-review gate is met: both adult services for January
+4, 11 and 18 have current authenticated owner-confirmed approvals (six approvals;
+three approved weeks). This is not independent two-source or full-year verification.
+See `PHASE_2_IMPLEMENTATION.md`.
+
+Phase 3 is authorized and in progress. Direct OAuth/PKCE, organization confirmation,
+encrypted token refresh/revocation and manual resumable People/Services/Check-Ins
+source ingestion are implemented. Configuration, real account/permission checks,
+live reconciliation and unattended scheduling remain outstanding. No live connection
+or metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
 
 | Phase | Build | Exit gate |
 |---|---|---|

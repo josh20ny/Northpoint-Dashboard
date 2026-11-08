@@ -49,6 +49,11 @@ import type {
   ListImportUploadsParams,
   MappingReviewInput,
   MinistryInput,
+  PlanningCenterAuthorization,
+  PlanningCenterConfirmation,
+  PlanningCenterSync,
+  PlanningCenterSyncInput,
+  PlanningCenterWorkspace,
   PlanningDocument,
   Readiness,
   ServiceInput,
@@ -83,6 +88,632 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPlanningCenterUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center`
+}
+
+export const getPlanningCenter = async ( options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterWorkspace> => {
+
+  return customFetch<PlanningCenterWorkspace>(getGetPlanningCenterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlanningCenterQueryKey = () => {
+    return [
+    `/api/v1/admin/planning-center`
+    ] as const;
+    }
+
+
+export const getGetPlanningCenterQueryOptions = <TData = Awaited<ReturnType<typeof getPlanningCenter>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlanningCenterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlanningCenter>>> = ({ signal }) => getPlanningCenter({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlanningCenterQueryResult = NonNullable<Awaited<ReturnType<typeof getPlanningCenter>>>
+export type GetPlanningCenterQueryError = ErrorType<unknown>
+
+
+export function useGetPlanningCenter<TData = Awaited<ReturnType<typeof getPlanningCenter>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlanningCenter>>,
+          TError,
+          Awaited<ReturnType<typeof getPlanningCenter>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlanningCenter<TData = Awaited<ReturnType<typeof getPlanningCenter>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlanningCenter>>,
+          TError,
+          Awaited<ReturnType<typeof getPlanningCenter>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlanningCenter<TData = Awaited<ReturnType<typeof getPlanningCenter>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetPlanningCenter<TData = Awaited<ReturnType<typeof getPlanningCenter>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlanningCenterQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAuthorizePlanningCenterUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center/authorize`
+}
+
+export const authorizePlanningCenter = async ( options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterAuthorization> => {
+
+  return customFetch<PlanningCenterAuthorization>(getAuthorizePlanningCenterUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAuthorizePlanningCenterMutationKey = () => ['authorizePlanningCenter'] as const;
+
+export const getAuthorizePlanningCenterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authorizePlanningCenter>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authorizePlanningCenter>>, TError,void, TContext> => {
+
+const mutationKey = getAuthorizePlanningCenterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authorizePlanningCenter>>, void> = () => {
+
+
+          return  authorizePlanningCenter(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthorizePlanningCenterMutationResult = NonNullable<Awaited<ReturnType<typeof authorizePlanningCenter>>>
+
+    export type AuthorizePlanningCenterMutationError = ErrorType<unknown>
+
+
+    export const useAuthorizePlanningCenter = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authorizePlanningCenter>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authorizePlanningCenter>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAuthorizePlanningCenterMutationOptions(options), queryClient);
+    }
+
+export const getCompletePlanningCenterUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center/callback`
+}
+
+export const completePlanningCenter = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getCompletePlanningCenterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompletePlanningCenterQueryKey = () => {
+    return [
+    `/api/v1/admin/planning-center/callback`
+    ] as const;
+    }
+
+
+export const getCompletePlanningCenterQueryOptions = <TData = Awaited<ReturnType<typeof completePlanningCenter>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCompletePlanningCenterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof completePlanningCenter>>> = ({ signal }) => completePlanningCenter({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CompletePlanningCenterQueryResult = NonNullable<Awaited<ReturnType<typeof completePlanningCenter>>>
+export type CompletePlanningCenterQueryError = ErrorType<void>
+
+
+export function useCompletePlanningCenter<TData = Awaited<ReturnType<typeof completePlanningCenter>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof completePlanningCenter>>,
+          TError,
+          Awaited<ReturnType<typeof completePlanningCenter>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCompletePlanningCenter<TData = Awaited<ReturnType<typeof completePlanningCenter>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof completePlanningCenter>>,
+          TError,
+          Awaited<ReturnType<typeof completePlanningCenter>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCompletePlanningCenter<TData = Awaited<ReturnType<typeof completePlanningCenter>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCompletePlanningCenter<TData = Awaited<ReturnType<typeof completePlanningCenter>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof completePlanningCenter>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCompletePlanningCenterQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getConfirmPlanningCenterUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center/confirm`
+}
+
+export const confirmPlanningCenter = async (planningCenterConfirmation: PlanningCenterConfirmation, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getConfirmPlanningCenterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(planningCenterConfirmation)
+  }
+);}
+
+
+
+
+
+export const getConfirmPlanningCenterMutationKey = () => ['confirmPlanningCenter'] as const;
+
+export const getConfirmPlanningCenterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPlanningCenter>>, TError,ConfirmPlanningCenterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPlanningCenter>>, TError,ConfirmPlanningCenterMutationVariables, TContext> => {
+
+const mutationKey = getConfirmPlanningCenterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPlanningCenter>>, ConfirmPlanningCenterMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmPlanningCenter(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPlanningCenterMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPlanningCenter>>>
+    export type ConfirmPlanningCenterMutationBody = BodyType<PlanningCenterConfirmation>
+    export type ConfirmPlanningCenterMutationError = ErrorType<unknown>
+    export type ConfirmPlanningCenterMutationVariables = {data: BodyType<PlanningCenterConfirmation>}
+
+    export const useConfirmPlanningCenter = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPlanningCenter>>, TError,ConfirmPlanningCenterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPlanningCenter>>,
+        TError,
+        ConfirmPlanningCenterMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmPlanningCenterMutationOptions(options), queryClient);
+    }
+
+export const getDisconnectPlanningCenterUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center/disconnect`
+}
+
+export const disconnectPlanningCenter = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDisconnectPlanningCenterUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectPlanningCenterMutationKey = () => ['disconnectPlanningCenter'] as const;
+
+export const getDisconnectPlanningCenterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectPlanningCenter>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectPlanningCenter>>, TError,void, TContext> => {
+
+const mutationKey = getDisconnectPlanningCenterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectPlanningCenter>>, void> = () => {
+
+
+          return  disconnectPlanningCenter(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectPlanningCenterMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectPlanningCenter>>>
+
+    export type DisconnectPlanningCenterMutationError = ErrorType<unknown>
+
+
+    export const useDisconnectPlanningCenter = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectPlanningCenter>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectPlanningCenter>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectPlanningCenterMutationOptions(options), queryClient);
+    }
+
+export const getStartPlanningCenterSyncUrl = () => {
+
+
+
+
+  return `/api/v1/admin/planning-center/syncs`
+}
+
+export const startPlanningCenterSync = async (planningCenterSyncInput: PlanningCenterSyncInput, options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterSync> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlanningCenterSync>(getStartPlanningCenterSyncUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(planningCenterSyncInput)
+  }
+);}
+
+
+
+
+
+export const getStartPlanningCenterSyncMutationKey = () => ['startPlanningCenterSync'] as const;
+
+export const getStartPlanningCenterSyncMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPlanningCenterSync>>, TError,StartPlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startPlanningCenterSync>>, TError,StartPlanningCenterSyncMutationVariables, TContext> => {
+
+const mutationKey = getStartPlanningCenterSyncMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPlanningCenterSync>>, StartPlanningCenterSyncMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startPlanningCenterSync(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartPlanningCenterSyncMutationResult = NonNullable<Awaited<ReturnType<typeof startPlanningCenterSync>>>
+    export type StartPlanningCenterSyncMutationBody = BodyType<PlanningCenterSyncInput>
+    export type StartPlanningCenterSyncMutationError = ErrorType<unknown>
+    export type StartPlanningCenterSyncMutationVariables = {data: BodyType<PlanningCenterSyncInput>}
+
+    export const useStartPlanningCenterSync = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPlanningCenterSync>>, TError,StartPlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startPlanningCenterSync>>,
+        TError,
+        StartPlanningCenterSyncMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartPlanningCenterSyncMutationOptions(options), queryClient);
+    }
+
+export const getAdvancePlanningCenterSyncUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/planning-center/syncs/${id}/advance`
+}
+
+export const advancePlanningCenterSync = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterSync> => {
+
+  return customFetch<PlanningCenterSync>(getAdvancePlanningCenterSyncUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdvancePlanningCenterSyncMutationKey = () => ['advancePlanningCenterSync'] as const;
+
+export const getAdvancePlanningCenterSyncMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof advancePlanningCenterSync>>, TError,AdvancePlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof advancePlanningCenterSync>>, TError,AdvancePlanningCenterSyncMutationVariables, TContext> => {
+
+const mutationKey = getAdvancePlanningCenterSyncMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof advancePlanningCenterSync>>, AdvancePlanningCenterSyncMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  advancePlanningCenterSync(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdvancePlanningCenterSyncMutationResult = NonNullable<Awaited<ReturnType<typeof advancePlanningCenterSync>>>
+
+    export type AdvancePlanningCenterSyncMutationError = ErrorType<unknown>
+    export type AdvancePlanningCenterSyncMutationVariables = {id: string}
+
+    export const useAdvancePlanningCenterSync = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof advancePlanningCenterSync>>, TError,AdvancePlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof advancePlanningCenterSync>>,
+        TError,
+        AdvancePlanningCenterSyncMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAdvancePlanningCenterSyncMutationOptions(options), queryClient);
+    }
+
+export const getCancelPlanningCenterSyncUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/planning-center/syncs/${id}/cancel`
+}
+
+export const cancelPlanningCenterSync = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getCancelPlanningCenterSyncUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelPlanningCenterSyncMutationKey = () => ['cancelPlanningCenterSync'] as const;
+
+export const getCancelPlanningCenterSyncMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPlanningCenterSync>>, TError,CancelPlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelPlanningCenterSync>>, TError,CancelPlanningCenterSyncMutationVariables, TContext> => {
+
+const mutationKey = getCancelPlanningCenterSyncMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelPlanningCenterSync>>, CancelPlanningCenterSyncMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelPlanningCenterSync(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelPlanningCenterSyncMutationResult = NonNullable<Awaited<ReturnType<typeof cancelPlanningCenterSync>>>
+
+    export type CancelPlanningCenterSyncMutationError = ErrorType<unknown>
+    export type CancelPlanningCenterSyncMutationVariables = {id: string}
+
+    export const useCancelPlanningCenterSync = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPlanningCenterSync>>, TError,CancelPlanningCenterSyncMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelPlanningCenterSync>>,
+        TError,
+        CancelPlanningCenterSyncMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelPlanningCenterSyncMutationOptions(options), queryClient);
+    }
 
 export const getListImportsUrl = () => {
 

@@ -5,6 +5,121 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface PlanningCenterAuthorization {
+  url: string;
+}
+
+export interface PlanningCenterConfirmation {
+  /**
+     * @maxLength 30
+     * @pattern ^[0-9]+$
+     */
+  accountRef: string;
+}
+
+export type PlanningCenterSyncInputProduct = typeof PlanningCenterSyncInputProduct[keyof typeof PlanningCenterSyncInputProduct];
+
+
+export const PlanningCenterSyncInputProduct = {
+  people: 'people',
+  services: 'services',
+  check_ins: 'check_ins',
+} as const;
+
+export type PlanningCenterSyncInputMode = typeof PlanningCenterSyncInputMode[keyof typeof PlanningCenterSyncInputMode];
+
+
+export const PlanningCenterSyncInputMode = {
+  backfill: 'backfill',
+  incremental: 'incremental',
+} as const;
+
+export interface PlanningCenterSyncInput {
+  product: PlanningCenterSyncInputProduct;
+  mode: PlanningCenterSyncInputMode;
+}
+
+export type PlanningCenterSyncProduct = typeof PlanningCenterSyncProduct[keyof typeof PlanningCenterSyncProduct];
+
+
+export const PlanningCenterSyncProduct = {
+  people: 'people',
+  services: 'services',
+  check_ins: 'check_ins',
+} as const;
+
+export type PlanningCenterSyncMode = typeof PlanningCenterSyncMode[keyof typeof PlanningCenterSyncMode];
+
+
+export const PlanningCenterSyncMode = {
+  backfill: 'backfill',
+  incremental: 'incremental',
+} as const;
+
+export type PlanningCenterSyncStatus = typeof PlanningCenterSyncStatus[keyof typeof PlanningCenterSyncStatus];
+
+
+export const PlanningCenterSyncStatus = {
+  running: 'running',
+  retry: 'retry',
+  complete: 'complete',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface PlanningCenterSync {
+  id: string;
+  product: PlanningCenterSyncProduct;
+  mode: PlanningCenterSyncMode;
+  status: PlanningCenterSyncStatus;
+  fetched: number;
+  revised: number;
+  pages: number;
+  pendingPages: number;
+  startedAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+  /** @nullable */
+  error: string | null;
+  /** @nullable */
+  retryAt: string | null;
+}
+
+export type PlanningCenterConnectionState = typeof PlanningCenterConnectionState[keyof typeof PlanningCenterConnectionState];
+
+
+export const PlanningCenterConnectionState = {
+  pending: 'pending',
+  connected: 'connected',
+  reconnect_required: 'reconnect_required',
+  disconnected: 'disconnected',
+} as const;
+
+export interface PlanningCenterConnection {
+  accountRef: string;
+  accountName: string;
+  state: PlanningCenterConnectionState;
+  scopes: string[];
+  connectedBy: string;
+  updatedAt: string;
+  /** @nullable */
+  lastSuccessAt: string | null;
+  /** @nullable */
+  error: string | null;
+}
+
+export interface PlanningCenterWorkspace {
+  configured: boolean;
+  missingConfiguration: string[];
+  /** @nullable */
+  callbackUrl: string | null;
+  requestedScopes: string[];
+  connection: PlanningCenterConnection | null;
+  syncs: PlanningCenterSync[];
+  sourceRecords: number;
+  asOf: string;
+}
+
 export type WorkbookBytes = Blob;
 
 export interface WorkbookSourceInput {

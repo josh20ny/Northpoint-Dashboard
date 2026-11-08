@@ -32,6 +32,15 @@ export async function databaseReadiness() {
           AND table_name='import_week_reviews' AND column_name='review_method')
         AND EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('import_week_reviews')
           AND conname='import_review_method')
+        AND (SELECT count(*) FROM pg_class WHERE oid IN
+          (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'))
+          AND relrowsecurity AND relforcerowsecurity)=4
+        AND (SELECT count(*) FROM pg_policy WHERE polname='pco_admin_only' AND polrelid IN
+          (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities')))=4
+        AND (SELECT count(*) FROM pg_trigger WHERE tgname='pco_no_delete' AND tgenabled<>'D'
+          AND tgrelid IN (to_regclass('pco_connections'),to_regclass('pco_source_entities'),to_regclass('pco_sync_runs')))=3
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_immutable' AND tgenabled<>'D' AND tgrelid IN
           (to_regclass('import_cells'),to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=3
         AS schema_ready FROM foundation_metadata WHERE key = $1`,

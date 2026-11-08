@@ -11,6 +11,76 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/admin/planning-center:
+    get:
+      operationId: getPlanningCenter
+      responses:
+        "200":
+          description: Admin connection and sync metadata without tokens or personal records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterWorkspace" }
+  /v1/admin/planning-center/authorize:
+    post:
+      operationId: authorizePlanningCenter
+      responses:
+        "200":
+          description: One-time OAuth URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterAuthorization" }
+  /v1/admin/planning-center/callback:
+    get:
+      operationId: completePlanningCenter
+      responses:
+        "303": { description: Return to integration administration }
+  /v1/admin/planning-center/confirm:
+    post:
+      operationId: confirmPlanningCenter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanningCenterConfirmation" }
+      responses:
+        "204": { description: Organization confirmed and permissions checked }
+  /v1/admin/planning-center/disconnect:
+    post:
+      operationId: disconnectPlanningCenter
+      responses:
+        "204": { description: Tokens revoked; history retained }
+  /v1/admin/planning-center/syncs:
+    post:
+      operationId: startPlanningCenterSync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanningCenterSyncInput" }
+      responses:
+        "201":
+          description: Durable sync created; advance processes one page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterSync" }
+  /v1/admin/planning-center/syncs/{id}/advance:
+    post:
+      operationId: advancePlanningCenterSync
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Page committed or retry state recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterSync" }
+  /v1/admin/planning-center/syncs/{id}/cancel:
+    post:
+      operationId: cancelPlanningCenterSync
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Stopped; history retained }
   /v1/admin/imports:
     get:
       operationId: listImports
@@ -444,6 +514,65 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    PlanningCenterAuthorization:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+    PlanningCenterConfirmation:
+      type: object
+      required: [accountRef]
+      properties:
+        accountRef: { type: string, pattern: "^[0-9]+$", maxLength: 30 }
+    PlanningCenterSyncInput:
+      type: object
+      required: [product, mode]
+      properties:
+        product: { type: string, enum: [people, services, check_ins] }
+        mode: { type: string, enum: [backfill, incremental] }
+    PlanningCenterSync:
+      type: object
+      required: [id, product, mode, status, fetched, revised, pages, pendingPages, startedAt, finishedAt, error, retryAt]
+      properties:
+        id: { type: string, format: uuid }
+        product: { type: string, enum: [people, services, check_ins] }
+        mode: { type: string, enum: [backfill, incremental] }
+        status: { type: string, enum: [running, retry, complete, failed, cancelled] }
+        fetched: { type: integer }
+        revised: { type: integer }
+        pages: { type: integer }
+        pendingPages: { type: integer }
+        startedAt: { type: string }
+        finishedAt: { type: ["string", "null"] }
+        error: { type: ["string", "null"] }
+        retryAt: { type: ["string", "null"] }
+    PlanningCenterConnection:
+      type: object
+      required: [accountRef, accountName, state, scopes, connectedBy, updatedAt, lastSuccessAt, error]
+      properties:
+        accountRef: { type: string }
+        accountName: { type: string }
+        state: { type: string, enum: [pending, connected, reconnect_required, disconnected] }
+        scopes: { type: array, items: { type: string } }
+        connectedBy: { type: string }
+        updatedAt: { type: string }
+        lastSuccessAt: { type: ["string", "null"] }
+        error: { type: ["string", "null"] }
+    PlanningCenterWorkspace:
+      type: object
+      required: [configured, missingConfiguration, callbackUrl, requestedScopes, connection, syncs, sourceRecords, asOf]
+      properties:
+        configured: { type: boolean }
+        missingConfiguration: { type: array, items: { type: string } }
+        callbackUrl: { type: ["string", "null"] }
+        requestedScopes: { type: array, items: { type: string } }
+        connection:
+          anyOf:
+            - { $ref: "#/components/schemas/PlanningCenterConnection" }
+            - { type: "null" }
+        syncs: { type: array, items: { $ref: "#/components/schemas/PlanningCenterSync" } }
+        sourceRecords: { type: integer }
+        asOf: { type: string }
     WorkbookBytes: { type: string, format: binary }
     WorkbookSourceInput:
       type: object

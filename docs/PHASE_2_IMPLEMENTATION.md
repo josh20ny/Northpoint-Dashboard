@@ -1,5 +1,15 @@
 # Phase 2 — historical import workspace
 
+## Current release-gate status — 2026-11-08
+
+The real-workbook sample-review gate is met. Both adult services on January
+4, 11 and 18, 2026 have authenticated owner-confirmed approvals matching current
+mapping/evidence hashes: six approvals and three approved weeks. The counts
+are 446/464, 462/448 and 421/410 respectively. These are owner confirmations,
+not independent two-source or full-year verification. Chronological notes below
+that describe the gate as outstanding are retained as history, not current status.
+The owner subsequently authorized Phase 3; see `PHASE_3_IMPLEMENTATION.md`.
+
 ## Scope
 Owner authorized Phase 2 on 2026-11-07. Build an Admin-only XLSX explorer,
 explicit versioned mappings, raw-only staging and weekly reconciliation.

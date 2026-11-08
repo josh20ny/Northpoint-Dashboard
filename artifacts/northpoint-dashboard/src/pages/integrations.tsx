@@ -1,13 +1,37 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useGetFoundation } from "@workspace/api-client-react";
+import { useAuth } from "@workspace/replit-auth-web";
+import { RestrictedState } from "@/components/admin-controls";
+import { PlanningCenterAdmin } from "@/components/planning-center";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, QueryError, RefreshButton, StatusPill, usePageTitle } from "@/components/kit";
 
 export default function Integrations() {
   usePageTitle("Integrations");
   const q = useGetFoundation();
-  const list = q.data?.integrations;
+  const list = q.data?.integrations.filter((it) => it.id !== "planning-center");
+  const { user, enabled, isLoading } = useAuth();
+  const admin = isLoading ? (
+    <Skeleton className="mb-8 h-40 w-full" />
+  ) : !enabled ? (
+    <RestrictedState
+      title="Authentication is not enabled"
+      detail="Planning Center management is unavailable until invite-only sign-in is enabled."
+    />
+  ) : !user ? (
+    <RestrictedState
+      title="Log in to continue"
+      detail="This workspace is limited to verified Northpoint Austin staff."
+    />
+  ) : user.role !== "admin" ? (
+    <RestrictedState
+      title="Administrator access required"
+      detail={`Signed in as ${user.email} · ${user.role}.`}
+    />
+  ) : (
+    <PlanningCenterAdmin />
+  );
 
   return (
     <>
@@ -19,11 +43,13 @@ export default function Integrations() {
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Administration
       </Link>
       <PageHeader
-        eyebrow="Read-only"
+        eyebrow="Administration"
         title="Integrations"
-        description="Connected services and their current status."
+        description="Source connections and their actual status. Other providers listed below are not connected."
         actions={<RefreshButton busy={q.isFetching} onClick={() => q.refetch()} />}
       />
+      <div className="mb-8">{admin}</div>
+      <h2 className="mb-3 font-display text-[15px] font-semibold">Other providers</h2>
       {q.isError ? (
         <QueryError
           title="Integration list unavailable"

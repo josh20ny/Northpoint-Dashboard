@@ -29,6 +29,28 @@
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
 
+## Phase 2 sample gate and direct Planning Center authorization — 2026-11-08
+
+**APPROVED**, owner: product owner. Proceed into Phase 3 and “Build direct OAuth
+connection” after built-in connector discovery returned no Planning Center match.
+Use server-side confidential OAuth with PKCE and only People, Services and
+Check-Ins product scopes. This is not approval of Giving, Groups, operational
+metric publication or broader person-level views. An Admin must confirm the
+returned organization before ingestion; do not infer an organization from its name.
+
+Before proceeding, a read-only application-evidence check found six current
+owner-confirmed approvals: January 4 (446/464), January 11 (462/448) and January
+18 (421/410), all 2026. Approval hashes match the currently approved mappings
+and staged values of the imported workbook. The report computes three approved
+weeks. This supersedes earlier chronological notes that these approvals were
+outstanding, but does not convert them into independent two-source verification.
+
+Alternative: pause Phase 3 rather than build direct OAuth. Migration impact:
+additive restricted connection, OAuth flow, durable sync and normalized source
+projection tables; existing workbook/source history retained. Tests cover
+scope restrictions, current Admin authority, state/session/PKCE replay, source
+pagination, safe retry, revision idempotency and token encryption/refresh/revoke.
+
 ## Historical review input and ordering — 2026-11-07
 **APPROVED**, owner: product owner. Finish Phase 2 reconciliation before starting
 Phase 3. Use the supplied legacy workbook and include all data in review.

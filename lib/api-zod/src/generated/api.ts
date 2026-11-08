@@ -8,6 +8,112 @@
 import * as zod from 'zod';
 
 
+export const GetPlanningCenterResponse = zod.object({
+  "configured": zod.boolean(),
+  "missingConfiguration": zod.array(zod.string()),
+  "callbackUrl": zod.string().nullable(),
+  "requestedScopes": zod.array(zod.string()),
+  "connection": zod.union([zod.object({
+  "accountRef": zod.string(),
+  "accountName": zod.string(),
+  "state": zod.enum(['pending', 'connected', 'reconnect_required', 'disconnected']),
+  "scopes": zod.array(zod.string()),
+  "connectedBy": zod.string(),
+  "updatedAt": zod.string(),
+  "lastSuccessAt": zod.string().nullable(),
+  "error": zod.string().nullable()
+}),zod.null()]),
+  "syncs": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "mode": zod.enum(['backfill', 'incremental']),
+  "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
+  "fetched": zod.number().int(),
+  "revised": zod.number().int(),
+  "pages": zod.number().int(),
+  "pendingPages": zod.number().int(),
+  "startedAt": zod.string(),
+  "finishedAt": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "retryAt": zod.string().nullable()
+})),
+  "sourceRecords": zod.number().int(),
+  "asOf": zod.string()
+})
+
+
+export const AuthorizePlanningCenterResponse = zod.object({
+  "url": zod.string().url()
+})
+
+
+export const CompletePlanningCenterResponse = zod.void()
+
+
+export const confirmPlanningCenterBodyAccountRefMax = 30;
+
+
+export const confirmPlanningCenterBodyAccountRefRegExp = new RegExp('^[0-9]+$');
+
+
+export const ConfirmPlanningCenterBody = zod.object({
+  "accountRef": zod.string().max(confirmPlanningCenterBodyAccountRefMax).regex(confirmPlanningCenterBodyAccountRefRegExp)
+})
+
+export const ConfirmPlanningCenterResponse = zod.void()
+
+
+export const DisconnectPlanningCenterResponse = zod.void()
+
+
+export const StartPlanningCenterSyncBody = zod.object({
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "mode": zod.enum(['backfill', 'incremental'])
+})
+
+export const StartPlanningCenterSyncResponse = zod.object({
+  "id": zod.string().uuid(),
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "mode": zod.enum(['backfill', 'incremental']),
+  "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
+  "fetched": zod.number().int(),
+  "revised": zod.number().int(),
+  "pages": zod.number().int(),
+  "pendingPages": zod.number().int(),
+  "startedAt": zod.string(),
+  "finishedAt": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "retryAt": zod.string().nullable()
+})
+
+
+export const AdvancePlanningCenterSyncParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const AdvancePlanningCenterSyncResponse = zod.object({
+  "id": zod.string().uuid(),
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "mode": zod.enum(['backfill', 'incremental']),
+  "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
+  "fetched": zod.number().int(),
+  "revised": zod.number().int(),
+  "pages": zod.number().int(),
+  "pendingPages": zod.number().int(),
+  "startedAt": zod.string(),
+  "finishedAt": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "retryAt": zod.string().nullable()
+})
+
+
+export const CancelPlanningCenterSyncParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const CancelPlanningCenterSyncResponse = zod.void()
+
+
 export const ListImportsResponse = zod.object({
   "storageReady": zod.boolean(),
   "batches": zod.array(zod.object({

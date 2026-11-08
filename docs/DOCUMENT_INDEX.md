@@ -16,6 +16,7 @@
 - `docs/HEALTH_SCORING.md`
 - `docs/HISTORICAL_MIGRATION.md`
 - `docs/INTEGRATIONS.md`
+- `docs/PHASE_3_IMPLEMENTATION.md` — Planning Center setup and delivery limits
 - `docs/JOURNEYS.md`
 - `docs/METRICS.md`
 - `docs/OPEN_QUESTIONS.md`

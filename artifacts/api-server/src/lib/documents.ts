@@ -41,6 +41,7 @@ const documentFiles = [
   "docs/PHASE_0_VERIFICATION.md",
   "docs/PHASE_1_IMPLEMENTATION.md",
   "docs/PHASE_2_IMPLEMENTATION.md",
+  "docs/PHASE_3_IMPLEMENTATION.md",
   "docs/specs/CAMP_75.md",
   "docs/specs/COMMUNICATIONS.md",
   "docs/specs/CONNECTION.md",

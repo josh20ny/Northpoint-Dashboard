@@ -1,5 +1,17 @@
 # Logical Database Model (proposed; validate before migration generation)
 
+## Phase 3 implementation note
+
+`pco_connections`, `pco_oauth_flows`, `pco_sync_runs` and `pco_source_entities`
+implement a single-organization direct connector, with forced Admin RLS and
+additive migration `0007`. Private token ciphertext uses AES-256-GCM with a
+dedicated key. OAuth flow secrets expire and are consumed once, bound to the
+authenticated Admin session. Source revisions reuse the immutable
+`raw_source_records` table; normalized projections reference the raw revision
+and most recent sync run. No names, contact details, medical notes or security
+codes are retained by these minimal adapters. No person-level read API or
+operational metric publication is added.
+
 ## Phase 2 implementation note
 `import_batches`, `import_cells`, `import_mappings`, `import_staged_rows` and
 `import_week_reviews` now implement Admin-only, review-only historical staging.
