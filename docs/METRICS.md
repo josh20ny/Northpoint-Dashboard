@@ -10,6 +10,18 @@
 - Missing, delayed or partial weeks: `quality_status` and denominator; do not display as zero.
 
 ## Attendance
+### Owner-confirmed legacy review names (2026-11-07)
+- `SPD!F` → `adult_service_1`.
+- `SPD!I` → `adult_service_2`.
+- The review's former `diagnostic_sum` → `adult_services_total`
+  (`adult_service_1 + adult_service_2`, unknown if either input is missing).
+
+These are approved source/review names for the selected workbook, not publication
+or weekly-value approval. They do not approve `SPD!L`/`Dash!C` semantics, unique
+attendee interpretation, ministry/time mappings or the draft canonical metrics
+below. See `DECISIONS.md`.
+
+### Canonical definitions
 - `adult_in_person_attendance`: sum of verified adult manual per-service headcounts for Sunday; aggregate observations must be marked as such (DRAFT).
 - `adult_online_connections`: raw source-defined live Sunday connections; distinct from estimated persons (DRAFT).
 - `adult_total_engagement`: historical `in_person + online_connections * multiplier`; preserve as *legacy-defined* metric, with effective-dated multiplier, and do not call it unique attendees (DRAFT).

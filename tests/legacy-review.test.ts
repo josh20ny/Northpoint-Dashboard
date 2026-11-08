@@ -28,16 +28,27 @@ describe("offline source review (never an approval)", () => {
         .map((x) => ({ sheet: "Dash", cell: { ...x.cell } })),
     ];
     const review = buildReview(w, excelDate);
+    expect(review.columns.find((c) => c.sheet === "SPD" && c.column === "F")?.candidateMetric).toBe(
+      "adult_service_1",
+    );
+    expect(review.columns.find((c) => c.sheet === "SPD" && c.column === "I")?.candidateMetric).toBe(
+      "adult_service_2",
+    );
+    expect(review.columns.find((c) => c.sheet === "SPD" && c.column === "L")?.candidateMetric).toBe(
+      "",
+    );
     expect(review.adult[0]).toMatchObject({
-      first: 0,
-      diagnosticSum: 12,
+      adult_service_1: 0,
+      adult_services_total: 12,
+      sourceStatus: "INPUTS_PRESENT_UNAPPROVED",
       variance: 0,
       status: "MATCHED_COPIES_UNAPPROVED",
     });
     w.cells = w.cells.filter((x) => x.sheet !== "SPD" || x.cell.column !== "I");
     expect(buildReview(w, excelDate).adult[0]).toMatchObject({
-      second: null,
-      diagnosticSum: null,
+      adult_service_2: null,
+      adult_services_total: null,
+      sourceStatus: "MISSING_INPUTS",
       status: "INCOMPLETE",
     });
     w.cells.find((x) => x.sheet === "SPD" && x.cell.column === "A")!.cell.value = "46033";

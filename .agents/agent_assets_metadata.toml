@@ -70,3 +70,45 @@ mtime_ms = 1794091129637
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/e0d67073-ab91-45b0-98c9-f6f0398c7e9c/41e52116-5972-41cb-9542-ec33c0536423"
 storage_version_token = "1794091198444873"
 content_type = "text/csv"
+
+[[outputs]]
+id = "RTuaTTeEls2tyeghsccNM"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/owner-named-adult-sources/source-review.html"
+type = "html"
+title = "Workbook review — corrected adult source names"
+description = "Uses adult_service_1, adult_service_2 and adult_services_total. Source completeness is separate from cached comparisons; weekly values remain unapproved."
+logical_id = "b848e4b7-b1b1-4d4b-8861-30e3c5b168b9"
+content_hash = "sha256:9dd9d9e35e40a7a723271b30d710a140eee7503c5464883b84422f82aed0cde4"
+size = 24471
+mtime_ms = 1794096287482
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/b848e4b7-b1b1-4d4b-8861-30e3c5b168b9/452811c8-587f-437d-94c6-1aba60518c10"
+storage_version_token = "1794096294425266"
+content_type = "text/html"
+
+[[outputs]]
+id = "Yi-t_7SyjsmHuVgZo3VKG"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/owner-named-adult-sources/adult-comparison-unapproved.csv"
+type = "table"
+title = "Adult comparison — corrected field names"
+description = "52 weeks with the corrected names, explicit zero/unknown values, snapshot flags and separate source/comparison status."
+logical_id = "def04e6a-d1b4-4666-b742-4ae239c8d73c"
+content_hash = "sha256:ce8fa80c1f1016a70cabbce9b9e7d3a8c7913b2a047f9c31a64dca36dacb8cb1"
+size = 11018
+mtime_ms = 1794096287490
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/def04e6a-d1b4-4666-b742-4ae239c8d73c/a8f62f43-2f74-47a7-a878-46b8e490dee4"
+storage_version_token = "1794096295174188"
+content_type = "text/csv"
+
+[[outputs]]
+id = "UiQkszvvC7JJt7_7BmrFB"
+uri = "file://generated-artifacts/phase2-review/c925d771b67c4503ad46d5919000fcb5744c164fc1683a441055b11a1c70a1b3/2026-11-06/owner-named-adult-sources/column-inventory-unreviewed.csv"
+type = "table"
+title = "Column inventory — owner-named SPD sources"
+description = "SPD F and I have the confirmed source names. Other columns and all weekly values remain unapproved."
+logical_id = "acdd8a43-91a3-43f6-b78b-78ed4ef34a8b"
+content_hash = "sha256:bf6e3eeae707d2db43ca6db5ea2edb5d3bd0c8d8c27d8f429dbbbf5b99e957a9"
+size = 94518
+mtime_ms = 1794096287490
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/acdd8a43-91a3-43f6-b78b-78ed4ef34a8b/ce1f37ea-d3fb-4fae-a605-f799c72fd898"
+storage_version_token = "1794096295771499"
+content_type = "text/csv"

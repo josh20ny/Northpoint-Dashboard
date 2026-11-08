@@ -13,6 +13,7 @@ const operating = new Set([
   "SPD",
   "Communications",
 ]);
+const adultSourceNames = { F: "adult_service_1", I: "adult_service_2" };
 const raw = (cell) => (cell?.formula === null ? cell.value : (cell?.cachedValue ?? null));
 const numeric = (cell) => {
   const value = raw(cell);
@@ -74,6 +75,7 @@ export function buildReview(workbook, excelDate, snapshotDate = null) {
         column: cell.column,
         headerCoordinate: header?.coordinate ?? "",
         legacyLabel: header?.value ?? "",
+        candidateMetric: sheet === "SPD" ? (adultSourceNames[cell.column] ?? "") : "",
         firstRow: cell.row,
         lastRow: cell.row,
         populated: 0,
@@ -104,21 +106,27 @@ export function buildReview(workbook, excelDate, snapshotDate = null) {
       dash = get("Dash", `C${row}`);
     const firstValue = numeric(first),
       secondValue = numeric(second);
-    const diagnosticSum =
+    const adultServicesTotal =
       firstValue !== null && secondValue !== null && Number.isSafeInteger(firstValue + secondValue)
         ? firstValue + secondValue
         : null;
     const totalValue = numeric(total),
       dashValue = numeric(dash);
     const spdDate = excelDate(raw(get("SPD", `A${row}`)), workbook.dateSystem);
-    const complete = [diagnosticSum, totalValue, dashValue].every((v) => v !== null);
+    const complete = [adultServicesTotal, totalValue, dashValue].every((v) => v !== null);
     adult.push({
       date,
       row,
       spdDate,
-      first: firstValue,
-      second: secondValue,
-      diagnosticSum,
+      adult_service_1: firstValue,
+      adult_service_2: secondValue,
+      adult_services_total: adultServicesTotal,
+      sourceStatus:
+        spdDate !== date
+          ? "DATE_MISMATCH"
+          : adultServicesTotal === null
+            ? "MISSING_INPUTS"
+            : "INPUTS_PRESENT_UNAPPROVED",
       total: totalValue,
       dash: dashValue,
       variance: totalValue !== null && dashValue !== null ? dashValue - totalValue : null,
@@ -140,7 +148,7 @@ export function buildReview(workbook, excelDate, snapshotDate = null) {
           ? "DATE_MISMATCH"
           : !complete
             ? "INCOMPLETE"
-            : diagnosticSum === totalValue && totalValue === dashValue
+            : adultServicesTotal === totalValue && totalValue === dashValue
               ? "MATCHED_COPIES_UNAPPROVED"
               : "VALUE_MISMATCH",
     });
@@ -215,9 +223,12 @@ Flags overlap.</li>
 <li>${review.typedErrors} typed Excel error cells, but ${counts("spreadsheet_error")}
 cells contain error-like raw results. These are different checks; the old typed-error
 count did not establish clean data.</li>
-<li>Dash adult counts link to SPD. Matching cached copies are not independent
-corroboration. The service-count sum below is diagnostic arithmetic, not an
-approved metric definition or an evaluation of workbook formulas.</li>
+<li>The owner named SPD F <code>adult_service_1</code>, SPD I
+<code>adult_service_2</code>, and their sum <code>adult_services_total</code>.
+These names do not approve weekly values or publish a canonical metric.
+SPD L and Dash C remain raw cached comparison columns with unconfirmed meanings.
+Dash formulas reference SPD L; matching caches are not independent corroboration.
+Workbook formulas have not been evaluated.</li>
 <li>Of ${review.adult.length} 2026 adult rows,
 ${review.adult.filter((r) => r.status === "MATCHED_COPIES_UNAPPROVED").length}
 have matching caches and diagnostic service-count sums;
@@ -232,7 +243,7 @@ ${
         review.adult.filter(
           (r) => r.snapshotStatus === "WITHIN_SNAPSHOT" && r.status === "INCOMPLETE",
         ).length
-      } incomplete adult weeks fall on or before the snapshot. Missing future weeks are not past attendance gaps.</li>`
+      } incomplete cached comparisons fall on or before the snapshot. Missing future weeks are not past attendance gaps.</li>`
 }
 <li>All Raw Data column A has ${review.rawDateCoverage.dates2026} interpreted dates
 in 2026. Its observed date-axis coverage is
@@ -246,13 +257,16 @@ the workbook snapshot date or the coverage of every historical tab.</li>
       ? "Confirm the workbook's export/as-of date, or obtain a dated replacement."
       : `Keep the owner-confirmed ${escapeHtml(review.snapshotDate)} snapshot date with the original-file provenance.`
   }</li>
-<li>Confirm adult in-person semantics and whether SPD F/I are entered headcounts
-and L their authoritative weekly total. The old 9:30 header is not proof of a
+<li>Retain the owner-confirmed names: SPD F → adult_service_1; SPD I →
+adult_service_2; their sum → adult_services_total. Confirm any additional
+counting semantics before publication. Do not infer that SPD L is authoritative
+or equivalent to adult_services_total. The old 9:30 header is not proof of a
 2026 service time. Online multipliers are excluded from this comparison.</li>
 <li>Choose real sample weeks and confirm them against an independent source.
 Resolve missing/error/shared-formula issues rather than approving copied totals.</li>
 <li>Review the remaining ministry and historical column definitions in batches.
-Every column remains UNREVIEWED; forecast outputs are not historical truth.
+Only SPD F/I have owner-confirmed source names; their values remain unapproved.
+Other columns remain UNREVIEWED; forecast outputs are not historical truth.
 Giving/person-level data stays outside this packet.</li>
 </ol></section>
 <section><h2>All-sheet quality inventory</h2>
@@ -270,31 +284,38 @@ ${table(
 )}
 </section><section><h2>Adult in-person comparison — every 2026 date in Dash A</h2>
 <p>Dates are workbook calendar dates (America/Chicago reporting convention), not
-timestamps. Counts are source headcounts/caches with unapproved definitions.
+timestamps. Source names follow the owner's correction; additional counting
+semantics and weekly values remain unapproved. SPD L/Dash C are comparison caches only.
 Blank or invalid values remain unknown. Zero is preserved only when explicit.</p>
 <p>For row r, columns are SPD!Fr, SPD!Ir, SPD!Lr and Dash!Cr.
 SPD!Ar must agree with Dash!Ar; their shared row number alone is not a valid join.</p>
 ${table(
   [
     "Date / row",
-    "First count",
-    "Second count",
-    "Diagnostic sum",
-    "SPD cache",
-    "Dash cache",
+    "adult_service_1 (SPD F)",
+    "adult_service_2 (SPD I)",
+    "adult_services_total (F + I)",
+    "SPD L cache — meaning unconfirmed",
+    "Dash C cache — meaning unconfirmed",
     "Dash − SPD",
     "Status / flags",
     "Dash formula",
   ],
   review.adult.map((r) => [
     r.date + " / " + r.row,
-    r.first,
-    r.second,
-    r.diagnosticSum,
+    r.adult_service_1,
+    r.adult_service_2,
+    r.adult_services_total,
     r.total,
     r.dash,
     r.variance,
-    r.snapshotStatus + "; " + r.status + "; " + r.flags.join(", "),
+    r.snapshotStatus +
+      "; " +
+      r.sourceStatus +
+      "; comparison: " +
+      r.status +
+      "; " +
+      r.flags.join(", "),
     r.formula,
   ]),
 )}
@@ -328,6 +349,7 @@ async function main() {
     "phase2-review",
     sha256,
     snapshotDate ?? "undated",
+    "owner-named-adult-sources",
   );
   await fs.mkdir(directory, { recursive: true });
   const html = renderReview(review, source);
@@ -369,13 +391,13 @@ async function main() {
         c.external,
         c.missingCaches,
         c.errors,
+        c.candidateMetric,
         "",
         "",
         "",
         "",
         "",
-        "",
-        "UNREVIEWED",
+        c.candidateMetric ? "OWNER_NAMED_VALUES_UNAPPROVED" : "UNREVIEWED",
       ]),
     ]),
   );
@@ -386,25 +408,26 @@ async function main() {
         "week",
         "row",
         "spd_week",
-        "spd_F",
-        "spd_I",
-        "diagnostic_sum",
+        "adult_service_1",
+        "adult_service_2",
+        "adult_services_total",
         "spd_L_cache",
         "dash_C_cache",
         "dash_minus_spd",
-        "status",
+        "comparison_status",
         "flags",
         "dash_formula",
         "snapshot_date",
         "snapshot_status",
+        "source_status",
       ],
       ...review.adult.map((r) => [
         r.date,
         r.row,
         r.spdDate,
-        r.first,
-        r.second,
-        r.diagnosticSum,
+        r.adult_service_1,
+        r.adult_service_2,
+        r.adult_services_total,
         r.total,
         r.dash,
         r.variance,
@@ -413,6 +436,7 @@ async function main() {
         r.formula,
         snapshotDate,
         r.snapshotStatus,
+        r.sourceStatus,
       ]),
     ]),
   );

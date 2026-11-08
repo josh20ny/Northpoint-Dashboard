@@ -51,6 +51,18 @@ Migration impact: none; retain this date with any subsequent import provenance.
 Tests: valid calendar input, inclusive snapshot boundary, future-week flags,
 unknown snapshot handling and preservation of all source rows.
 
+## Adult legacy source naming correction — 2026-11-07
+**APPROVED**, owner: product owner. “SPD F = adult_service_1, SPD I =
+adult_service_2, diagnostic_sum= adult_services_total”.
+Use these exact names for the selected workbook review. The existing review
+sum of F and I is named `adult_services_total`; keep missing inputs unknown.
+This does not name SPD L or Dash C, approve weekly values, establish unique-person
+counting, set service times or publish a canonical metric.
+Alternative: the earlier tentative adult attendance terminology, which the owner
+said needed correction. Migration impact: none; offline labels/exports only.
+Tests: exact source names, derived total, explicit zero, unknown inputs,
+and no implied mapping of SPD L to the derived total.
+
 ## Phase 2 authorization — 2026-11-07
 **APPROVED**, owner: product owner. Proceed with the roadmap's historical
 workbook explorer, explicit mapping review, raw-only staging and reconciliation.

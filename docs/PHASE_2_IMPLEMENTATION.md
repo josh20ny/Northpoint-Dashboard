@@ -209,3 +209,17 @@ or other explanation is inferred for these gaps.
 Admin mapping approval and sample-week reconciliation remain open. Cataloging
 must use the authenticated Admin flow; offline discovery does not impersonate
 an Admin or write approval/audit records on the owner's behalf.
+
+## Corrected adult source names — 2026-11-07
+Owner correction: SPD F = `adult_service_1`, SPD I = `adult_service_2`,
+and the former `diagnostic_sum` = `adult_services_total`. The latter remains
+the review sum of F/I with unknown preserved if either input is absent.
+HTML/CSV outputs use these exact names; the column inventory identifies only
+F/I as owner-named, with values still unapproved. SPD L/Dash C remain cached
+comparison columns with unconfirmed meanings, not sources automatically assigned
+to `adult_services_total`. Earlier report labels are superseded by the corrected
+packet. No canonical metric, app mapping approval or weekly approval is implied.
+Source-input completeness is separate from cached-comparison completeness:
+January 25 has explicit zeroes in F/I and therefore a zero review sum, while
+L/Dash caches are missing. April 12, 19, 26 and May 3 have missing F/I inputs and
+unknown sums. The report does not infer what the January zeroes signify.
