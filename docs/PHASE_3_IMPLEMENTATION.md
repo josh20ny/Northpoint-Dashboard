@@ -116,6 +116,40 @@ without committing part of a page. Last successful sync is not advanced on failu
 - The status endpoint returns configuration presence, organization metadata and
   run counts only. Tokens, payloads and personal records are never in its response.
 
+### Relationship-field repair
+
+The initial sparse fieldsets selected attributes only. JSON:API fieldsets also
+filter relationship fields, so completed runs could retain related included
+resources without retaining the links connecting them. Raw-source revision links
+were intact; those links do not establish event/person/time/location coverage.
+
+Requests now explicitly select CheckIn person/event_period/event_times/locations,
+EventPeriod event, EventTime event/event_period, and Plan service_type identifiers.
+These selections apply again to every continuation request and included resource.
+Missing requested relationship data fails the page with an unsupported-source-shape
+error rather than silently saving empty links. Explicit null to-one relationships
+(including one-time guest person links) and empty to-many arrays remain valid.
+Person resources are not included and product-specific person IDs are not merged.
+PlanTime has no documented plan relationship; its parent remains in sourceCollection.
+
+Existing immutable revisions are not rewritten or removed. An Admin must run
+**Incremental → Run to completion** for Services and Check-Ins after this fix.
+The rescan creates revisions when linkage changes and updates the existing source
+entity by identity; it does not duplicate entities. People does not need a repair
+rescan because no person relationships are requested. Expect a larger revision
+count on the first repair rescan; that is not evidence of duplicate people or visits.
+Verify stored linkage after those runs before accepting metric coverage.
+
+References: Planning Center's JSON:API guide and the JSON:API 1.0 sparse-fieldset
+contract, plus the pinned CheckIn/EventPeriod/EventTime and Services Plan resource
+documentation:
+- https://api.planningcenteronline.com/docs/overview/json-api
+- https://jsonapi.org/format/1.0/#fetching-sparse-fieldsets
+- https://api.planningcenteronline.com/docs/apps/check-ins/versions/2025-05-28/vertices/check_in
+- https://api.planningcenteronline.com/docs/apps/check-ins/versions/2025-05-28/vertices/event_period
+- https://api.planningcenteronline.com/docs/apps/check-ins/versions/2025-05-28/vertices/event_time
+- https://api.planningcenteronline.com/docs/apps/services/versions/2018-11-01/vertices/plan
+
 ### Security and verification
 
 OAuth state is random, hashed, short-lived, session-and-Admin-bound, and consumed

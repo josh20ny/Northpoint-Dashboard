@@ -3,3 +3,4 @@
 - [Confidential upload tracking](storage-tracking.md) — commit intents before storage; unknown is not absent, and declarative RLS must match custom migrations.
 - [OAuth key ownership](oauth-key-ownership.md) — application owns its persistent encryption key; never ask Planning Center to provide it or regenerate on startup.
 - [Workspace test isolation](workspace-test-isolation.md) — mock the shared pool instance, not only its package alias; assert the stub is used before mutation tests.
+- [Planning Center fieldsets](pco-fieldsets.md) — sparse fieldsets filter linkage too; included records and complete syncs do not establish relationship coverage.

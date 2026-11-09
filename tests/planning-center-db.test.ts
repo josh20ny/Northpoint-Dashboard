@@ -378,7 +378,12 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         .mockResolvedValueOnce(
           response({
             data: [
-              { type: "Plan", id: "2", attributes: { title: "Sunday", sort_date: "2026-01-04" } },
+              {
+                type: "Plan",
+                id: "2",
+                attributes: { title: "Sunday", sort_date: "2026-01-04" },
+                relationships: { service_type: { data: { type: "ServiceType", id: "1" } } },
+              },
             ],
           }),
         )
@@ -409,11 +414,24 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
               type: "CheckIn",
               id: "2",
               attributes: { kind: "Guest", created_at: "2026-01-04T15:00:00Z" },
-              relationships: { person: { data: { type: "Person", id: "9" } } },
+              relationships: {
+                person: { data: { type: "Person", id: "9" } },
+                event_period: { data: { type: "EventPeriod", id: "4" } },
+                event_times: { data: [{ type: "EventTime", id: "3" }] },
+                locations: { data: [] },
+              },
             },
           ],
           included: [
-            { type: "EventTime", id: "3", attributes: { starts_at: "2026-01-04T15:00:00Z" } },
+            {
+              type: "EventTime",
+              id: "3",
+              attributes: { starts_at: "2026-01-04T15:00:00Z" },
+              relationships: {
+                event: { data: { type: "Event", id: "1" } },
+                event_period: { data: { type: "EventPeriod", id: "4" } },
+              },
+            },
           ],
         }),
       );
@@ -433,6 +451,8 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         metricPublication: "not_published",
       });
       expect(check.sourceRelationships.person.data.id).toBe("9");
+      expect(check.sourceRelationships.event_period.data.id).toBe("4");
+      expect(check.sourceRelationships.event_times.data).toEqual([{ type: "EventTime", id: "3" }]);
       expect(check.ministry).toBeUndefined();
     });
     it("enforces connection and source RLS for a non-owner database role", async () => {

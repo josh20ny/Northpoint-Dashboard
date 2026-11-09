@@ -13,6 +13,22 @@ export const fields: Record<string, string[]> = {
   EventTime: ["starts_at", "ends_at", "updated_at"],
   Location: ["name", "kind", "updated_at"],
 };
+// JSON:API sparse fieldsets select relationships as well as attributes.
+// Keep these separate from attributes so identifiers never become person data.
+// Only request documented linkage; do not include Person resources or merge IDs
+// across Planning Center products. Services PlanTime parents remain explicit in
+// sourceCollection: that resource does not expose a documented plan relationship.
+const relationshipFields: Record<string, Record<string, { type: string; many?: boolean }>> = {
+  Plan: { service_type: { type: "ServiceType" } },
+  CheckIn: {
+    person: { type: "Person" },
+    event_period: { type: "EventPeriod" },
+    event_times: { type: "EventTime", many: true },
+    locations: { type: "Location", many: true },
+  },
+  EventPeriod: { event: { type: "Event" } },
+  EventTime: { event: { type: "Event" }, event_period: { type: "EventPeriod" } },
+};
 export interface Page {
   path: string;
   type: string;
@@ -40,7 +56,11 @@ export function pagePath(page: Page, product: Product) {
   // sparse-field contract and fixed includes. The browser never supplies URLs.
   const query = new URLSearchParams({ per_page: "100" });
   if (offset !== null) query.set("offset", offset);
-  for (const [type, attrs] of Object.entries(fields)) query.set(`fields[${type}]`, attrs.join(","));
+  for (const [type, attrs] of Object.entries(fields))
+    query.set(
+      `fields[${type}]`,
+      [...attrs, ...Object.keys(relationshipFields[type] ?? {})].join(","),
+    );
   if (page.type === "CheckIn") query.set("include", "event_period,event_times,locations");
   return `${u.pathname}?${query}`;
 }
@@ -90,27 +110,22 @@ export function sourceEntity(value: unknown): SourceEntity {
   const relationships: SourceEntity["relationships"] = {};
   const all = v.relationships as Record<string, { data?: unknown }> | undefined;
   // Preserve source links but do not assert that person IDs across products match.
-  for (const key of [
-    "person",
-    "event",
-    "event_period",
-    "event_times",
-    "locations",
-    "service_type",
-    "plan",
-  ]) {
-    if (!all || !Object.hasOwn(all, key)) continue;
+  for (const [key, contract] of Object.entries(relationshipFields[v.type] ?? {})) {
+    // An explicit null person (e.g. a one-time guest) or empty collection is
+    // valid. An omitted requested relationship is unknown, not an empty link.
+    if (!all || typeof all !== "object" || Array.isArray(all) || !Object.hasOwn(all, key))
+      throw new ProviderError(422);
     const data = all[key]?.data;
     const valid = (r: unknown): r is Relation =>
       !!r &&
       typeof r === "object" &&
-      typeof (r as Relation).type === "string" &&
-      /^[A-Za-z]{1,40}$/.test((r as Relation).type) &&
+      (r as Relation).type === contract.type &&
       idValid((r as Relation).id);
-    if (data === null) relationships[key] = { data: null };
-    else if (Array.isArray(data) && data.length <= 1000 && data.every(valid))
+    if (!contract.many && data === null) relationships[key] = { data: null };
+    else if (contract.many && Array.isArray(data) && data.length <= 1000 && data.every(valid))
       relationships[key] = { data: data.map((r) => ({ type: r.type, id: r.id })) };
-    else if (valid(data)) relationships[key] = { data: { type: data.type, id: data.id } };
+    else if (!contract.many && valid(data))
+      relationships[key] = { data: { type: data.type, id: data.id } };
     else throw new ProviderError(422);
   }
   return { type: v.type, id: v.id, attributes, relationships };

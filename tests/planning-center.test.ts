@@ -122,6 +122,8 @@ describe("Planning Center secure transport and source contract", () => {
       relationships: {
         person: { data: null },
         event_period: { data: { type: "EventPeriod", id: "9" } },
+        event_times: { data: [] },
+        locations: { data: [] },
       },
     });
     expect(e.relationships.person?.data).toBeNull();
@@ -172,7 +174,16 @@ describe("Planning Center secure transport and source contract", () => {
       { path: "/services/v2/service_types/3/plans", type: "Plan" },
     ]);
     const plan = parsePage(
-      { data: [{ type: "Plan", id: "4", attributes: {} }] },
+      {
+        data: [
+          {
+            type: "Plan",
+            id: "4",
+            attributes: {},
+            relationships: { service_type: { data: { type: "ServiceType", id: "3" } } },
+          },
+        ],
+      },
       service.nextPages[0]!,
       "services",
     );
