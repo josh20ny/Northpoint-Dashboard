@@ -12,19 +12,23 @@ to metrics. The Phase 2 sample-review gate is met: both adult services for Janua
 three approved weeks). This is not independent two-source or full-year verification.
 See `PHASE_2_IMPLEMENTATION.md`.
 
-Phase 3 is authorized and in progress. Direct OAuth/PKCE, organization confirmation,
+Phase 3 is complete for development with owner-approved live-verification
+deferrals (D-025). Direct OAuth/PKCE, organization confirmation,
 encrypted token refresh/revocation and resumable People/Services/Check-Ins
 source ingestion with opt-in background run-to-completion are implemented.
 Development OAuth configuration and organization confirmation are complete.
 Live backfills, incremental rescans and repaired source relationships are verified
 in development. An Admin-configurable refresh scheduler is implemented
 (daily 1 AM Central by default, with time/frequency/weekday/time-zone controls);
-development lifecycle rules and tracking are implemented. Final development
-acceptance is next: fresh lifecycle baselines, a scheduled cycle and controlled
-interruption/credential-lifecycle evidence or explicit owner-approved exceptions.
+development lifecycle rules and tracking are implemented. Fresh lifecycle
+baselines, a scheduled cycle, controlled restart/recovery and live credential-
+failure/reconnect demonstrations are deferred until before production, not passed.
+The schedule remains disabled; unattended freshness must not be assumed.
 Unattended hosting is deferred by the owner's development-only choice;
 production retention/privacy deletion and release approval remain separate gates.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
+Phase 4 adult-attendance development is next; source authority, numeric definitions
+and metric publication still require their own approvals.
 
 | Phase | Build | Exit gate |
 |---|---|---|

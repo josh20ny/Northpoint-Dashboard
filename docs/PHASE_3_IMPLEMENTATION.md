@@ -35,14 +35,18 @@ Services and Check-Ins were verified with locally resolvable source links.
 Development lifecycle rules are approved (D-024), with tracking implemented.
 The owner chose development-only hosting; unattended production hosting is
 explicitly deferred, not demonstrated. Pre-production retention/privacy-deletion
-decisions remain open. Phase 3 is ready for final development acceptance, but
-closeout has not yet been signed off and no production/live-data release is approved.
+decisions remain open. **Phase 3 is complete for development with owner-approved
+live-verification deferrals (D-025, 2026-11-09).** Proceed to Phase 4 development.
+No production/live-data release or operational metric publication is approved.
 
 ### Final development acceptance checklist — checked 2026-11-09
 
 This is an evidence checklist, not a claim that synthetic coverage demonstrates
 every real-provider failure mode. Read-only development metadata was checked;
 no credentials were revoked, imports started, or schedule settings changed.
+The owner subsequently accepted development closeout with the remaining live
+checks deferred until before production. Pending/not-demonstrated entries below
+remain factually unchanged; they are no longer development-closeout blockers.
 
 | Case | Evidence / result | Acceptance status |
 |---|---|---|
@@ -61,16 +65,17 @@ no credentials were revoked, imports started, or schedule settings changed.
 | Current implementation checks | 215 tests passed, 34 DB-fixture tests skipped to protect real connection; typecheck/lint, isolated temporary-table lifecycle SQL checks and readiness passed | Verified for lifecycle implementation; skipped fixtures are not fresh live evidence |
 | Hosting / retention | Development-only hosting accepted; no automatic purge approved in development | Explicit production deferrals, not production acceptance |
 
-**Closeout sequence:** establish fresh tracked scans and inspect their summaries;
-demonstrate a planned interruption/resumption without losing saved pages; verify
-the first scheduled cycle if accepting the scheduler as live-demonstrated; then
-either perform a controlled credential/reconnect exercise or obtain explicit
-owner acceptance of that unverified live case as a documented development-only
-exception. Revocation/disconnect will stop imports and may require owner OAuth
-consent and organization confirmation again, so it must not be done without
-informed approval. Preserve prior revisions and do not alter metric formulas.
-Only then record the owner's development closeout decision, separately from
-production readiness. This checklist itself is not that approval.
+**Accepted development closeout:** the owner explicitly chose to move on rather
+than wait for long scans. Fresh lifecycle baselines, the first scheduled cycle
+and controlled restart/recovery, and live expired/revoked-access recovery are
+deferred, not demonstrated. Complete these before production. Until then, use
+the validated imports within their known coverage, treat lifecycle absence as
+unassessed, keep scheduled refresh disabled and do not assume data is current.
+Revocation/disconnect requires separate informed approval because it stops
+imports and may require owner OAuth consent and organization confirmation again.
+Preserve prior revisions and do not alter or publish metric formulas under this
+approval. Production hosting, retention/privacy procedures and release approval
+remain separate. D-025 records the owner's development signoff.
 
 #### Non-destructive acceptance pass — 2026-11-09
 
@@ -116,15 +121,15 @@ no import started, and no schedule or source data changed.
   valid for the unchanged implementation; the guarded real-account database
   fixture suite was not run.
 
-**Next safe action:** an authenticated Admin starts **People → Incremental →
+**When the deferred checks resume:** an authenticated Admin starts **People → Incremental →
 Run to completion** in Administration → Integrations. Then inspect the newly
 tracked completed run before proceeding with Services and Check-Ins one at a
 time. Starting imports must use actual Admin authorization, not a fabricated
 principal or a direct database insert. Establishing these manual baselines does
 not by itself demonstrate the scheduler. A controlled restart needs an active
 run and an agreed interruption point; no idle restart is counted as recovery.
-Final development closeout remains pending the remaining demonstrations or
-explicit owner-approved exceptions.
+These demonstrations are not required to continue development under D-025, but
+remain pre-production requirements. No new scans are requested by this closeout.
 
 ### Administration flow
 
@@ -324,7 +329,7 @@ deleted-record coverage or cross-product identity equivalence.
 Automated signed-in browser verification remains unavailable; no authentication
 bypass or real-user impersonation was added.
 
-### Remaining Phase 3 exit checks
+### Deferred operational checks — required before production
 
 - Completed in development: consent/organization confirmation, all three backfills,
   revision rescans, source provenance and repaired source relationships.

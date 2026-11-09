@@ -53,6 +53,12 @@ The scheduler defaults to daily 1 AM Central; start time and time zone remain ed
 It processes People, Services and Check-Ins sequentially and requires a running API. Reliable unattended hosting is
 still outstanding. No operational metrics or individual attendance/giving views.
 The owner chose to keep development only; unattended production hosting is deferred.
+Phase 3 is closed for development under D-025; proceed to Phase 4 without waiting
+for fresh lifecycle scans, a scheduled-cycle/restart exercise, or real credential-
+failure/reconnect tests. These remain unverified live and required before
+production. Keep the schedule disabled until ready to demonstrate it, treat
+lifecycle absence as unassessed, and never assume unattended freshness. This
+closeout does not authorize metric publication, deletion, or credential changes.
 
 ## User preferences
 

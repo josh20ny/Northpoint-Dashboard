@@ -27,8 +27,42 @@
 | D-022 | OPEN | Health thresholds and weekly summary destination and auto-send gate | Seed draft only |
 | D-023 | OPEN | Which source is authoritative for each numeric measure | Reconcile mapping with owners |
 | D-024 | APPROVED | Preserve source history; separate explicit lifecycle markers from completed-scan absence; no automatic purge in development | Missing is not deleted; retention/privacy deletion require pre-production decisions |
+| D-025 | APPROVED | Close Phase 3 for development with explicit live-verification deferrals; proceed to Phase 4 | Not production acceptance; do not wait for long rescans or claim deferred checks passed |
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
+
+## D-025 — Phase 3 development closeout — 2026-11-09
+
+**APPROVED**, owner: product owner. Close Phase 3 for development with these
+live-verification deferrals rather than waiting for long scans:
+
+1. Fresh People/Services/Check-Ins scans to establish the new lifecycle baseline.
+2. A first scheduled three-product cycle and controlled restart/recovery exercise.
+3. Real expired/revoked-access failure and reconnect recovery.
+
+The owner accepted moving on to Phase 4 under the stated development-only
+boundaries. Existing validated imports remain usable within their documented
+coverage; lifecycle absence remains unassessed until new tracked scans complete.
+Keep the schedule disabled until ready to demonstrate it; do not rely on
+unattended freshness. Recovery cases retain synthetic evidence only where no
+live demonstration exists.
+
+These are deferred checks, not passed checks or permanently waived requirements.
+Complete them before production. Production hosting, retention/privacy-deletion
+procedures and release approval remain separate gates. No metric publication,
+source/history deletion, broader scopes, credential changes, or automatic imports
+are authorized by this closeout.
+
+**Why:** the owner does not want to wait for long scans now and explicitly chose
+development closeout with the described deferrals.
+**How to apply:** proceed with Phase 4 development without reopening Phase 3 just
+to require these scans; carry the unresolved checks into the pre-production
+acceptance checklist. Use real Admin authorization for future live exercises.
+
+Alternative: keep Phase 3 open until all demonstrations complete. Migration
+impact: none; documentation-only approval, no runtime or database changes.
+Verification: preserves the recorded non-destructive acceptance results and
+existing synthetic test evidence without claiming new live executions.
 
 ## D-024 — Planning Center lifecycle rules — 2026-11-09
 
