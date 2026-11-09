@@ -6,3 +6,4 @@
 - [Planning Center fieldsets](pco-fieldsets.md) — sparse fieldsets filter linkage too; included records and complete syncs do not establish relationship coverage.
 - [Historical event context](historical-event-context.md) — owner-confirmed context for interpreting exceptional historical check-ins.
 - [Adult attendance policy](adult-attendance-policy.md) — auditorium attendees only; breaks stay unrecorded; manual counts need corrections, not approval.
+- [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday overview across all ministries; each ministry needs attendance and all documented KPIs.
