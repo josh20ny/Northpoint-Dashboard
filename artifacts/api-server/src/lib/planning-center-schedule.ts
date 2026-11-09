@@ -1,39 +1,16 @@
 import type { PoolClient } from "pg";
-import type { PlanningCenterSchedule } from "@workspace/api-zod";
+import { SetPlanningCenterScheduleBody, type PlanningCenterSchedule } from "@workspace/api-zod";
 import type { Principal } from "./auth";
 import { AccessError, adminTransaction } from "./administration";
 import { recordAudit } from "./audit";
 import { roots } from "./planning-center-source";
 import { requireConfiguration, type Product } from "./planning-center-client";
+import { defaultSchedule, nextScheduledAt, validTimeZone } from "./planning-center-calendar";
 
 const PRODUCTS: Product[] = ["people", "services", "check_ins"];
-const zone = "America/Chicago";
-const local = new Intl.DateTimeFormat("en-CA", {
-  timeZone: zone,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  hourCycle: "h23",
-});
-function parts(date: Date) {
-  return Object.fromEntries(local.formatToParts(date).map((p) => [p.type, p.value]));
-}
-// First 1 AM on the next eligible local date. On fall-back day, run only
-// at the first 1 AM; never schedule the repeated hour as a second nightly run.
+// Retained as a convenience for the default cadence.
 export function nextNightlyAt(now: Date): Date {
-  const p = parts(now);
-  const day = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
-  if (Number(p.hour) >= 1) day.setUTCDate(day.getUTCDate() + 1);
-  const target = day.toISOString().slice(0, 10);
-  const start = Math.floor(now.getTime() / 3_600_000) * 3_600_000;
-  for (let i = 0; i < 50; i++) {
-    const candidate = new Date(start + i * 3_600_000);
-    const c = parts(candidate);
-    if (candidate > now && `${c.year}-${c.month}-${c.day}` === target && c.hour === "01")
-      return candidate;
-  }
-  throw new Error("Could not calculate nightly sync time");
+  return nextScheduledAt(now, defaultSchedule);
 }
 interface Schedule {
   account_ref: string;
@@ -46,13 +23,19 @@ interface Schedule {
   remaining: Product[];
   status: PlanningCenterSchedule["status"];
   error: string | null;
+  time_zone: string;
+  local_time: string;
+  frequency: PlanningCenterSchedule["frequency"];
+  week_days: number[];
 }
 const iso = (v: Date | null | undefined) => v?.toISOString() ?? null;
 function view(s?: Schedule): PlanningCenterSchedule {
   return {
     enabled: s?.enabled ?? false,
-    timeZone: zone,
-    localTime: "01:00",
+    timeZone: s?.time_zone ?? defaultSchedule.timeZone,
+    localTime: s?.local_time ?? defaultSchedule.localTime,
+    frequency: s?.frequency ?? defaultSchedule.frequency,
+    weekDays: s?.week_days ?? defaultSchedule.weekDays,
     nextRunAt: s?.enabled ? iso(s.next_run_at) : null,
     lastStartedAt: iso(s?.last_started_at),
     lastFinishedAt: iso(s?.last_finished_at),
@@ -67,7 +50,28 @@ export async function scheduleView(c: PoolClient, account: string) {
   ]);
   return view(s.rows[0]);
 }
-export async function setSchedule(p: Principal, enabled: boolean) {
+export async function setSchedule(
+  p: Principal,
+  input:
+    | boolean
+    | {
+        enabled: boolean;
+        timeZone?: string;
+        localTime?: string;
+        frequency?: PlanningCenterSchedule["frequency"];
+        weekDays?: number[];
+      },
+) {
+  const parsed = SetPlanningCenterScheduleBody.strict().safeParse(
+    typeof input === "boolean" ? { enabled: input } : input,
+  );
+  if (!parsed.success) throw new AccessError(400, "Invalid refresh schedule");
+  const b = parsed.data;
+  const { enabled } = b;
+  if (b.timeZone && !validTimeZone(b.timeZone))
+    throw new AccessError(400, "Choose a valid IANA time zone");
+  if (b.weekDays && new Set(b.weekDays).size !== b.weekDays.length)
+    throw new AccessError(400, "Choose each weekday only once");
   if (enabled) requireConfiguration();
   return adminTransaction(p, async (c) => {
     const v = (
@@ -83,7 +87,10 @@ export async function setSchedule(p: Principal, enabled: boolean) {
         [v.account_ref],
       );
       if (PRODUCTS.some((product) => !baseline.rows.some((r) => r.product === product)))
-        throw new AccessError(409, "Complete all three backfills before enabling nightly syncs");
+        throw new AccessError(
+          409,
+          "Complete all three backfills before enabling scheduled refreshes",
+        );
     }
     const old = (
       await c.query<Schedule>(
@@ -93,30 +100,59 @@ export async function setSchedule(p: Principal, enabled: boolean) {
     // A paused cycle retains its current run and remaining products. Reauthorizing
     // adopts only this schedule's run, never unrelated manual work.
     const same = old?.account_ref === v.account_ref;
+    const previous = view(same ? old : undefined);
+    const settings = {
+      timeZone: b.timeZone ?? previous.timeZone,
+      localTime: b.localTime ?? previous.localTime,
+      frequency: b.frequency ?? previous.frequency,
+      weekDays: (b.weekDays ?? previous.weekDays).slice().sort((a, b) => a - b),
+    };
+    const changed =
+      settings.timeZone !== previous.timeZone ||
+      settings.localTime !== previous.localTime ||
+      settings.frequency !== previous.frequency ||
+      JSON.stringify(settings.weekDays) !== JSON.stringify(previous.weekDays);
     if (same && old.active_run_id) {
       await c.query(
-        `UPDATE pco_sync_runs SET automatic=$2,
+        `UPDATE pco_sync_runs SET automatic=CASE WHEN $4 THEN $2 ELSE automatic END,
          automatic_requested_by=CASE WHEN $2 THEN $3 ELSE automatic_requested_by END
          WHERE id=$1 AND status IN ('running','retry')`,
-        [old.active_run_id, enabled, p.userId],
+        [old.active_run_id, enabled, p.userId, old.enabled !== enabled],
       );
     }
-    const next = same && old.enabled && enabled ? old.next_run_at : nextNightlyAt(new Date());
+    const next =
+      same && old.enabled && enabled && !changed
+        ? old.next_run_at
+        : nextScheduledAt(new Date(), settings);
     const updated = await c.query<Schedule>(
-      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at)
-       VALUES ('planning_center',$1,$2,$3,$4)
+      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at,time_zone,local_time,frequency,week_days)
+       VALUES ('planning_center',$1,$2,$3,$4,$5,$6,$7,$8)
        ON CONFLICT(id) DO UPDATE SET account_ref=$1,enabled=$2,authorized_by=$3,next_run_at=$4,
+       time_zone=$5,local_time=$6,frequency=$7,week_days=$8,
        active_run_id=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.active_run_id END,
        remaining=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.remaining ELSE '[]'::jsonb END,
        status=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.status ELSE 'idle' END,
        last_started_at=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.last_started_at END,
        last_finished_at=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.last_finished_at END,
        error=NULL RETURNING *`,
-      [v.account_ref, enabled, p.userId, enabled ? next : null],
+      [
+        v.account_ref,
+        enabled,
+        p.userId,
+        enabled ? next : null,
+        settings.timeZone,
+        settings.localTime,
+        settings.frequency,
+        JSON.stringify(settings.weekDays),
+      ],
     );
     await recordAudit(
       p.userId!,
-      enabled ? "planning_center.schedule_enabled" : "planning_center.schedule_paused",
+      changed
+        ? "planning_center.schedule_updated"
+        : enabled
+          ? "planning_center.schedule_enabled"
+          : "planning_center.schedule_paused",
       "integration",
       null,
       "success",
@@ -168,7 +204,7 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
     if (!run || run.status !== "complete") {
       await c.query(
         `UPDATE pco_sync_schedules SET active_run_id=NULL,remaining='[]',status=$1,
-         last_finished_at=$2,error='Nightly cycle stopped; review the sync before the next scheduled attempt'
+         last_finished_at=$2,error='Scheduled cycle stopped; review the sync before the next scheduled attempt'
          WHERE id='planning_center'`,
         [run?.status === "cancelled" ? "cancelled" : "failed", now],
       );
@@ -235,7 +271,13 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
      last_started_at=CASE WHEN $3 THEN $4 ELSE last_started_at END,
      last_finished_at=CASE WHEN $3 THEN NULL ELSE last_finished_at END,
      next_run_at=CASE WHEN $3 THEN $5 ELSE next_run_at END WHERE id='planning_center'`,
-    [run.id, JSON.stringify(products.slice(1)), !s.active_run_id, now, nextNightlyAt(now)],
+    [
+      run.id,
+      JSON.stringify(products.slice(1)),
+      !s.active_run_id,
+      now,
+      nextScheduledAt(now, view(s)),
+    ],
   );
   await recordAudit(
     s.authorized_by,

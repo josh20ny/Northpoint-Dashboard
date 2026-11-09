@@ -115,6 +115,16 @@ export interface PlanningCenterConnection {
   error: string | null;
 }
 
+export type PlanningCenterScheduleFrequency = typeof PlanningCenterScheduleFrequency[keyof typeof PlanningCenterScheduleFrequency];
+
+
+export const PlanningCenterScheduleFrequency = {
+  daily: 'daily',
+  twice_daily: 'twice_daily',
+  every_6_hours: 'every_6_hours',
+  weekly: 'weekly',
+} as const;
+
 export type PlanningCenterScheduleStatus = typeof PlanningCenterScheduleStatus[keyof typeof PlanningCenterScheduleStatus];
 
 
@@ -130,6 +140,14 @@ export interface PlanningCenterSchedule {
   enabled: boolean;
   timeZone: string;
   localTime: string;
+  frequency: PlanningCenterScheduleFrequency;
+  /**
+     * @minItems 1
+     * @maxItems 7
+     * @items.minimum 0
+     * @items.maximum 6
+     */
+  weekDays: number[];
   /** @nullable */
   nextRunAt: string | null;
   /** @nullable */
@@ -141,6 +159,35 @@ export interface PlanningCenterSchedule {
   status: PlanningCenterScheduleStatus;
   /** @nullable */
   error: string | null;
+}
+
+export type PlanningCenterScheduleInputFrequency = typeof PlanningCenterScheduleInputFrequency[keyof typeof PlanningCenterScheduleInputFrequency];
+
+
+export const PlanningCenterScheduleInputFrequency = {
+  daily: 'daily',
+  twice_daily: 'twice_daily',
+  every_6_hours: 'every_6_hours',
+  weekly: 'weekly',
+} as const;
+
+export interface PlanningCenterScheduleInput {
+  enabled: boolean;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  timeZone?: string;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  localTime?: string;
+  frequency?: PlanningCenterScheduleInputFrequency;
+  /**
+     * @minItems 1
+     * @maxItems 7
+     * @items.minimum 0
+     * @items.maximum 6
+     */
+  weekDays?: number[];
 }
 
 export interface PlanningCenterWorkspace {

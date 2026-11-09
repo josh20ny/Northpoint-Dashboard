@@ -27,7 +27,7 @@ owner's registered OAuth application and explicit consent.
 
 ## Delivery status
 
-The Phase 3 connection, opt-in background page executor and nightly scheduler are implemented.
+The Phase 3 connection, opt-in background page executor and configurable scheduler are implemented.
 Migrations are applied in development only. Provider configuration, consent and
 organization confirmation have been completed in development. All three product
 backfills and incremental rescans completed; relationship repair rescans for
@@ -79,24 +79,38 @@ Phase 3 is not complete or approved for a live-data release.
    and cancelling open runs. Disconnect before reauthorizing, including a pending
    or expired connection. Retained source data is never deleted by disconnect.
 
-An authenticated Admin can enable **Nightly refresh** in Integrations after all
-three product backfills complete. It defaults to disabled, starts at **1:00 AM
-America/Chicago**, and processes People, Services, then Check-Ins sequentially.
-The first 1 AM is used on the fall-back date, with no second run in the repeated
-hour. Enabling a new schedule sets the next future 1 AM; it does not start an
-immediate import. Pausing retains the current run and remaining products;
-resuming an interrupted cycle continues its saved progress.
+An authenticated Admin can configure **Scheduled refresh** in Integrations.
+The default remains disabled, daily at **1:00 AM America/Chicago**. Admins can
+choose daily, twice daily, every six hours, or selected weekdays, with an HH:mm
+start/anchor time and IANA time zone. Twice-daily and six-hour patterns repeat
+at local-clock offsets from the anchor, wrapping through the same daily pattern.
+Selected weekdays use Sunday=0 through Saturday=6 and require at least one day.
+These are wall-clock schedules, so elapsed intervals may vary at DST transitions.
+Repeated local times run at the first occurrence only; nonexistent local times
+shift forward by the clock gap (for example 02:30 becomes 03:30).
+
+Settings are persisted and audited through the current Admin/CSRF boundary;
+invalid times, zones, frequencies and weekdays are rejected. Saving keeps the
+enabled/paused state, recalculates the next future start when settings change,
+and retains current import progress. The editor preserves unsaved changes during
+status polling, has explicit Save/Discard controls, and displays saved settings
+and next/last-run status in the selected time zone.
+
+Enabling requires all three product backfills and a confirmed connection.
+Each cycle processes People, Services, then Check-Ins sequentially. A new schedule
+starts at the next future matching time, not immediately. Pausing retains the
+current run and remaining products; resuming continues saved progress.
 
 Schedule claims and run creation use the same transaction/advisory lock as page
 processing. Active manual runs (including paused ones) delay scheduled imports.
-An enabled active nightly cycle blocks new manual imports until paused.
+An enabled active scheduled cycle blocks new manual imports until paused.
 Failed/cancelled scheduled imports stop the cycle rather than skip a product;
-the next nightly cycle may try again. Authorization loss disables the schedule
+the next scheduled cycle may try again. Authorization loss disables the schedule
 and requires explicit Admin re-enablement. Disconnect disables and clears the
-cycle without removing source history. Missed nights collapse into a single
-catch-up cycle when the API returns, not one run per missed date. Schedule state,
+cycle without removing source history. Missed starts collapse into a single
+catch-up cycle when the API returns, not one run per missed interval. Schedule state,
 last cycle start/finish, next due time and safe errors appear in Integrations.
-The cadence is configured in application code, not an editable cron expression.
+There is no free-form cron expression or overlapping catch-up backlog.
 
 **Reliable unattended hosting is not yet configured.** The scheduler and page
 executor only operate while the API is running. No deployment, permanent
@@ -206,8 +220,9 @@ bypass or real-user impersonation was added.
 - Completed in development: consent/organization confirmation, all three backfills,
   revision rescans, source provenance and repaired source relationships.
   No production release authorization is implied.
-- Nightly 1 AM Central cadence and durable scheduler are implemented, initially
-  disabled until an Admin enables the control. Verify first live scheduled cycle.
+- Configurable cadence, time zone, start time, selected weekdays and durable
+  scheduler are implemented, initially disabled until an Admin enables the
+  control. Daily 1 AM Central remains the default. Verify first live scheduled cycle.
 - Configure reliable unattended execution; the workspace API alone is not an
   always-running hosting guarantee. Validate interruptions and credential lifecycle.
 - Consider appropriate delta filtering only where the provider documents/supports it.

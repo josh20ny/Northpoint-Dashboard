@@ -4,7 +4,7 @@
 connection and resumable source ingestion with opt-in server-side run-to-completion
 processing implemented. Development OAuth consent and organization confirmation
 are complete, as are all three backfills/revision rescans and relationship checks.
-Admin-enabled nightly scheduling is implemented; unattended hosting and final
+Admin-configurable refresh scheduling is implemented; unattended hosting and final
 operational acceptance are still required.
 No published operational metrics.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
@@ -145,8 +145,9 @@ This is not independent two-source or full-year verification. The imported
 workbook retains its accepted 2026-11-07 cutoff and original fingerprint caveat.
 Planning Center authorization and organization confirmation are complete in
 development. All three backfills/revision rescans and repaired relationships were
-verified. Opt-in run-to-completion resumes partial runs; an Admin can enable nightly
-1 AM Central refreshes for People → Services → Check-Ins. Unattended hosting,
+verified. Opt-in run-to-completion resumes partial runs; Admins can configure
+refresh frequency, start/anchor time, weekdays and time zone for
+People → Services → Check-Ins (daily 1 AM Central by default). Unattended hosting,
 first scheduled-cycle acceptance, deletion/retention rules and release acceptance
 remain unfinished. Metrics and later phases remain out of scope.
 

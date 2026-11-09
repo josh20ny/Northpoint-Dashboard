@@ -17,7 +17,8 @@ encrypted token refresh/revocation and resumable People/Services/Check-Ins
 source ingestion with opt-in background run-to-completion are implemented.
 Development OAuth configuration and organization confirmation are complete.
 Live backfills, incremental rescans and repaired source relationships are verified
-in development. An Admin-enabled nightly 1 AM Central scheduler is implemented;
+in development. An Admin-configurable refresh scheduler is implemented
+(daily 1 AM Central by default, with time/frequency/weekday/time-zone controls);
 reliable unattended hosting, first scheduled-cycle acceptance, retention/deletion
 rules and final operational acceptance remain outstanding.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.

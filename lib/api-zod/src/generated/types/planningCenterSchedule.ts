@@ -5,12 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PlanningCenterScheduleFrequency } from './planningCenterScheduleFrequency';
 import type { PlanningCenterScheduleStatus } from './planningCenterScheduleStatus';
 
 export interface PlanningCenterSchedule {
   enabled: boolean;
   timeZone: string;
   localTime: string;
+  frequency: PlanningCenterScheduleFrequency;
+  /**
+     * @minItems 1
+     * @maxItems 7
+     * @items.minimum 0
+     * @items.maximum 6
+     */
+  weekDays: number[];
   /** @nullable */
   nextRunAt: string | null;
   /** @nullable */

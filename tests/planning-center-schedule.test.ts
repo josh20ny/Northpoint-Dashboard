@@ -7,6 +7,10 @@ import {
   scheduleView,
   setSchedule,
 } from "../artifacts/api-server/src/lib/planning-center-schedule";
+import {
+  defaultSchedule,
+  nextScheduledAt,
+} from "../artifacts/api-server/src/lib/planning-center-calendar";
 import type { Principal } from "../artifacts/api-server/src/lib/auth";
 
 const actor = "00000000-0000-4000-8000-000000000001";
@@ -24,6 +28,10 @@ const saved = () => ({
   remaining: [] as string[],
   status: "idle",
   error: null,
+  time_zone: "America/Chicago",
+  local_time: "01:00",
+  frequency: "daily",
+  week_days: [0],
 });
 let schedule: ReturnType<typeof saved> | null;
 let runStatus: string;
@@ -204,8 +212,8 @@ describe("durable schedule coordinator", () => {
     await setSchedule(admin, false);
     expect(pool.connect).toHaveBeenCalledOnce();
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("UPDATE pco_sync_runs SET automatic=$2"),
-      [id, false, actor],
+      expect.stringContaining("UPDATE pco_sync_runs SET automatic=CASE"),
+      [id, false, actor, true],
     );
     expect(query.mock.calls.some(([sql]) => /SET queue|DELETE FROM/.test(sql))).toBe(false);
     expect(query).toHaveBeenLastCalledWith("COMMIT");
@@ -215,9 +223,125 @@ describe("durable schedule coordinator", () => {
     schedule!.active_run_id = id;
     await setSchedule(admin, true);
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("UPDATE pco_sync_runs SET automatic=$2"),
-      [id, true, actor],
+      expect.stringContaining("UPDATE pco_sync_runs SET automatic=CASE"),
+      [id, true, actor, true],
     );
     expect(inserts()).toHaveLength(0);
+  });
+  it("persists edited settings while keeping a paused schedule paused", async () => {
+    schedule!.enabled = false;
+    await setSchedule(admin, {
+      enabled: false,
+      timeZone: "America/New_York",
+      localTime: "09:45",
+      frequency: "weekly",
+      weekDays: [3, 1],
+    });
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO pco_sync_schedules"), [
+      "1",
+      false,
+      actor,
+      null,
+      "America/New_York",
+      "09:45",
+      "weekly",
+      "[1,3]",
+    ]);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO audit_events"), [
+      actor,
+      "planning_center.schedule_updated",
+      "integration",
+      null,
+      "success",
+    ]);
+    expect(inserts()).toHaveLength(0);
+  });
+  it("recalculates the next start after edits without restarting its current import", async () => {
+    schedule!.active_run_id = id;
+    await setSchedule(admin, { enabled: true, localTime: "16:35" });
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("UPDATE pco_sync_runs SET automatic=CASE"),
+      [id, true, actor, false],
+    );
+    const call = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO pco_sync_schedules"))!;
+    expect(call[1][3]).toBeInstanceOf(Date);
+    expect(call[1][3]).not.toEqual(schedule!.next_run_at);
+    expect(call[1][5]).toBe("16:35");
+    expect(inserts()).toHaveLength(0);
+  });
+  it("leaves an unchanged enabled schedule's due time alone", async () => {
+    await setSchedule(admin, { enabled: true, localTime: "01:00", frequency: "daily" });
+    const call = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO pco_sync_schedules"))!;
+    expect(call[1][3]).toEqual(now);
+  });
+  it.each([
+    { localTime: "24:00" },
+    { localTime: "1:00" },
+    { localTime: "10:60" },
+    { frequency: "hourly" },
+    { weekDays: [] },
+    { weekDays: [7] },
+    { weekDays: [1, 1] },
+    { weekDays: [1.5] },
+    { timeZone: "Not/AZone" },
+    { enabled: "true" },
+    { unexpected: "field" },
+  ])("rejects invalid schedule settings before database access: %j", async (invalid) => {
+    await expect(setSchedule(admin, { enabled: false, ...invalid } as never)).rejects.toMatchObject(
+      { status: 400 },
+    );
+    expect(pool.connect).not.toHaveBeenCalled();
+  });
+});
+
+describe("configurable refresh calendar", () => {
+  it.each([
+    ["twice_daily", "01:00", "2026-11-09T07:00:00Z", "2026-11-09T19:00:00Z"],
+    ["every_6_hours", "01:15", "2026-11-09T07:15:00Z", "2026-11-09T13:15:00Z"],
+    ["every_6_hours", "22:40", "2026-11-09T05:00:00Z", "2026-11-09T10:40:00Z"],
+    ["daily", "02:30", "2026-03-08T06:00:00Z", "2026-03-08T08:30:00Z"],
+    ["daily", "01:30", "2026-11-01T06:31:00Z", "2026-11-02T07:30:00Z"],
+    ["daily", "23:59", "2026-12-31T06:00:00Z", "2027-01-01T05:59:00Z"],
+  ] as const)("handles %s at %s", (frequency, localTime, input, expected) => {
+    expect(nextScheduledAt(new Date(input), { ...defaultSchedule, frequency, localTime })).toEqual(
+      new Date(expected),
+    );
+  });
+  it("finds the next selected weekday, including week wrap", () => {
+    const settings = {
+      ...defaultSchedule,
+      frequency: "weekly" as const,
+      weekDays: [1, 3],
+      localTime: "09:45",
+    };
+    expect(nextScheduledAt(new Date("2026-11-09T15:45:00Z"), settings)).toEqual(
+      new Date("2026-11-11T15:45:00Z"),
+    );
+    expect(nextScheduledAt(new Date("2026-11-12T15:45:00Z"), settings)).toEqual(
+      new Date("2026-11-16T15:45:00Z"),
+    );
+  });
+  it("uses the saved settings for future coordinator claims", async () => {
+    schedule!.frequency = "weekly";
+    schedule!.week_days = [3];
+    schedule!.local_time = "09:45";
+    await advanceSchedule(c, now);
+    expect(writes()[0]![1]![4]).toEqual(new Date("2026-11-11T15:45:00Z"));
+  });
+  it("supports a half-hour offset zone and UTC", () => {
+    expect(
+      nextScheduledAt(new Date("2026-11-09T00:00:00Z"), {
+        ...defaultSchedule,
+        timeZone: "Asia/Kolkata",
+        localTime: "06:10",
+      }),
+    ).toEqual(new Date("2026-11-09T00:40:00Z"));
+    expect(
+      nextScheduledAt(new Date("2026-11-09T00:00:00Z"), {
+        ...defaultSchedule,
+        timeZone: "UTC",
+        localTime: "06:10",
+      }),
+    ).toEqual(new Date("2026-11-09T06:10:00Z"));
   });
 });

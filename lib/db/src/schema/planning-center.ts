@@ -125,6 +125,10 @@ export const pcoSyncSchedules = pgTable(
     id: text("id").primaryKey().default("planning_center"),
     accountRef: text("account_ref").notNull(),
     enabled: boolean("enabled").notNull().default(false),
+    timeZone: text("time_zone").notNull().default("America/Chicago"),
+    localTime: text("local_time").notNull().default("01:00"),
+    frequency: text("frequency").notNull().default("daily"),
+    weekDays: jsonb("week_days").notNull().default([0]),
     authorizedBy: uuid("authorized_by")
       .notNull()
       .references(() => usersTable.id),
@@ -139,6 +143,11 @@ export const pcoSyncSchedules = pgTable(
   (t) => [
     admin(),
     check("pco_schedule_singleton", sql`${t.id} = 'planning_center'`),
+    check(
+      "pco_schedule_frequency",
+      sql`${t.frequency} IN ('daily','twice_daily','every_6_hours','weekly')`,
+    ),
+    check("pco_schedule_time", sql`${t.localTime} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`),
     check(
       "pco_schedule_status",
       sql`${t.status} IN ('idle','running','complete','failed','cancelled')`,

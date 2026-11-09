@@ -8,6 +8,13 @@
 import * as zod from 'zod';
 
 
+export const getPlanningCenterResponseScheduleWeekDaysItemMin = 0;
+export const getPlanningCenterResponseScheduleWeekDaysItemMax = 6;
+
+export const getPlanningCenterResponseScheduleWeekDaysMax = 7;
+
+
+
 export const GetPlanningCenterResponse = zod.object({
   "configured": zod.boolean(),
   "missingConfiguration": zod.array(zod.string()),
@@ -44,6 +51,8 @@ export const GetPlanningCenterResponse = zod.object({
   "enabled": zod.boolean(),
   "timeZone": zod.string(),
   "localTime": zod.string(),
+  "frequency": zod.enum(['daily', 'twice_daily', 'every_6_hours', 'weekly']),
+  "weekDays": zod.array(zod.number().int().min(getPlanningCenterResponseScheduleWeekDaysItemMin).max(getPlanningCenterResponseScheduleWeekDaysItemMax)).min(1).max(getPlanningCenterResponseScheduleWeekDaysMax),
   "nextRunAt": zod.string().nullable(),
   "lastStartedAt": zod.string().nullable(),
   "lastFinishedAt": zod.string().nullable(),
@@ -55,14 +64,37 @@ export const GetPlanningCenterResponse = zod.object({
 })
 
 
+export const setPlanningCenterScheduleBodyTimeZoneMax = 100;
+
+export const setPlanningCenterScheduleBodyLocalTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const setPlanningCenterScheduleBodyWeekDaysItemMin = 0;
+export const setPlanningCenterScheduleBodyWeekDaysItemMax = 6;
+
+export const setPlanningCenterScheduleBodyWeekDaysMax = 7;
+
+
+
 export const SetPlanningCenterScheduleBody = zod.object({
-  "enabled": zod.boolean()
+  "enabled": zod.boolean(),
+  "timeZone": zod.string().min(1).max(setPlanningCenterScheduleBodyTimeZoneMax).optional(),
+  "localTime": zod.string().regex(setPlanningCenterScheduleBodyLocalTimeRegExp).optional(),
+  "frequency": zod.enum(['daily', 'twice_daily', 'every_6_hours', 'weekly']).optional(),
+  "weekDays": zod.array(zod.number().int().min(setPlanningCenterScheduleBodyWeekDaysItemMin).max(setPlanningCenterScheduleBodyWeekDaysItemMax)).min(1).max(setPlanningCenterScheduleBodyWeekDaysMax).optional()
 })
+
+export const setPlanningCenterScheduleResponseWeekDaysItemMin = 0;
+export const setPlanningCenterScheduleResponseWeekDaysItemMax = 6;
+
+export const setPlanningCenterScheduleResponseWeekDaysMax = 7;
+
+
 
 export const SetPlanningCenterScheduleResponse = zod.object({
   "enabled": zod.boolean(),
   "timeZone": zod.string(),
   "localTime": zod.string(),
+  "frequency": zod.enum(['daily', 'twice_daily', 'every_6_hours', 'weekly']),
+  "weekDays": zod.array(zod.number().int().min(setPlanningCenterScheduleResponseWeekDaysItemMin).max(setPlanningCenterScheduleResponseWeekDaysItemMax)).min(1).max(setPlanningCenterScheduleResponseWeekDaysMax),
   "nextRunAt": zod.string().nullable(),
   "lastStartedAt": zod.string().nullable(),
   "lastFinishedAt": zod.string().nullable(),

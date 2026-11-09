@@ -53,6 +53,7 @@ import type {
   PlanningCenterAutomationInput,
   PlanningCenterConfirmation,
   PlanningCenterSchedule,
+  PlanningCenterScheduleInput,
   PlanningCenterSync,
   PlanningCenterSyncInput,
   PlanningCenterWorkspace,
@@ -194,7 +195,7 @@ export const getSetPlanningCenterScheduleUrl = () => {
   return `/api/v1/admin/planning-center/schedule`
 }
 
-export const setPlanningCenterSchedule = async (planningCenterAutomationInput: PlanningCenterAutomationInput, options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterSchedule> => {
+export const setPlanningCenterSchedule = async (planningCenterScheduleInput: PlanningCenterScheduleInput, options?: Parameters<typeof customFetch>[1]): Promise<PlanningCenterSchedule> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -215,7 +216,7 @@ return customFetch<PlanningCenterSchedule>(getSetPlanningCenterScheduleUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(planningCenterAutomationInput)
+    body: JSON.stringify(planningCenterScheduleInput)
   }
 );}
 
@@ -253,9 +254,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type SetPlanningCenterScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof setPlanningCenterSchedule>>>
-    export type SetPlanningCenterScheduleMutationBody = BodyType<PlanningCenterAutomationInput>
+    export type SetPlanningCenterScheduleMutationBody = BodyType<PlanningCenterScheduleInput>
     export type SetPlanningCenterScheduleMutationError = ErrorType<unknown>
-    export type SetPlanningCenterScheduleMutationVariables = {data: BodyType<PlanningCenterAutomationInput>}
+    export type SetPlanningCenterScheduleMutationVariables = {data: BodyType<PlanningCenterScheduleInput>}
 
     export const useSetPlanningCenterSchedule = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlanningCenterSchedule>>, TError,SetPlanningCenterScheduleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

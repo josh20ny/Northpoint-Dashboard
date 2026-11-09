@@ -62,9 +62,7 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
         return;
       }
       res.json(
-        SetPlanningCenterScheduleResponse.parse(
-          await setSchedule(res.locals.principal, b.data.enabled),
-        ),
+        SetPlanningCenterScheduleResponse.parse(await setSchedule(res.locals.principal, b.data)),
       );
     }),
   );

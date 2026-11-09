@@ -11,7 +11,6 @@ import {
   useGetPlanningCenter,
   useStartPlanningCenterSync,
   useSetPlanningCenterAutomation,
-  useSetPlanningCenterSchedule,
   type PlanningCenterSync,
   type PlanningCenterSyncInputMode,
   type PlanningCenterSyncInputProduct,
@@ -22,6 +21,7 @@ import { Panel, QueryError, RefreshButton, StatusPill } from "@/components/kit";
 import { EmptyRecord, FormError, SectionHeading } from "@/components/admin-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { btn, btnPrimary, csrfRequest, Note } from "@/components/import-common";
+import { RefreshSchedule } from "@/components/planning-center-schedule";
 
 const PRODUCTS: [PlanningCenterSyncInputProduct, string][] = [
   ["people", "People"],
@@ -474,94 +474,6 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
   );
 }
 
-function NightlySchedule({ ws }: { ws: PlanningCenterWorkspace }) {
-  const { csrfToken } = useAuth();
-  const invalidate = useInvalidate();
-  const save = useSetPlanningCenterSchedule({
-    ...csrfRequest(csrfToken),
-    mutation: { onSettled: () => void invalidate() },
-  });
-  const s = ws.schedule;
-  const central = (value: string | null) =>
-    value
-      ? new Date(value).toLocaleString("en-US", {
-          timeZone: "America/Chicago",
-          timeZoneName: "short",
-        })
-      : "—";
-  const ready =
-    ws.connection?.state === "connected" &&
-    PRODUCTS.every(([p]) =>
-      ws.syncs.some((r) => r.product === p && r.mode === "backfill" && r.status === "complete"),
-    );
-  const active = ws.syncs.find((r) => r.id === s.activeRunId);
-  return (
-    <Panel className="p-5 sm:p-6" data-testid="card-pco-schedule">
-      <SectionHeading
-        icon={RefreshCcw}
-        title="Nightly refresh"
-        detail="Every night at 1:00 AM Central, including daylight-saving changes."
-      />
-      <div className="space-y-2 text-[12.5px] leading-relaxed">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p>People → Services → Check-Ins · incremental rescans, one at a time.</p>
-          <StatusPill
-            status={s.enabled ? "current" : "off"}
-            label={s.enabled ? "Enabled" : "Paused"}
-          />
-        </div>
-        <dl className="grid gap-2 sm:grid-cols-3">
-          <div>
-            <dt className="text-muted-foreground">Next cycle</dt>
-            <dd data-testid="text-schedule-next">{central(s.nextRunAt)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Last cycle started</dt>
-            <dd>{central(s.lastStartedAt)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Last cycle finished</dt>
-            <dd>{central(s.lastFinishedAt)}</dd>
-          </div>
-        </dl>
-        <p role="status" data-testid="text-schedule-status">
-          Cycle: {s.status}.
-          {active &&
-            ` ${PRODUCTS.find(([p]) => p === active.product)?.[1]}: ${active.status}, ${n(active.pages)} pages saved.`}
-          {s.status === "running" && !s.enabled && " Cycle paused; saved progress retained."}
-        </p>
-        {s.error && <Note tone="warn">{s.error}</Note>}
-        <p className="text-muted-foreground">
-          Existing unfinished imports delay the next cycle. Pausing stops processing this schedule’s
-          current import and retains its progress; manual imports are unchanged. Missed nights are
-          combined into one catch-up cycle when the API returns, not a backlog of daily runs. This
-          needs a running API; reliable unattended hosting is not configured by this control.
-        </p>
-        {!ready && (
-          <Note>
-            A confirmed connection and completed backfills for all three products are required to
-            enable this schedule.
-          </Note>
-        )}
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={save.isPending || (!s.enabled && !ready)}
-          onClick={() => save.mutate({ data: { enabled: !s.enabled } })}
-          data-testid="button-pco-schedule"
-        >
-          {save.isPending
-            ? "Saving"
-            : s.enabled
-              ? "Pause nightly refresh"
-              : "Enable nightly refresh"}
-        </button>
-        <FormError error={save.error} />
-      </div>
-    </Panel>
-  );
-}
-
 export function PlanningCenterAdmin() {
   const q = useGetPlanningCenter({
     query: {
@@ -602,7 +514,7 @@ export function PlanningCenterAdmin() {
             key={`${ws.connection?.accountRef ?? "none"}:${ws.connection?.state ?? "none"}`}
             ws={ws}
           />
-          <NightlySchedule ws={ws} />
+          <RefreshSchedule ws={ws} />
           <Syncs ws={ws} />
         </>
       )}

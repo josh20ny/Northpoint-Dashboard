@@ -39,6 +39,8 @@ export async function databaseReadiness() {
         AND (SELECT count(*) FROM pg_policy WHERE polname='pco_admin_only' AND polrelid IN
           (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
            to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules')))=5
+        AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_sync_schedules' AND column_name IN ('time_zone','local_time','frequency','week_days'))=4
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='pco_no_delete' AND tgenabled<>'D'
           AND tgrelid IN (to_regclass('pco_connections'),to_regclass('pco_source_entities'),to_regclass('pco_sync_runs')))=3
          AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'
