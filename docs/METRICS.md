@@ -10,6 +10,20 @@
 - Missing, delayed or partial weeks: `quality_status` and denominator; do not display as zero except for the owner-confirmed attendance rule below.
 
 ## Attendance
+### Phase 4 approved count and missingness rules
+- Adult count: people seated in the auditorium attending that service, excluding
+  volunteers and people on stage. Service sums are not deduplicated unique people.
+- Manual saves take effect immediately; corrections retain previous revisions.
+- April 12, 19, 26 and May 3, 2026 are online-only/unrecorded, not measured zero.
+  Intentionally off Sundays are also unrecorded; do not invent their dates.
+  These exceptions supersede the blanket historical blank-to-zero interpretation.
+- January 25, 2026 retains the explicitly confirmed zero and ice-storm context.
+- Full Sunday actuals require both configured adult source slots; a single known
+  service produces only a labelled subtotal. Unrecorded/invalidated/future values
+  never become full totals.
+- Four-week denominators and YoY alignment remain unapproved. The implementation
+  shows unavailable explanations, not invented numeric comparisons.
+
 ### Owner-confirmed legacy review names (2026-11-07)
 - `SPD!F` → `adult_service_1`.
 - `SPD!I` → `adult_service_2`.
@@ -33,7 +47,7 @@ below. See `DECISIONS.md`.
   dates remain unresolved; this rule does not apply to other numeric measures.
 
 ### Canonical definitions
-- `adult_in_person_attendance`: sum of verified adult manual per-service headcounts for Sunday; aggregate observations must be marked as such (DRAFT).
+- `adult_in_person_attendance`: sum of auditorium per-service headcounts for Sunday under the Phase 4 definition; aggregate observations are marked as such. Manual entry is approved without an approval queue; historical source authority/promotion remains explicit and separate.
 - `adult_online_connections`: raw source-defined live Sunday connections; distinct from estimated persons (DRAFT).
 - `adult_total_engagement`: historical `in_person + online_connections * multiplier`; preserve as *legacy-defined* metric, with effective-dated multiplier, and do not call it unique attendees (DRAFT).
 - Kids/students attendance: normalized Planning Center Check-Ins headcount by occurrence/ministry/age/grade/gender/service/room where source supports; no double count of re-checks (DRAFT).

@@ -1,7 +1,8 @@
 import type { Request, RequestHandler } from "express";
 
 export type Role = "staff" | "leadership" | "admin";
-export type Permission = "attendance:aggregate" | "giving:individual" | "system:manage";
+export type Permission =
+  "attendance:aggregate" | "attendance:write" | "giving:individual" | "system:manage";
 
 // Identity may only originate from a verified server-side provider session.
 // There is deliberately no header, query, cookie, or development-role shortcut.
@@ -46,7 +47,7 @@ export const sessionAuthProvider: AuthProvider = {
 export function hasPermission(principal: Principal | null, permission: Permission): boolean {
   if (!principal) return false;
   if (!["staff", "leadership", "admin"].includes(principal.role)) return false;
-  if (permission === "attendance:aggregate") return true;
+  if (permission === "attendance:aggregate" || permission === "attendance:write") return true;
   if (permission === "giving:individual" || permission === "system:manage") {
     return principal.role === "admin";
   }

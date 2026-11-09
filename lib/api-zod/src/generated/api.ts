@@ -8,6 +8,180 @@
 import * as zod from 'zod';
 
 
+export const GetAttendanceQueryParams = zod.object({
+  "start": zod.coerce.string().optional(),
+  "end": zod.coerce.string().optional(),
+  "definitionId": zod.coerce.string().uuid().optional()
+})
+
+export const GetAttendanceResponse = zod.object({
+  "definition": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "ministryId": zod.string().uuid(),
+  "effectiveFrom": zod.string(),
+  "version": zod.number().int(),
+  "note": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()]),
+  "definitions": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "ministryId": zod.string().uuid(),
+  "effectiveFrom": zod.string(),
+  "version": zod.number().int(),
+  "note": zod.string(),
+  "createdAt": zod.string()
+})),
+  "isCurrentDefinition": zod.boolean(),
+  "ministries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string()
+})),
+  "services": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "startAt": zod.string()
+})),
+  "revisions": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "slot": zod.string(),
+  "occurrenceId": zod.string().uuid().nullable(),
+  "count": zod.number().int().nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "note": zod.string(),
+  "source": zod.enum(['manual', 'workbook']),
+  "reviewMethod": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "previousId": zod.string().uuid().nullable(),
+  "valid": zod.boolean()
+})),
+  "weeks": zod.array(zod.object({
+  "week": zod.string(),
+  "value": zod.number().nullable(),
+  "knownSubtotal": zod.number().nullable(),
+  "recordedServices": zod.number().int(),
+  "expectedServices": zod.number().int(),
+  "quality": zod.enum(['complete', 'partial', 'missing', 'unrecorded', 'invalidated', 'future']),
+  "lastUpdatedAt": zod.string().nullable()
+})),
+  "asOf": zod.string(),
+  "timezone": zod.string(),
+  "metricSlug": zod.string(),
+  "definitionText": zod.string(),
+  "fourWeek": zod.string(),
+  "yoy": zod.string(),
+  "latestCompletedWeek": zod.string(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "historyTruncated": zod.boolean()
+})
+
+
+export const saveAttendanceBodyCountMin = 0;
+export const saveAttendanceBodyCountMax = 2147483647;
+
+export const saveAttendanceBodyNoteMin = 3;
+export const saveAttendanceBodyNoteMax = 1000;
+
+
+
+export const SaveAttendanceBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "slot": zod.enum(['adult_service_1', 'adult_service_2']),
+  "occurrenceId": zod.string().uuid().nullable(),
+  "count": zod.number().int().min(saveAttendanceBodyCountMin).max(saveAttendanceBodyCountMax).nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "note": zod.string().min(saveAttendanceBodyNoteMin).max(saveAttendanceBodyNoteMax),
+  "expectedRevision": zod.string().uuid().nullable()
+})
+
+export const SaveAttendanceResponse = zod.object({
+  "id": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "slot": zod.string(),
+  "occurrenceId": zod.string().uuid().nullable(),
+  "count": zod.number().int().nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "note": zod.string(),
+  "source": zod.enum(['manual', 'workbook']),
+  "reviewMethod": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "previousId": zod.string().uuid().nullable(),
+  "valid": zod.boolean()
+})
+
+
+export const saveAttendanceDefinitionBodyNoteMin = 20;
+export const saveAttendanceDefinitionBodyNoteMax = 1000;
+
+
+
+export const SaveAttendanceDefinitionBody = zod.object({
+  "ministryId": zod.string().uuid(),
+  "effectiveFrom": zod.string(),
+  "note": zod.string().min(saveAttendanceDefinitionBodyNoteMin).max(saveAttendanceDefinitionBodyNoteMax)
+})
+
+export const SaveAttendanceDefinitionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "ministryId": zod.string().uuid(),
+  "effectiveFrom": zod.string(),
+  "version": zod.number().int(),
+  "note": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+export const GetAttendanceHistoryPreviewParams = zod.object({
+  "batchId": zod.coerce.string().uuid()
+})
+
+export const GetAttendanceHistoryPreviewResponse = zod.object({
+  "candidates": zod.array(zod.object({
+  "week": zod.string(),
+  "slot": zod.string(),
+  "count": zod.number().int().nullable(),
+  "evidenceHash": zod.string(),
+  "eligible": zod.boolean(),
+  "reviewMethod": zod.string().nullable(),
+  "flags": zod.array(zod.string())
+}))
+})
+
+
+export const PromoteAttendanceHistoryParams = zod.object({
+  "batchId": zod.coerce.string().uuid()
+})
+
+export const promoteAttendanceHistoryBodyFirstHashMin = 64;
+export const promoteAttendanceHistoryBodyFirstHashMax = 64;
+
+export const promoteAttendanceHistoryBodySecondHashMin = 64;
+export const promoteAttendanceHistoryBodySecondHashMax = 64;
+
+export const promoteAttendanceHistoryBodyNoteMin = 20;
+export const promoteAttendanceHistoryBodyNoteMax = 1000;
+
+
+
+export const PromoteAttendanceHistoryBody = zod.object({
+  "definitionId": zod.string().uuid(),
+  "week": zod.string(),
+  "firstHash": zod.string().min(promoteAttendanceHistoryBodyFirstHashMin).max(promoteAttendanceHistoryBodyFirstHashMax),
+  "secondHash": zod.string().min(promoteAttendanceHistoryBodySecondHashMin).max(promoteAttendanceHistoryBodySecondHashMax),
+  "note": zod.string().min(promoteAttendanceHistoryBodyNoteMin).max(promoteAttendanceHistoryBodyNoteMax),
+  "acknowledgeAuthority": zod.boolean()
+})
+
+export const PromoteAttendanceHistoryResponse = zod.object({
+  "promoted": zod.number().int()
+})
+
+
 export const getPlanningCenterResponseScheduleIntervalCountMax = 365;
 
 export const getPlanningCenterResponseScheduleAnchorDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');

@@ -1,12 +1,15 @@
 # Northpoint Dashboard 2.0
 
-**Status:** Phase 2 sample-review gate met; Phase 3 direct Planning Center
+**Status:** Phase 4 adult-attendance development slice implemented; see
+`docs/PHASE_4_IMPLEMENTATION.md` for setup, verification and release limits.
+Phase 2 sample-review gate met; Phase 3 direct Planning Center
 connection and resumable source ingestion with opt-in server-side run-to-completion
 processing implemented. Development OAuth consent and organization confirmation
 are complete, as are all three backfills/revision rescans and relationship checks.
 Admin-configurable refresh scheduling is implemented; unattended hosting and final
 operational acceptance are still required.
-No published operational metrics.
+No real attendance has been promoted by the agent. An Admin must configure the
+adult ministry before manual entry; historical promotion is a separate explicit action.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
 The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
 
@@ -137,9 +140,14 @@ not custom production migration scripts or deployment-build DDL. Independent
 hosting needs a separately reviewed release process. Keep only one schema
 application mechanism per database. No production release is authorized by this setup.
 
-## Next roadmap slice
+## Current roadmap slice
 
-Phase 3 is authorized. Phase 2's January 4, 11 and 18 sample weeks have current
+Phase 4 provides protected adult attendance at `/attendance`, with immediate
+manual entry, append-only corrections, deliberate historical promotion and a
+home KPI. Auditorium attendees only; volunteers and stage participants excluded.
+Online-only and intentionally off Sundays remain unrecorded, not measured zero.
+Four-week and YoY comparisons remain unavailable pending policy approval.
+Phase 2's January 4, 11 and 18 sample weeks have current
 owner-confirmed approvals for both adult services (six exact-evidence approvals).
 This is not independent two-source or full-year verification. The imported
 workbook retains its accepted 2026-11-07 cutoff and original fingerprint caveat.
@@ -149,7 +157,8 @@ verified. Opt-in run-to-completion resumes partial runs; Admins can configure
 Daily/Weekly/Custom frequency, custom intervals and start date, time, weekdays and time zone for
 People → Services → Check-Ins (daily 1 AM Central by default). Unattended hosting,
 first scheduled-cycle acceptance, deletion/retention rules and release acceptance
-remain unfinished. Metrics and later phases remain out of scope.
+remain pre-production requirements, not blockers to Phase 4 development under
+D-025. Later modules remain out of scope. No production release is authorized.
 
 ## Non-negotiable standards
 

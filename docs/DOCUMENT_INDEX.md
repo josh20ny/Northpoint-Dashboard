@@ -17,6 +17,7 @@
 - `docs/HISTORICAL_MIGRATION.md`
 - `docs/INTEGRATIONS.md`
 - `docs/PHASE_3_IMPLEMENTATION.md` — Planning Center setup and delivery limits
+- `docs/PHASE_4_IMPLEMENTATION.md` — adult attendance setup, corrections and historical promotion
 - `docs/JOURNEYS.md`
 - `docs/METRICS.md`
 - `docs/OPEN_QUESTIONS.md`

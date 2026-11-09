@@ -411,7 +411,7 @@ export function buildReport(
     ).length,
   };
 }
-async function evidence(c: PoolClient, id: string) {
+export async function evidence(c: PoolClient, id: string) {
   const r = await c.query<EvidenceRow>(
     `SELECT m.id AS "mappingId",m.definition,r.data FROM import_mappings m
     JOIN import_staged_rows r ON r.mapping_id=m.id WHERE m.batch_id=$1 AND m.status='approved'

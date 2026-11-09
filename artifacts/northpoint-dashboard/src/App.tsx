@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Ministries from "@/pages/ministries";
 import Ministry from "@/pages/ministry";
+import Attendance from "@/pages/attendance";
 import Administration from "@/pages/administration";
 import Integrations from "@/pages/integrations";
 import Imports from "@/pages/imports";
@@ -29,6 +30,7 @@ function Router() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/attendance" component={Attendance} />
           <Route path="/ministries" component={Ministries} />
           <Route path="/ministries/:slug" component={Ministry} />
           <Route path="/administration" component={Administration} />

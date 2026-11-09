@@ -27,8 +27,13 @@ The schedule remains disabled; unattended freshness must not be assumed.
 Unattended hosting is deferred by the owner's development-only choice;
 production retention/privacy deletion and release approval remain separate gates.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
-Phase 4 adult-attendance development is next; source authority, numeric definitions
-and metric publication still require their own approvals.
+Phase 4 adult-attendance development now provides manual auditorium headcounts,
+immediate saves, immutable corrections, typed aggregate reads, the home KPI and
+attendance drilldown, plus deliberate evidence-bound historical promotion.
+No real attendance was entered/promoted by the agent. Initial adult ministry and
+service setup and owner-operated historical publication remain outstanding.
+Four-week and YoY policies remain unapproved/unavailable. See
+`PHASE_4_IMPLEMENTATION.md`; this is not production or full historical acceptance.
 
 | Phase | Build | Exit gate |
 |---|---|---|

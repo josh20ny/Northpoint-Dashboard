@@ -5,6 +5,197 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AttendanceDefinitionInput {
+  ministryId: string;
+  effectiveFrom: string;
+  /**
+     * @minLength 20
+     * @maxLength 1000
+     */
+  note: string;
+}
+
+export interface AttendanceDefinition {
+  id: string;
+  ministryId: string;
+  effectiveFrom: string;
+  version: number;
+  note: string;
+  createdAt: string;
+}
+
+export type AttendanceInputSlot = typeof AttendanceInputSlot[keyof typeof AttendanceInputSlot];
+
+
+export const AttendanceInputSlot = {
+  adult_service_1: 'adult_service_1',
+  adult_service_2: 'adult_service_2',
+} as const;
+
+export type AttendanceInputStatus = typeof AttendanceInputStatus[keyof typeof AttendanceInputStatus];
+
+
+export const AttendanceInputStatus = {
+  recorded: 'recorded',
+  unrecorded: 'unrecorded',
+} as const;
+
+export interface AttendanceInput {
+  requestId: string;
+  definitionId: string;
+  serviceDate: string;
+  slot: AttendanceInputSlot;
+  /** @nullable */
+  occurrenceId: string | null;
+  /**
+     * @minimum 0
+     * @maximum 2147483647
+     * @nullable
+     */
+  count: number | null;
+  status: AttendanceInputStatus;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  note: string;
+  /** @nullable */
+  expectedRevision: string | null;
+}
+
+export type AttendanceRevisionStatus = typeof AttendanceRevisionStatus[keyof typeof AttendanceRevisionStatus];
+
+
+export const AttendanceRevisionStatus = {
+  recorded: 'recorded',
+  unrecorded: 'unrecorded',
+} as const;
+
+export type AttendanceRevisionSource = typeof AttendanceRevisionSource[keyof typeof AttendanceRevisionSource];
+
+
+export const AttendanceRevisionSource = {
+  manual: 'manual',
+  workbook: 'workbook',
+} as const;
+
+export interface AttendanceRevision {
+  id: string;
+  definitionId: string;
+  serviceDate: string;
+  slot: string;
+  /** @nullable */
+  occurrenceId: string | null;
+  /** @nullable */
+  count: number | null;
+  status: AttendanceRevisionStatus;
+  note: string;
+  source: AttendanceRevisionSource;
+  /** @nullable */
+  reviewMethod: string | null;
+  createdAt: string;
+  /** @nullable */
+  previousId: string | null;
+  valid: boolean;
+}
+
+export type AttendanceWeekQuality = typeof AttendanceWeekQuality[keyof typeof AttendanceWeekQuality];
+
+
+export const AttendanceWeekQuality = {
+  complete: 'complete',
+  partial: 'partial',
+  missing: 'missing',
+  unrecorded: 'unrecorded',
+  invalidated: 'invalidated',
+  future: 'future',
+} as const;
+
+export interface AttendanceWeek {
+  week: string;
+  /** @nullable */
+  value: number | null;
+  /** @nullable */
+  knownSubtotal: number | null;
+  recordedServices: number;
+  expectedServices: number;
+  quality: AttendanceWeekQuality;
+  /** @nullable */
+  lastUpdatedAt: string | null;
+}
+
+export interface AttendanceService {
+  id: string;
+  serviceDate: string;
+  startAt: string;
+}
+
+export interface AttendanceMinistry {
+  id: string;
+  name: string;
+}
+
+export interface AttendanceWorkspace {
+  definition: AttendanceDefinition | null;
+  definitions: AttendanceDefinition[];
+  isCurrentDefinition: boolean;
+  ministries: AttendanceMinistry[];
+  services: AttendanceService[];
+  revisions: AttendanceRevision[];
+  weeks: AttendanceWeek[];
+  asOf: string;
+  timezone: string;
+  metricSlug: string;
+  definitionText: string;
+  fourWeek: string;
+  yoy: string;
+  latestCompletedWeek: string;
+  start: string;
+  end: string;
+  historyTruncated: boolean;
+}
+
+export interface AttendanceHistoryCandidate {
+  week: string;
+  slot: string;
+  /** @nullable */
+  count: number | null;
+  evidenceHash: string;
+  eligible: boolean;
+  /** @nullable */
+  reviewMethod: string | null;
+  flags: string[];
+}
+
+export interface AttendanceHistoryPreview {
+  candidates: AttendanceHistoryCandidate[];
+}
+
+export interface AttendancePromotionInput {
+  definitionId: string;
+  week: string;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  firstHash: string;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  secondHash: string;
+  /**
+     * @minLength 20
+     * @maxLength 1000
+     */
+  note: string;
+  acknowledgeAuthority: boolean;
+}
+
+export interface AttendancePromotionResult {
+  promoted: number;
+}
+
 export interface PlanningCenterAuthorization {
   url: string;
 }
@@ -815,6 +1006,12 @@ export interface DocumentContent {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetAttendanceParams = {
+start?: string;
+end?: string;
+definitionId?: string;
+};
 
 export type UploadWorkbookParams = {
 /**

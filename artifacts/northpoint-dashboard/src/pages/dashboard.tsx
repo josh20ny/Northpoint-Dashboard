@@ -1,6 +1,11 @@
 import { Link } from "wouter";
 import { ArrowUpRight, Lock } from "lucide-react";
-import { useGetFoundation } from "@workspace/api-client-react";
+import {
+  getGetAttendanceQueryKey,
+  useGetAttendance,
+  useGetFoundation,
+} from "@workspace/api-client-react";
+import { QUALITY_LABEL, QUALITY_TONE, attendancePolling, fmtCount } from "@/lib/attendance";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   KV,
@@ -16,7 +21,12 @@ import { useAuth } from "@workspace/replit-auth-web";
 
 export default function Dashboard() {
   usePageTitle("Dashboard");
-  const { enabled } = useAuth();
+  const { enabled, user } = useAuth();
+  const att = useGetAttendance(undefined, {
+    query: { enabled: !!user, queryKey: getGetAttendanceQueryKey(), ...attendancePolling },
+  });
+  const aw = att.data;
+  const latest = aw?.weeks.find((x) => x.week === aw.latestCompletedWeek);
   const q = useGetFoundation();
   const f = q.data;
   const loading = q.isLoading || q.isFetching;
@@ -40,19 +50,77 @@ export default function Dashboard() {
           <Panel className="np-grid-bg relative overflow-hidden" delay={60}>
             <div className="flex min-h-[260px] flex-col justify-between bg-gradient-to-br from-card via-card/95 to-card/70 p-6">
               <div>
-                <StatusPill
-                  status="placeholder"
-                  label="No operational data"
-                  testId="status-dashboard-data"
-                />
-                <h2 className="mt-4 max-w-md text-xl font-semibold tracking-tight">
-                  Weekly ministry reporting
-                </h2>
-                <p className="mt-2 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-                  No weekly reports are available yet.
-                </p>
+                {!user ? (
+                  <>
+                    <StatusPill
+                      status="placeholder"
+                      label="Sign in required"
+                      testId="status-dashboard-data"
+                    />
+                    <h2 className="mt-4 max-w-md text-xl font-semibold tracking-tight">
+                      Adult attendance
+                    </h2>
+                    <p className="mt-2 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+                      Sign in to view weekly counts.
+                    </p>
+                  </>
+                ) : att.isError && !aw ? (
+                  <QueryError
+                    title="Attendance unavailable"
+                    error={att.error}
+                    onRetry={() => void att.refetch()}
+                  />
+                ) : !aw ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-12 w-40" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      Adult attendance · week of {formatDate(aw.latestCompletedWeek)}
+                    </p>
+                    <p
+                      className="mt-3 font-display text-[44px] font-semibold leading-none tracking-tight"
+                      data-testid="text-adult-kpi"
+                    >
+                      {latest && latest.value !== null ? fmtCount(latest.value) : "No total"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+                      {latest && (
+                        <>
+                          <StatusPill
+                            status={QUALITY_TONE[latest.quality]}
+                            label={QUALITY_LABEL[latest.quality]}
+                            testId="status-dashboard-data"
+                          />
+                          <span>
+                            {latest.recordedServices} of {latest.expectedServices} services
+                          </span>
+                          {latest.value === null && latest.knownSubtotal !== null && (
+                            <span>Known subtotal {fmtCount(latest.knownSubtotal)}</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <p className="mt-3 max-w-md text-[12.5px] text-muted-foreground">
+                      {latest?.lastUpdatedAt
+                        ? `Last count entered ${formatDate(latest.lastUpdatedAt, true)}.`
+                        : "No counts entered."}{" "}
+                      4-week: {aw.fourWeek} YoY: {aw.yoy}
+                    </p>
+                  </>
+                )}
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
+                <Link
+                  href="/attendance"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3.5 text-[13px] font-medium hover:bg-secondary"
+                  data-testid="link-attendance"
+                >
+                  Attendance
+                </Link>
                 <Link
                   href="/system"
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"

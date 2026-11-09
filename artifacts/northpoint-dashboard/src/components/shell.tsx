@@ -4,6 +4,7 @@ import {
   BookOpen,
   Compass,
   LayoutGrid,
+  Users,
   Lock,
   Menu,
   Plug,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: Compass, exact: true },
+  { href: "/attendance", label: "Attendance", icon: Users },
   { href: "/ministries", label: "Ministries", icon: LayoutGrid },
   { href: "/administration", label: "Administration", icon: ShieldCheck, exact: true },
   { href: "/administration/integrations", label: "Integrations", icon: Plug, indent: true },

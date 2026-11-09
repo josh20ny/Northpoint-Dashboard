@@ -56,6 +56,14 @@ export async function databaseReadiness() {
            AND column_name IN ('automatic','automatic_requested_by','last_automatic_at'))=3
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='import_immutable' AND tgenabled<>'D' AND tgrelid IN
           (to_regclass('import_cells'),to_regclass('import_staged_rows'),to_regclass('import_week_reviews')))=3
+        AND (SELECT count(*) FROM pg_class WHERE oid IN
+          (to_regclass('attendance_definitions'),to_regclass('attendance_revisions'),to_regclass('attendance_lineage'))
+          AND relrowsecurity AND relforcerowsecurity)=3
+        AND (SELECT count(*) FROM pg_trigger WHERE tgname='attendance_immutable' AND tgenabled<>'D' AND tgrelid IN
+          (to_regclass('attendance_definitions'),to_regclass('attendance_revisions'),to_regclass('attendance_lineage')))=3
+        AND to_regprocedure('np_attendance_source_valid(uuid)') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('attendance_revisions') AND polname='attendance_write')
+        AND to_regclass('attendance_one_root') IS NOT NULL
         AS schema_ready FROM foundation_metadata WHERE key = $1`,
       ["application"],
     );

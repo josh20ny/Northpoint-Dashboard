@@ -1,5 +1,25 @@
 # API Contract Skeleton
 
+## Phase 4 implemented surface
+
+Protected `GET /api/v1/attendance` accepts optional Sunday `start`/`end` (up to
+two years) and optional historical `definitionId`. It returns weekly totals,
+separate known subtotals, quality, safe observation revisions and definition/
+freshness metadata. Current revisions are always included even when older edit
+history is bounded. It exposes no workbook originals, private paths or provider
+payloads. Previous versions are read-only.
+
+`POST /api/v1/attendance` allows authenticated Staff/Leadership/Admin, requires
+Origin/CSRF, a request UUID and exact expected revision, and saves immediately.
+Recorded actuals require an eligible configured service, Sunday date and
+nonnegative integer; unrecorded entries have null counts.
+
+Admin-only definition creation and historical preview/promotion are under
+`/api/v1/admin/attendance`. Promotion requires current evidence hashes, explicit
+source-authority acknowledgement and a basis note; it is not automatically
+performed by workbook review. All responses use `no-store`. Generated OpenAPI
+remains the source of truth for request/response fields.
+
 ## Phase 2 implemented surface
 All `/api/v1/admin/imports` routes require a current Admin session and `no-store`.
 Mutations additionally require exact Origin and session-bound `X-CSRF-Token`.

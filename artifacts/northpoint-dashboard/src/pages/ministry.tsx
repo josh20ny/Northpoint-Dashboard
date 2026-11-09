@@ -1,5 +1,5 @@
 import { Link, useParams } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useGetFoundation } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, Panel, QueryError, StatusPill, usePageTitle } from "@/components/kit";
@@ -69,6 +69,15 @@ export default function Ministry() {
         description={m.description}
         actions={<StatusPill status={m.status} testId="status-ministry" />}
       />
+      {slug === "service-programming" && (
+        <Link
+          href="/attendance"
+          data-testid="link-ministry-attendance"
+          className="mb-5 inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:opacity-90"
+        >
+          Adult attendance <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      )}
       <Panel
         title="Planned for this view"
         meta={<span className="font-mono text-[11px] text-muted-foreground">Planned</span>}

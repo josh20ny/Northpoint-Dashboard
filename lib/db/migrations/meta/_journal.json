@@ -92,6 +92,20 @@
       "when": 1794245728448,
       "tag": "0012_nasty_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794252239649,
+      "tag": "0013_flowery_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794252409426,
+      "tag": "0014_common_banshee",
+      "breakpoints": true
     }
   ]
 }

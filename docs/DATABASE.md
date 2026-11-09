@@ -1,5 +1,27 @@
 # Logical Database Model (proposed; validate before migration generation)
 
+## Phase 4 implementation note
+
+`attendance_definitions` binds the adult ministry, effective date and immutable
+definition version. `attendance_revisions` stores aggregate manual/historical
+observations with status, count, source, actor, immutable occurrence snapshot,
+idempotency key and prior-revision link. Partial unique root and successor indexes
+prevent duplicate revision chains. `attendance_lineage` retains Admin-only
+workbook batch/evidence/mapping references.
+
+All three have forced RLS and immutable-history guards. Staff/Leadership read
+safe attendance facts and insert their own authenticated edits; definitions and
+historical lineage writes are Admin-only. A narrowly scoped SECURITY DEFINER
+function returns only historical validity, restores caller role settings and
+never returns raw source records. Custom protection objects must survive schema
+transfers. Migrations 0013–0014 are development-only and additive.
+
+Calculations are read-time and deterministic; no metric cache or snapshot table
+requires invalidation. Withdrawn/replaced workbook evidence and changed service
+meaning yield invalidated totals. Previous definition versions remain explicitly
+selectable, not silently replayed into newer definitions. Manual counts need no
+approval under the owner's Phase 4 rule. No fictitious people are created.
+
 ## Phase 3 implementation note
 
 `pco_connections`, `pco_oauth_flows`, `pco_sync_runs` and `pco_source_entities`

@@ -1,0 +1,387 @@
+import { randomUUID } from "node:crypto";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from "vitest";
+import type { PoolClient } from "pg";
+import type { Principal } from "../artifacts/api-server/src/lib/auth";
+import type { AttendanceInput } from "../lib/api-zod/src/index";
+import request from "supertest";
+import express from "express";
+import { createAttendanceRouter } from "../artifacts/api-server/src/routes/attendance";
+
+describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
+  "adult attendance isolated rollback fixtures",
+  () => {
+    let c: PoolClient, db: typeof import("../lib/db/src/index");
+    let repo: typeof import("../artifacts/api-server/src/lib/attendance");
+    let historical: typeof import("../artifacts/api-server/src/lib/attendance-history");
+    let imports: typeof import("../artifacts/api-server/src/lib/imports");
+    let admin: Principal, staff: Principal, ministryId: string, definitionId: string;
+    let service1: string, service2: string;
+    beforeAll(async () => {
+      db = await import("../lib/db/src/index");
+      c = await db.pool.connect();
+      vi.spyOn(db.pool, "connect").mockImplementation(
+        async () =>
+          ({
+            query: async (sql: string, args?: unknown[]) => {
+              if (sql === "BEGIN") return c.query("SAVEPOINT attendance_operation");
+              if (sql === "COMMIT") return c.query("RELEASE SAVEPOINT attendance_operation");
+              if (sql === "ROLLBACK") {
+                await c.query("ROLLBACK TO SAVEPOINT attendance_operation");
+                return c.query("RELEASE SAVEPOINT attendance_operation");
+              }
+              return c.query(sql, args);
+            },
+            release() {},
+          }) as never,
+      );
+      repo = await import("../artifacts/api-server/src/lib/attendance");
+      historical = await import("../artifacts/api-server/src/lib/attendance-history");
+      imports = await import("../artifacts/api-server/src/lib/imports");
+    });
+    beforeEach(async () => {
+      await c.query("BEGIN");
+      await c.query("SELECT set_config('np.role','admin',true)");
+      const actor = async (role: "staff" | "admin") => {
+        const id = randomUUID(),
+          email = `${id}@example.invalid`;
+        await c.query(
+          "INSERT INTO users(id,provider,auth_subject,email,role) VALUES($1,'replit',$4,$2,$3)",
+          [id, email, role, id],
+        );
+        return {
+          userId: id,
+          role,
+          identity: { subject: id, provider: "replit" as const, verifiedEmail: email },
+        };
+      };
+      admin = await actor("admin");
+      staff = await actor("staff");
+      ministryId = randomUUID();
+      await c.query(
+        "INSERT INTO ministries(id,code,name) VALUES($1,$2,'Synthetic attendance fixture')",
+        [ministryId, randomUUID()],
+      );
+      const definition = await repo.saveDefinition(admin, {
+        ministryId,
+        effectiveFrom: "2026-01-01",
+        note: "Synthetic definition for rollback-only attendance tests",
+      });
+      definitionId = definition.id;
+      expect(db.pool.connect).toHaveBeenCalled();
+      service1 = randomUUID();
+      service2 = randomUUID();
+      for (const [id, hour] of [
+        [service1, "15"],
+        [service2, "17"],
+      ])
+        await c.query(
+          "INSERT INTO service_occurrences(id,ministry_id,service_date,start_at) VALUES($1,$2,'2026-01-04',$3)",
+          [id, ministryId, `2026-01-04T${hour}:00:00Z`],
+        );
+    });
+    afterEach(async () => {
+      await c.query("ROLLBACK");
+    });
+    afterAll(async () => {
+      vi.restoreAllMocks();
+      c?.release();
+      await db?.pool.end();
+    });
+    const input = (extras: Partial<AttendanceInput> = {}): AttendanceInput => ({
+      requestId: randomUUID(),
+      definitionId,
+      serviceDate: "2026-01-04",
+      slot: "adult_service_1",
+      occurrenceId: service1,
+      count: 446,
+      status: "recorded",
+      note: "Synthetic auditorium headcount",
+      expectedRevision: null,
+      ...extras,
+    });
+    const deniedSql = async (sql: string, args?: unknown[]) => {
+      await c.query("SAVEPOINT denied_sql");
+      try {
+        await expect(c.query(sql, args)).rejects.toBeDefined();
+      } finally {
+        await c.query("ROLLBACK TO SAVEPOINT denied_sql");
+        await c.query("RELEASE SAVEPOINT denied_sql");
+      }
+    };
+    it("makes Staff entries immediately visible, correction history immutable and stale edits conflicts", async () => {
+      const first = await repo.saveManual(staff, input());
+      await repo.saveManual(
+        staff,
+        input({ slot: "adult_service_2", occurrenceId: service2, count: 464 }),
+      );
+      const w = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(w.weeks[0].value).toBe(910);
+      const corrected = await repo.saveManual(
+        staff,
+        input({ count: 447, expectedRevision: first.id }),
+      );
+      expect(corrected.previousId).toBe(first.id);
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).weeks[0].value).toBe(
+        911,
+      );
+      await expect(
+        repo.saveManual(staff, input({ count: 448, expectedRevision: first.id })),
+      ).rejects.toMatchObject({ status: 409 });
+      expect(
+        (await c.query("SELECT count FROM attendance_revisions WHERE id=$1", [first.id])).rows[0]
+          .count,
+      ).toBe(446);
+      await deniedSql("UPDATE attendance_revisions SET count=99 WHERE id=$1", [first.id]);
+      await deniedSql("DELETE FROM attendance_revisions WHERE id=$1", [first.id]);
+    });
+    it("makes identical save retries idempotent and rejects changed request payloads", async () => {
+      const v = input(),
+        a = await repo.saveManual(staff, v),
+        b = await repo.saveManual(staff, v);
+      expect(b.id).toBe(a.id);
+      await expect(repo.saveManual(staff, { ...v, count: 999 })).rejects.toMatchObject({
+        status: 409,
+      });
+    });
+    it("persists the actual typed API input and returns the generated response contract", async () => {
+      const originalOrigin = process.env.AUTH_ORIGIN;
+      process.env.AUTH_ORIGIN = "https://attendance.example.invalid";
+      try {
+        const app = express();
+        app.use(express.json());
+        app.use((_req, res, next) => {
+          res.locals.session = { csrfToken: "synthetic-token" };
+          next();
+        });
+        app.use(
+          createAttendanceRouter({
+            name: "synthetic-fixture",
+            enabled: true,
+            authenticate: async () => staff,
+          }),
+        );
+        const saved = await request(app)
+          .post("/v1/attendance")
+          .set("Origin", process.env.AUTH_ORIGIN)
+          .set("X-CSRF-Token", "synthetic-token")
+          .send(input());
+        expect(saved.status).toBe(200);
+        expect(saved.body).toMatchObject({
+          count: 446,
+          status: "recorded",
+          source: "manual",
+          valid: true,
+        });
+        const read = await request(app).get("/v1/attendance?start=2026-01-04&end=2026-01-04");
+        expect(read.status).toBe(200);
+        expect(read.body.weeks[0]).toMatchObject({
+          value: null,
+          knownSubtotal: 446,
+          quality: "partial",
+        });
+        expect(read.body.revisions[0].id).toBe(saved.body.id);
+      } finally {
+        if (originalOrigin === undefined) delete process.env.AUTH_ORIGIN;
+        else process.env.AUTH_ORIGIN = originalOrigin;
+      }
+    });
+    it("rejects duplicate slots for a service, invalid dates, future actuals and missing counts", async () => {
+      await repo.saveManual(staff, input());
+      await expect(
+        repo.saveManual(staff, input({ slot: "adult_service_2" })),
+      ).rejects.toMatchObject({ status: 409 });
+      await expect(repo.saveManual(staff, input({ count: null }))).rejects.toMatchObject({
+        status: 400,
+      });
+      await expect(
+        repo.saveManual(staff, input({ serviceDate: "2026-01-05" })),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        repo.saveManual(staff, input({ serviceDate: "2099-01-04" })),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(repo.saveManual(staff, input({ count: -1 }))).rejects.toMatchObject({
+        status: 400,
+      });
+    });
+    it("preserves explicit unrecorded days without a fabricated service or zero", async () => {
+      const saved = await repo.saveManual(
+        staff,
+        input({ serviceDate: "2026-04-12", status: "unrecorded", count: null, occurrenceId: null }),
+      );
+      expect(saved.count).toBeNull();
+      expect((await repo.readAttendance(staff, "2026-04-12", "2026-04-12")).weeks[0]).toMatchObject(
+        { quality: "unrecorded", value: null },
+      );
+      await expect(
+        repo.saveManual(staff, input({ serviceDate: "2026-04-12", count: 0 })),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+    it("invalidates an occurrence whose date/time meaning changed instead of rewriting past counts", async () => {
+      await repo.saveManual(staff, input());
+      await c.query(
+        "UPDATE service_occurrences SET start_at=start_at+interval '1 hour' WHERE id=$1",
+        [service1],
+      );
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).weeks[0]).toMatchObject(
+        { quality: "invalidated", value: null },
+      );
+    });
+    it("rechecks current membership and blocks Staff definition changes", async () => {
+      await expect(
+        repo.saveDefinition(staff, {
+          ministryId,
+          effectiveFrom: "2026-01-01",
+          note: "Synthetic setup must be blocked for staff",
+        }),
+      ).rejects.toMatchObject({ status: 403 });
+      await c.query("UPDATE users SET status='suspended' WHERE id=$1", [staff.userId]);
+      await expect(repo.saveManual(staff, input())).rejects.toMatchObject({ status: 403 });
+    });
+    it("keeps earlier definition versions inspectable and rejects writes to them", async () => {
+      await repo.saveManual(staff, input());
+      const next = await repo.saveDefinition(admin, {
+        ministryId,
+        effectiveFrom: "2026-02-01",
+        note: "Synthetic new version changes the source scope",
+      });
+      expect(next.id).not.toBe(definitionId);
+      const old = await repo.readAttendance(staff, "2026-01-04", "2026-01-04", definitionId);
+      expect(old.isCurrentDefinition).toBe(false);
+      expect(old.weeks[0].knownSubtotal).toBe(446);
+      await expect(repo.saveManual(staff, input())).rejects.toMatchObject({ status: 409 });
+    });
+    async function syntheticHistory() {
+      await c.query("SELECT set_config('np.role','admin',true)");
+      const batchId = randomUUID();
+      await c.query(
+        "INSERT INTO import_batches(id,sha256,filename,snapshot_date,object_path,catalog,created_by) VALUES($1,$2,'synthetic.xlsx','2026-11-07','synthetic-test-only','{}',$3)",
+        [batchId, randomUUID(), admin.userId],
+      );
+      for (const [slot, column, value] of [
+        ["adult_service_1", "B", 446],
+        ["adult_service_2", "C", 464],
+      ] as const) {
+        const mappingId = randomUUID();
+        const definition = {
+          target: slot,
+          unit: "attendance_count",
+          ministry: "Synthetic adult",
+          sheet: "Test",
+        };
+        await c.query(
+          "INSERT INTO import_mappings(id,batch_id,definition,status) VALUES($1,$2,$3,'approved')",
+          [mappingId, batchId, JSON.stringify(definition)],
+        );
+        await c.query(
+          "INSERT INTO import_staged_rows(mapping_id,source_row,data) VALUES($1,'2',$2)",
+          [
+            mappingId,
+            JSON.stringify({
+              sundayDate: "2026-01-04",
+              sheet: "Test",
+              coordinate: `${column}2`,
+              value,
+              flags: [],
+            }),
+          ],
+        );
+      }
+      const e = await imports.evidence(c, batchId);
+      for (const g of e.report.weeks)
+        await c.query(
+          "INSERT INTO import_week_reviews(batch_id,week,evidence_hash,review_method,note,reviewed_by) VALUES($1,$2,$3,'owner_confirmed','Synthetic owner confirmed evidence for rollback test',$4)",
+          [batchId, g.week, g.evidenceHash, admin.userId],
+        );
+      const candidates = (await historical.previewHistory(admin, batchId)).candidates;
+      return {
+        batchId,
+        promote: {
+          definitionId,
+          week: "2026-01-04",
+          firstHash: candidates.find((g) => g.slot === "adult_service_1")!.evidenceHash,
+          secondHash: candidates.find((g) => g.slot === "adult_service_2")!.evidenceHash,
+          note: "Synthetic deliberate publication for test fixture only",
+          acknowledgeAuthority: true,
+        },
+      };
+    }
+    it("promotes eligible history atomically and idempotently, preserving review method", async () => {
+      const { batchId, promote } = await syntheticHistory();
+      expect(await historical.promoteHistory(admin, batchId, promote)).toEqual({ promoted: 2 });
+      expect(await historical.promoteHistory(admin, batchId, promote)).toEqual({ promoted: 0 });
+      const w = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(w.weeks[0].value).toBe(910);
+      expect(
+        w.revisions.every(
+          (r) => r.reviewMethod === "owner_confirmed" && r.occurrenceId === null && r.valid,
+        ),
+      ).toBe(true);
+      expect(JSON.stringify(w)).not.toContain("object_path");
+      expect((await c.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
+        "staff",
+      );
+    });
+    it("rejects changed historical hashes and rolls back partial promotion", async () => {
+      const { batchId, promote } = await syntheticHistory();
+      await expect(
+        historical.promoteHistory(admin, batchId, { ...promote, secondHash: "b".repeat(64) }),
+      ).rejects.toMatchObject({ status: 409 });
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).revisions).toHaveLength(
+        0,
+      );
+    });
+    it("invalidates withdrawn or replaced historical sources without exposing their raw evidence", async () => {
+      const { batchId, promote } = await syntheticHistory();
+      await historical.promoteHistory(admin, batchId, promote);
+      await c.query("SELECT set_config('np.role','admin',true)");
+      await c.query("UPDATE import_batches SET state='withdrawn' WHERE id=$1", [batchId]);
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).weeks[0].quality).toBe(
+        "invalidated",
+      );
+      await c.query("SELECT set_config('np.role','admin',true)");
+      await c.query("UPDATE import_batches SET state='active' WHERE id=$1", [batchId]);
+      await c.query("UPDATE import_mappings SET status='superseded' WHERE batch_id=$1", [batchId]);
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).weeks[0].quality).toBe(
+        "invalidated",
+      );
+    });
+    it("never adds workbook counts to existing manual facts or accepts non-Admin promotion", async () => {
+      const { batchId, promote } = await syntheticHistory();
+      await repo.saveManual(staff, input());
+      await expect(historical.promoteHistory(admin, batchId, promote)).rejects.toMatchObject({
+        status: 409,
+      });
+      await expect(historical.promoteHistory(staff, batchId, promote)).rejects.toMatchObject({
+        status: 403,
+      });
+    });
+    it("enforces forced RLS with a non-owner role and restores Staff privilege after boolean lineage checks", async () => {
+      const { batchId, promote } = await syntheticHistory();
+      await historical.promoteHistory(admin, batchId, promote);
+      const role = `attendance_test_${randomUUID().replaceAll("-", "")}`;
+      await c.query(`CREATE ROLE ${role} NOLOGIN`);
+      await c.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+      await c.query(
+        `GRANT SELECT ON attendance_revisions,attendance_lineage,import_batches TO ${role}`,
+      );
+      await c.query(`SET LOCAL ROLE ${role}`);
+      await c.query("SELECT set_config('np.role','staff',true)");
+      expect((await c.query("SELECT count(*)::int AS n FROM attendance_lineage")).rows[0].n).toBe(
+        0,
+      );
+      expect((await c.query("SELECT count(*)::int AS n FROM import_batches")).rows[0].n).toBe(0);
+      const ids = (
+        await c.query("SELECT id FROM attendance_revisions WHERE definition_id=$1", [definitionId])
+      ).rows;
+      expect(ids).toHaveLength(2);
+      expect(
+        (await c.query("SELECT np_attendance_source_valid($1) AS valid", [ids[0].id])).rows[0]
+          .valid,
+      ).toBe(true);
+      expect((await c.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
+        "staff",
+      );
+      await c.query("RESET ROLE");
+    });
+  },
+);

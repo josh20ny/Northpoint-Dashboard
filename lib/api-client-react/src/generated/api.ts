@@ -27,11 +27,20 @@ import type {
 import type {
   AccessUserUpdate,
   AdminWorkspace,
+  AttendanceDefinition,
+  AttendanceDefinitionInput,
+  AttendanceHistoryPreview,
+  AttendanceInput,
+  AttendancePromotionInput,
+  AttendancePromotionResult,
+  AttendanceRevision,
+  AttendanceWorkspace,
   AuthState,
   AuthUser,
   DocumentContent,
   Foundation,
   GetAdminWorkspaceParams,
+  GetAttendanceParams,
   GetImportCellsParams,
   GetImportRowsParams,
   HealthStatus,
@@ -91,6 +100,450 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetAttendanceUrl = (params?: GetAttendanceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/attendance?${stringifiedParams}` : `/api/v1/attendance`
+}
+
+export const getAttendance = async (params?: GetAttendanceParams, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceWorkspace> => {
+
+  return customFetch<AttendanceWorkspace>(getGetAttendanceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttendanceQueryKey = (params?: GetAttendanceParams,) => {
+    return [
+    `/api/v1/attendance`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAttendanceQueryOptions = <TData = Awaited<ReturnType<typeof getAttendance>>, TError = ErrorType<unknown>>(params?: GetAttendanceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttendanceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttendance>>> = ({ signal }) => getAttendance(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAttendanceQueryResult = NonNullable<Awaited<ReturnType<typeof getAttendance>>>
+export type GetAttendanceQueryError = ErrorType<unknown>
+
+
+export function useGetAttendance<TData = Awaited<ReturnType<typeof getAttendance>>, TError = ErrorType<unknown>>(
+ params: undefined |  GetAttendanceParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttendance>>,
+          TError,
+          Awaited<ReturnType<typeof getAttendance>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttendance<TData = Awaited<ReturnType<typeof getAttendance>>, TError = ErrorType<unknown>>(
+ params?: GetAttendanceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttendance>>,
+          TError,
+          Awaited<ReturnType<typeof getAttendance>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttendance<TData = Awaited<ReturnType<typeof getAttendance>>, TError = ErrorType<unknown>>(
+ params?: GetAttendanceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetAttendance<TData = Awaited<ReturnType<typeof getAttendance>>, TError = ErrorType<unknown>>(
+ params?: GetAttendanceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendance>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAttendanceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveAttendanceUrl = () => {
+
+
+
+
+  return `/api/v1/attendance`
+}
+
+export const saveAttendance = async (attendanceInput: AttendanceInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceRevision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AttendanceRevision>(getSaveAttendanceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(attendanceInput)
+  }
+);}
+
+
+
+
+
+export const getSaveAttendanceMutationKey = () => ['saveAttendance'] as const;
+
+export const getSaveAttendanceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendance>>, TError,SaveAttendanceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAttendance>>, TError,SaveAttendanceMutationVariables, TContext> => {
+
+const mutationKey = getSaveAttendanceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAttendance>>, SaveAttendanceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveAttendance(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAttendanceMutationResult = NonNullable<Awaited<ReturnType<typeof saveAttendance>>>
+    export type SaveAttendanceMutationBody = BodyType<AttendanceInput>
+    export type SaveAttendanceMutationError = ErrorType<unknown>
+    export type SaveAttendanceMutationVariables = {data: BodyType<AttendanceInput>}
+
+    export const useSaveAttendance = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendance>>, TError,SaveAttendanceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveAttendance>>,
+        TError,
+        SaveAttendanceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveAttendanceMutationOptions(options), queryClient);
+    }
+
+export const getSaveAttendanceDefinitionUrl = () => {
+
+
+
+
+  return `/api/v1/admin/attendance/definition`
+}
+
+export const saveAttendanceDefinition = async (attendanceDefinitionInput: AttendanceDefinitionInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceDefinition> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AttendanceDefinition>(getSaveAttendanceDefinitionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(attendanceDefinitionInput)
+  }
+);}
+
+
+
+
+
+export const getSaveAttendanceDefinitionMutationKey = () => ['saveAttendanceDefinition'] as const;
+
+export const getSaveAttendanceDefinitionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceDefinition>>, TError,SaveAttendanceDefinitionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceDefinition>>, TError,SaveAttendanceDefinitionMutationVariables, TContext> => {
+
+const mutationKey = getSaveAttendanceDefinitionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAttendanceDefinition>>, SaveAttendanceDefinitionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveAttendanceDefinition(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAttendanceDefinitionMutationResult = NonNullable<Awaited<ReturnType<typeof saveAttendanceDefinition>>>
+    export type SaveAttendanceDefinitionMutationBody = BodyType<AttendanceDefinitionInput>
+    export type SaveAttendanceDefinitionMutationError = ErrorType<unknown>
+    export type SaveAttendanceDefinitionMutationVariables = {data: BodyType<AttendanceDefinitionInput>}
+
+    export const useSaveAttendanceDefinition = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceDefinition>>, TError,SaveAttendanceDefinitionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveAttendanceDefinition>>,
+        TError,
+        SaveAttendanceDefinitionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveAttendanceDefinitionMutationOptions(options), queryClient);
+    }
+
+export const getGetAttendanceHistoryPreviewUrl = (batchId: string,) => {
+
+
+
+
+  return `/api/v1/admin/attendance/history/${batchId}`
+}
+
+export const getAttendanceHistoryPreview = async (batchId: string, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceHistoryPreview> => {
+
+  return customFetch<AttendanceHistoryPreview>(getGetAttendanceHistoryPreviewUrl(batchId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttendanceHistoryPreviewQueryKey = (batchId: string,) => {
+    return [
+    `/api/v1/admin/attendance/history/${batchId}`
+    ] as const;
+    }
+
+
+export const getGetAttendanceHistoryPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError = ErrorType<unknown>>(batchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttendanceHistoryPreviewQueryKey(batchId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>> = ({ signal }) => getAttendanceHistoryPreview(batchId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: batchId !== null && batchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAttendanceHistoryPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>>
+export type GetAttendanceHistoryPreviewQueryError = ErrorType<unknown>
+
+
+export function useGetAttendanceHistoryPreview<TData = Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError = ErrorType<unknown>>(
+ batchId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttendanceHistoryPreview>>,
+          TError,
+          Awaited<ReturnType<typeof getAttendanceHistoryPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttendanceHistoryPreview<TData = Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError = ErrorType<unknown>>(
+ batchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAttendanceHistoryPreview>>,
+          TError,
+          Awaited<ReturnType<typeof getAttendanceHistoryPreview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAttendanceHistoryPreview<TData = Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError = ErrorType<unknown>>(
+ batchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetAttendanceHistoryPreview<TData = Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError = ErrorType<unknown>>(
+ batchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAttendanceHistoryPreview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAttendanceHistoryPreviewQueryOptions(batchId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPromoteAttendanceHistoryUrl = (batchId: string,) => {
+
+
+
+
+  return `/api/v1/admin/attendance/history/${batchId}`
+}
+
+export const promoteAttendanceHistory = async (batchId: string,
+    attendancePromotionInput: AttendancePromotionInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendancePromotionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AttendancePromotionResult>(getPromoteAttendanceHistoryUrl(batchId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(attendancePromotionInput)
+  }
+);}
+
+
+
+
+
+export const getPromoteAttendanceHistoryMutationKey = () => ['promoteAttendanceHistory'] as const;
+
+export const getPromoteAttendanceHistoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof promoteAttendanceHistory>>, TError,PromoteAttendanceHistoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof promoteAttendanceHistory>>, TError,PromoteAttendanceHistoryMutationVariables, TContext> => {
+
+const mutationKey = getPromoteAttendanceHistoryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof promoteAttendanceHistory>>, PromoteAttendanceHistoryMutationVariables> = (props) => {
+          const {batchId,data} = props ?? {};
+
+          return  promoteAttendanceHistory(batchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PromoteAttendanceHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof promoteAttendanceHistory>>>
+    export type PromoteAttendanceHistoryMutationBody = BodyType<AttendancePromotionInput>
+    export type PromoteAttendanceHistoryMutationError = ErrorType<unknown>
+    export type PromoteAttendanceHistoryMutationVariables = {batchId: string;data: BodyType<AttendancePromotionInput>}
+
+    export const usePromoteAttendanceHistory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof promoteAttendanceHistory>>, TError,PromoteAttendanceHistoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof promoteAttendanceHistory>>,
+        TError,
+        PromoteAttendanceHistoryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPromoteAttendanceHistoryMutationOptions(options), queryClient);
+    }
 
 export const getGetPlanningCenterUrl = () => {
 

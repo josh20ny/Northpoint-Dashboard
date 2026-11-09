@@ -1,0 +1,4 @@
+ALTER TABLE "attendance_revisions" DROP CONSTRAINT "attendance_count_state";--> statement-breakpoint
+ALTER TABLE "attendance_revisions" ADD CONSTRAINT "attendance_revisions_previous_id_attendance_revisions_id_fk" FOREIGN KEY ("previous_id") REFERENCES "public"."attendance_revisions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "attendance_one_root" ON "attendance_revisions" USING btree ("definition_id","service_date","slot") WHERE "attendance_revisions"."previous_id" IS NULL;--> statement-breakpoint
+ALTER TABLE "attendance_revisions" ADD CONSTRAINT "attendance_count_state" CHECK (("attendance_revisions"."status"='recorded' AND "attendance_revisions"."count" IS NOT NULL AND "attendance_revisions"."count">=0) OR ("attendance_revisions"."status"='unrecorded' AND "attendance_revisions"."count" IS NULL));

@@ -1,6 +1,6 @@
 # Northpoint Dashboard 2.0
 
-Phase 3 source integration workspace for a portable internal ministry analytics platform.
+Phase 4 adult-attendance workspace for a portable internal ministry analytics platform.
 Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
 
 ## Run & Operate
@@ -53,12 +53,22 @@ The scheduler defaults to daily 1 AM Central; start time and time zone remain ed
 It processes People, Services and Check-Ins sequentially and requires a running API. Reliable unattended hosting is
 still outstanding. No operational metrics or individual attendance/giving views.
 The owner chose to keep development only; unattended production hosting is deferred.
-Phase 3 is closed for development under D-025; proceed to Phase 4 without waiting
+Phase 3 is closed for development under D-025; Phase 4 does not wait
 for fresh lifecycle scans, a scheduled-cycle/restart exercise, or real credential-
 failure/reconnect tests. These remain unverified live and required before
 production. Keep the schedule disabled until ready to demonstrate it, treat
 lifecycle absence as unassessed, and never assume unattended freshness. This
 closeout does not authorize metric publication, deletion, or credential changes.
+
+Phase 4 implements protected adult attendance at `/attendance`, a home KPI,
+immediate manual saves and immutable corrections. Count seated auditorium
+attendees only; exclude volunteers and people on stage. Online-only/intentionally
+off Sundays are unrecorded, not zero. Manual entries need no approval.
+Admin setup selects the adult ministry; service slots must be explicitly mapped,
+not inferred from old headers. No real attendance was entered/promoted by the
+agent. Historical evidence promotion requires an explicit Admin action and basis.
+Four-week/YoY policies are unapproved, so numeric comparisons stay unavailable.
+See `docs/PHASE_4_IMPLEMENTATION.md` for verification and acceptance limits.
 
 ## User preferences
 

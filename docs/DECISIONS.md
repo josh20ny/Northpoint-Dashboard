@@ -31,6 +31,33 @@
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
 
+## Phase 4 adult attendance rules — 2026-11-09
+
+**APPROVED**, owner: product owner. Adult attendance is “Just the headcount of
+people sitting in the auditorium during each service”; volunteers, people on
+stage and people not attending the service are not counted. Summing service
+counts measures service attendance, not deduplicated unique people.
+
+The four online-only Sundays (April 12, 19, 26 and May 3, 2026) are unrecorded,
+not zero. The owner also said Northpoint intentionally takes approximately two
+Sundays off each year and does not want those recorded as zeros affecting
+averages. This supersedes the earlier general past-blank-to-zero interpretation
+for these known exceptions; do not infer the dates of other intentional breaks.
+January 25 retains its separately confirmed zero and ice-storm context.
+
+Manual counts need no approval and must be adjustable. Corrections retain
+previous revisions and the authenticated editor; no approval queue is required.
+Historical evidence review remains distinct from deliberate historical
+promotion. Source authority by era, historical service times, YoY and exact
+four-week averaging/completeness policies remain unresolved.
+
+Alternatives: Admin-approved manual submissions, treating all past blanks as
+zero, or interpreting counts as unique people. Migration impact: additive
+attendance definitions, immutable observation revisions and restricted historical
+lineage; no raw source changes. Tests must cover immediate manual visibility,
+correction conflicts, zero versus unrecorded, historical evidence eligibility,
+and role restrictions.
+
 ## D-025 — Phase 3 development closeout — 2026-11-09
 
 **APPROVED**, owner: product owner. Close Phase 3 for development with these

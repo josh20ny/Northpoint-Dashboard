@@ -5,3 +5,4 @@
 - [Workspace test isolation](workspace-test-isolation.md) — mock the shared pool instance, not only its package alias; assert the stub is used before mutation tests.
 - [Planning Center fieldsets](pco-fieldsets.md) — sparse fieldsets filter linkage too; included records and complete syncs do not establish relationship coverage.
 - [Historical event context](historical-event-context.md) — owner-confirmed context for interpreting exceptional historical check-ins.
+- [Adult attendance policy](adult-attendance-policy.md) — auditorium attendees only; breaks stay unrecorded; manual counts need corrections, not approval.
