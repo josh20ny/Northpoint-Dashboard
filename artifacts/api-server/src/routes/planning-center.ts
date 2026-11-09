@@ -11,12 +11,15 @@ import {
   SetPlanningCenterAutomationParams,
   SetPlanningCenterAutomationBody,
   SetPlanningCenterAutomationResponse,
+  SetPlanningCenterScheduleBody,
+  SetPlanningCenterScheduleResponse,
 } from "@workspace/api-zod";
 import { requirePermission, sessionAuthProvider, type AuthProvider } from "../lib/auth";
 import { requireCsrf, SESSION_COOKIE } from "../lib/security";
 import { AccessError } from "../lib/administration";
 import { ProviderError } from "../lib/planning-center-client";
 import * as pco from "../lib/planning-center";
+import { setSchedule } from "../lib/planning-center-schedule";
 
 function sessionToken(req: Request) {
   const token: unknown = req.cookies?.[SESSION_COOKIE];
@@ -48,6 +51,21 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
     base,
     safe(async (_req, res) => {
       res.json(GetPlanningCenterResponse.parse(await pco.workspace(res.locals.principal)));
+    }),
+  );
+  r.post(
+    `${base}/schedule`,
+    safe(async (req, res) => {
+      const b = SetPlanningCenterScheduleBody.strict().safeParse(req.body);
+      if (!b.success) {
+        res.status(400).json({ error: "Invalid schedule request" });
+        return;
+      }
+      res.json(
+        SetPlanningCenterScheduleResponse.parse(
+          await setSchedule(res.locals.principal, b.data.enabled),
+        ),
+      );
     }),
   );
   r.post(

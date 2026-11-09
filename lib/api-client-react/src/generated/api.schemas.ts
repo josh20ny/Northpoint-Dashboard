@@ -115,6 +115,34 @@ export interface PlanningCenterConnection {
   error: string | null;
 }
 
+export type PlanningCenterScheduleStatus = typeof PlanningCenterScheduleStatus[keyof typeof PlanningCenterScheduleStatus];
+
+
+export const PlanningCenterScheduleStatus = {
+  idle: 'idle',
+  running: 'running',
+  complete: 'complete',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface PlanningCenterSchedule {
+  enabled: boolean;
+  timeZone: string;
+  localTime: string;
+  /** @nullable */
+  nextRunAt: string | null;
+  /** @nullable */
+  lastStartedAt: string | null;
+  /** @nullable */
+  lastFinishedAt: string | null;
+  /** @nullable */
+  activeRunId: string | null;
+  status: PlanningCenterScheduleStatus;
+  /** @nullable */
+  error: string | null;
+}
+
 export interface PlanningCenterWorkspace {
   configured: boolean;
   missingConfiguration: string[];
@@ -124,6 +152,7 @@ export interface PlanningCenterWorkspace {
   connection: PlanningCenterConnection | null;
   syncs: PlanningCenterSync[];
   sourceRecords: number;
+  schedule: PlanningCenterSchedule;
   asOf: string;
 }
 

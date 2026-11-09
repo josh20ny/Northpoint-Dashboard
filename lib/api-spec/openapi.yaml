@@ -20,6 +20,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PlanningCenterWorkspace" }
+  /v1/admin/planning-center/schedule:
+    post:
+      operationId: setPlanningCenterSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanningCenterAutomationInput" }
+      responses:
+        "200":
+          description: Admin-authorized nightly schedule enabled or paused
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningCenterSchedule" }
   /v1/admin/planning-center/authorize:
     post:
       operationId: authorizePlanningCenter
@@ -581,9 +595,22 @@ components:
         updatedAt: { type: string }
         lastSuccessAt: { type: ["string", "null"] }
         error: { type: ["string", "null"] }
+    PlanningCenterSchedule:
+      type: object
+      required: [enabled, timeZone, localTime, nextRunAt, lastStartedAt, lastFinishedAt, activeRunId, status, error]
+      properties:
+        enabled: { type: boolean }
+        timeZone: { type: string }
+        localTime: { type: string }
+        nextRunAt: { type: ["string", "null"] }
+        lastStartedAt: { type: ["string", "null"] }
+        lastFinishedAt: { type: ["string", "null"] }
+        activeRunId: { type: ["string", "null"], format: uuid }
+        status: { type: string, enum: [idle, running, complete, failed, cancelled] }
+        error: { type: ["string", "null"] }
     PlanningCenterWorkspace:
       type: object
-      required: [configured, missingConfiguration, callbackUrl, requestedScopes, connection, syncs, sourceRecords, asOf]
+      required: [configured, missingConfiguration, callbackUrl, requestedScopes, connection, syncs, sourceRecords, asOf, schedule]
       properties:
         configured: { type: boolean }
         missingConfiguration: { type: array, items: { type: string } }
@@ -595,6 +622,7 @@ components:
             - { type: "null" }
         syncs: { type: array, items: { $ref: "#/components/schemas/PlanningCenterSync" } }
         sourceRecords: { type: integer }
+        schedule: { $ref: "#/components/schemas/PlanningCenterSchedule" }
         asOf: { type: string }
     WorkbookBytes: { type: string, format: binary }
     WorkbookSourceInput:

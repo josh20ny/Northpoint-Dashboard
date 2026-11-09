@@ -34,11 +34,11 @@ export async function databaseReadiness() {
           AND conname='import_review_method')
         AND (SELECT count(*) FROM pg_class WHERE oid IN
           (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
-           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'))
-          AND relrowsecurity AND relforcerowsecurity)=4
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules'))
+          AND relrowsecurity AND relforcerowsecurity)=5
         AND (SELECT count(*) FROM pg_policy WHERE polname='pco_admin_only' AND polrelid IN
           (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
-           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities')))=4
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules')))=5
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='pco_no_delete' AND tgenabled<>'D'
           AND tgrelid IN (to_regclass('pco_connections'),to_regclass('pco_source_entities'),to_regclass('pco_sync_runs')))=3
          AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'

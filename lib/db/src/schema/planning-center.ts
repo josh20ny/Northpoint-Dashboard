@@ -119,6 +119,32 @@ export const pcoSourceEntities = pgTable(
     uniqueIndex("pco_entity_identity").on(t.accountRef, t.product, t.objectType, t.externalId),
   ],
 ).enableRLS();
+export const pcoSyncSchedules = pgTable(
+  "pco_sync_schedules",
+  {
+    id: text("id").primaryKey().default("planning_center"),
+    accountRef: text("account_ref").notNull(),
+    enabled: boolean("enabled").notNull().default(false),
+    authorizedBy: uuid("authorized_by")
+      .notNull()
+      .references(() => usersTable.id),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+    lastStartedAt: timestamp("last_started_at", { withTimezone: true }),
+    lastFinishedAt: timestamp("last_finished_at", { withTimezone: true }),
+    activeRunId: uuid("active_run_id").references(() => pcoSyncRuns.id),
+    remaining: jsonb("remaining").notNull().default([]),
+    status: text("status").notNull().default("idle"),
+    error: text("error"),
+  },
+  (t) => [
+    admin(),
+    check("pco_schedule_singleton", sql`${t.id} = 'planning_center'`),
+    check(
+      "pco_schedule_status",
+      sql`${t.status} IN ('idle','running','complete','failed','cancelled')`,
+    ),
+  ],
+).enableRLS();
 export const insertPcoSyncSchema = createInsertSchema(pcoSyncRuns).omit({
   id: true,
   startedAt: true,

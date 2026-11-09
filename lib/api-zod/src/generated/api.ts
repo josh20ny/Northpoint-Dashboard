@@ -40,7 +40,35 @@ export const GetPlanningCenterResponse = zod.object({
   "lastAutomaticAt": zod.string().nullable()
 })),
   "sourceRecords": zod.number().int(),
+  "schedule": zod.object({
+  "enabled": zod.boolean(),
+  "timeZone": zod.string(),
+  "localTime": zod.string(),
+  "nextRunAt": zod.string().nullable(),
+  "lastStartedAt": zod.string().nullable(),
+  "lastFinishedAt": zod.string().nullable(),
+  "activeRunId": zod.string().uuid().nullable(),
+  "status": zod.enum(['idle', 'running', 'complete', 'failed', 'cancelled']),
+  "error": zod.string().nullable()
+}),
   "asOf": zod.string()
+})
+
+
+export const SetPlanningCenterScheduleBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const SetPlanningCenterScheduleResponse = zod.object({
+  "enabled": zod.boolean(),
+  "timeZone": zod.string(),
+  "localTime": zod.string(),
+  "nextRunAt": zod.string().nullable(),
+  "lastStartedAt": zod.string().nullable(),
+  "lastFinishedAt": zod.string().nullable(),
+  "activeRunId": zod.string().uuid().nullable(),
+  "status": zod.enum(['idle', 'running', 'complete', 'failed', 'cancelled']),
+  "error": zod.string().nullable()
 })
 
 

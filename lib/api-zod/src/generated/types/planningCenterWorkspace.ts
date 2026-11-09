@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PlanningCenterConnection } from './planningCenterConnection';
+import type { PlanningCenterSchedule } from './planningCenterSchedule';
 import type { PlanningCenterSync } from './planningCenterSync';
 
 export interface PlanningCenterWorkspace {
@@ -17,5 +18,6 @@ export interface PlanningCenterWorkspace {
   connection: PlanningCenterConnection | null;
   syncs: PlanningCenterSync[];
   sourceRecords: number;
+  schedule: PlanningCenterSchedule;
   asOf: string;
 }

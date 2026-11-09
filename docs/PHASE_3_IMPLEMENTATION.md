@@ -27,10 +27,12 @@ owner's registered OAuth application and explicit consent.
 
 ## Delivery status
 
-The Phase 3 connection and opt-in background page executor are implemented.
+The Phase 3 connection, opt-in background page executor and nightly scheduler are implemented.
 Migrations are applied in development only. Provider configuration, consent and
-organization confirmation have been completed in development. Complete backfill
-coverage, replay validation and real-data acceptance remain outstanding;
+organization confirmation have been completed in development. All three product
+backfills and incremental rescans completed; relationship repair rescans for
+Services and Check-Ins were verified with locally resolvable source links.
+Unattended hosting, lifecycle acceptance and retention decisions remain outstanding;
 Phase 3 is not complete or approved for a live-data release.
 
 ### Administration flow
@@ -77,8 +79,28 @@ Phase 3 is not complete or approved for a live-data release.
    and cancelling open runs. Disconnect before reauthorizing, including a pending
    or expired connection. Retained source data is never deleted by disconnect.
 
-There is **no recurring sync scheduler** in this slice. Automatic processing only
-executes an existing run after an authenticated Admin explicitly enables it.
+An authenticated Admin can enable **Nightly refresh** in Integrations after all
+three product backfills complete. It defaults to disabled, starts at **1:00 AM
+America/Chicago**, and processes People, Services, then Check-Ins sequentially.
+The first 1 AM is used on the fall-back date, with no second run in the repeated
+hour. Enabling a new schedule sets the next future 1 AM; it does not start an
+immediate import. Pausing retains the current run and remaining products;
+resuming an interrupted cycle continues its saved progress.
+
+Schedule claims and run creation use the same transaction/advisory lock as page
+processing. Active manual runs (including paused ones) delay scheduled imports.
+An enabled active nightly cycle blocks new manual imports until paused.
+Failed/cancelled scheduled imports stop the cycle rather than skip a product;
+the next nightly cycle may try again. Authorization loss disables the schedule
+and requires explicit Admin re-enablement. Disconnect disables and clears the
+cycle without removing source history. Missed nights collapse into a single
+catch-up cycle when the API returns, not one run per missed date. Schedule state,
+last cycle start/finish, next due time and safe errors appear in Integrations.
+The cadence is configured in application code, not an editable cron expression.
+
+**Reliable unattended hosting is not yet configured.** The scheduler and page
+executor only operate while the API is running. No deployment, permanent
+keep-awake process or production change is included in this slice.
 A durable database flag and Admin delegation survive API restarts. The executor
 processes at most one page per tick with a two-second delay between attempts;
 the same transaction-scoped advisory lock used by manual/Admin operations
@@ -172,20 +194,23 @@ tests pass; typecheck/lint checks cover the updated app. Database fixtures cover
 all three products, pagination/replay, failed pages, scope/org/state/session/PKCE,
 refresh success/rejection, 401/429/500, revocation failure and retained history,
 and a non-owner role's RLS denial. No real provider credentials are needed.
-Signed-in browser controls and real Planning Center consent/permissions are not
-yet verified. The existing test OIDC setup was blocked during the preceding
-review feature; no authentication bypass or real-user impersonation was added.
+The owner exercised the signed-in connection and sync controls. Live backfills,
+incremental revision rescans, source provenance and repaired relationships were
+checked in development. This does not establish source lifetime completeness,
+deleted-record coverage or cross-product identity equivalence.
+Automated signed-in browser verification remains unavailable; no authentication
+bypass or real-user impersonation was added.
 
 ### Remaining Phase 3 exit checks
 
-- Owner configures the confidential OAuth application and grants consent.
-  Completed in development; no production release authorization is implied.
-- Verify actual organization permissions and sparse-field/API-version compatibility.
-- Review real backfill coverage, page counts and replay idempotency for each product.
-- Agree on refresh cadence, then add durable unattended scheduling/claims and
-  appropriate delta filtering where the provider documents/supports it.
-  Explicit run-to-completion processing is implemented; recurring run creation
-  remains deferred.
+- Completed in development: consent/organization confirmation, all three backfills,
+  revision rescans, source provenance and repaired source relationships.
+  No production release authorization is implied.
+- Nightly 1 AM Central cadence and durable scheduler are implemented, initially
+  disabled until an Admin enables the control. Verify first live scheduled cycle.
+- Configure reliable unattended execution; the workspace API alone is not an
+  always-running hosting guarantee. Validate interruptions and credential lifecycle.
+- Consider appropriate delta filtering only where the provider documents/supports it.
 - Validate deletion discovery, retention and any broader identity handling before
   claiming full synchronized coverage. No live records should be committed to Git.
 
@@ -197,8 +222,19 @@ rollback, safe error logging, restart selection and current Admin authority.
 The existing database fixtures were extended to cover automatic completion,
 pause/resume, rate limits and authority revocation. Run those fixtures only in an
 isolated database without a real Planning Center connection; do not overwrite a
-live connection or use it for synthetic tests. Signed-in controls and complete
-real-account background processing still require live acceptance.
+live connection or use it for synthetic tests. Real-account explicit background
+imports completed. The new nightly scheduler has synthetic calendar/coordinator,
+authority, overlap, pause/resume and permission-boundary coverage; live nightly
+and unattended hosting acceptance remain outstanding.
+
+### Owner-confirmed historical exceptions
+
+- April 12, 19, 26 and May 3, 2026 were online-only Sundays during the building
+  move; no attendance was recorded. These are not import gaps or measured zeros.
+- The October 29, 2023 InsideOut House of Torment check-ins with explicit empty
+  locations belong to a high school evening event. Do not infer a location or
+  classify them as Sunday adult attendance.
+- These facts do not yet establish a dashboard exclusion/average policy.
 
 ### Provider documentation checked
 

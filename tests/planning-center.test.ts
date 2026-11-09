@@ -282,6 +282,7 @@ describe("Planning Center HTTP permission boundary", () => {
         ["post", "/authorize"],
         ["post", "/confirm"],
         ["post", "/disconnect"],
+        ["post", "/schedule"],
         ["post", "/syncs"],
         ["post", "/syncs/00000000-0000-4000-8000-000000000000/advance"],
         ["post", "/syncs/00000000-0000-4000-8000-000000000000/cancel"],
@@ -315,6 +316,10 @@ describe("Planning Center HTTP permission boundary", () => {
       .send({ product: "giving", mode: "backfill" });
     expect(response.status).toBe(403);
     expect(response.body.error).toBe("Request verification failed");
+    const schedule = await request(app)
+      .post("/api/v1/admin/planning-center/schedule")
+      .send({ enabled: true });
+    expect(schedule.status).toBe(403);
     const automatic = await request(app)
       .post("/api/v1/admin/planning-center/syncs/00000000-0000-4000-8000-000000000000/automation")
       .send({ enabled: true });

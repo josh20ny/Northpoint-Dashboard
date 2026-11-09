@@ -5,6 +5,7 @@ import type { Principal } from "./auth";
 import { adminTransaction, AccessError, type AdminActor } from "./administration";
 import { recordAudit } from "./audit";
 import { hashToken } from "./security";
+import { scheduleView } from "./planning-center-schedule";
 import * as provider from "./planning-center-client";
 import {
   roots,
@@ -123,6 +124,7 @@ export async function workspace(p: Principal) {
         requestedScopes: provider.PCO_SCOPES,
         connection: v.rows[0] ?? null,
         syncs: runs.rows.map(syncView),
+        schedule: await scheduleView(c, account),
         sourceRecords: count.rows[0]!.n,
         asOf: new Date().toISOString(),
       }),
@@ -306,6 +308,11 @@ export async function disconnect(p: Principal) {
       [v.account_ref],
     );
     await c.query("DELETE FROM pco_oauth_flows");
+    await c.query(
+      `UPDATE pco_sync_schedules SET enabled=false,next_run_at=NULL,active_run_id=NULL,
+       remaining='[]',status='cancelled',last_finished_at=now(),error='Authorization disconnected'
+       WHERE id='planning_center'`,
+    );
     await recordAudit(p.userId!, "planning_center.disconnected", "integration", null, "success", c);
     return null;
   });
@@ -320,6 +327,15 @@ export async function startSync(
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
     connected(v);
+    if (
+      (
+        await c.query(
+          `SELECT id FROM pco_sync_schedules WHERE account_ref=$1 AND enabled AND active_run_id IS NOT NULL`,
+          [v.account_ref],
+        )
+      ).rowCount
+    )
+      throw new AccessError(409, "Pause the nightly cycle before starting a separate import");
     if (
       mode === "incremental" &&
       !(

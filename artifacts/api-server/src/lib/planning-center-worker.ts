@@ -2,8 +2,9 @@ import { pool } from "@workspace/db";
 import { advancePage } from "./planning-center";
 import { recordAudit } from "./audit";
 import { logger } from "./logger";
+import { advanceSchedule } from "./planning-center-schedule";
 
-// A bounded executor for explicitly requested runs, not a recurring sync scheduler.
+// A bounded executor for explicit runs and Admin-authorized nightly schedules.
 // Durable flags/cursors survive API restarts; a transaction lock coordinates
 // replicas and all existing Admin/manual operations without expiring leases.
 export async function processAutomaticPage(): Promise<boolean> {
@@ -18,6 +19,7 @@ export async function processAutomaticPage(): Promise<boolean> {
       return false;
     }
     await c.query("SELECT set_config('np.role','admin',true)");
+    await advanceSchedule(c);
     const revoked = await c.query<{ id: string; automatic_requested_by: string | null }>(
       `UPDATE pco_sync_runs r SET automatic=false
        WHERE automatic AND NOT EXISTS (

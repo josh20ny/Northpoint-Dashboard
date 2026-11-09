@@ -16,7 +16,10 @@ Phase 3 is authorized and in progress. Direct OAuth/PKCE, organization confirmat
 encrypted token refresh/revocation and resumable People/Services/Check-Ins
 source ingestion with opt-in background run-to-completion are implemented.
 Development OAuth configuration and organization confirmation are complete.
-Full live coverage/reconciliation and recurring scheduling remain outstanding.
+Live backfills, incremental rescans and repaired source relationships are verified
+in development. An Admin-enabled nightly 1 AM Central scheduler is implemented;
+reliable unattended hosting, first scheduled-cycle acceptance, retention/deletion
+rules and final operational acceptance remain outstanding.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
 
 | Phase | Build | Exit gate |

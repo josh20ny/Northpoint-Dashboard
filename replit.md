@@ -46,7 +46,9 @@ Foundation shell, invite-only OIDC/local roles, Admin access/ministry/service
 configuration, audit log, historical workbook exploration/raw staging,
 reference schemas, documentation and health. Planning Center OAuth and restricted
 source ingestion support manual pages or opt-in run-to-completion on the API.
-No recurring sync scheduler, operational metrics or individual attendance/giving views.
+An Admin-enabled nightly 1 AM Central scheduler processes People, Services and
+Check-Ins sequentially; it requires a running API. Reliable unattended hosting is
+still outstanding. No operational metrics or individual attendance/giving views.
 
 ## User preferences
 
