@@ -151,6 +151,37 @@ Unsaved inputs are not replaced by polling.
 
 ## Remaining acceptance boundaries
 
+### January sample activation check — 2026-11-09
+
+The owner chose the already-reviewed January samples as the next validation
+scope. A read-only transaction ran the application's actual evidence builder and
+historical eligibility checks against the active 2026-11-07 snapshot. Each of the
+six service groups has exactly one current group, a matching current
+owner-confirmed review and eligible nonnegative integer evidence. Counts
+reconciled to 446/464, 462/448 and 421/410; totals are 910, 910 and 831.
+
+The existing `date_formula_unverified` and `insufficient_comparison_sources`
+flags remain visible. Eligibility uses the documented owner-confirmed policy;
+this does not establish independent corroboration or newly verify formulas.
+No reviews, definitions, ministries, occurrences, attendance revisions or
+publication audit entries were inserted by this diagnostic.
+
+The remaining operational prerequisite is an authenticated Admin saving the
+actual adult-ministry configuration and initial definition effective for the
+selected dates, then explicitly promoting each selected week with its source
+authority acknowledgement and basis note. Historical-only promotion does not
+require fabricated service timestamps. Choosing sample validation in chat is
+not a replacement for these application actions.
+
+After promotion, apply the Attendance range 2026-01-04 through 2026-01-18 and
+verify six current workbook observations, three full totals, correct
+owner-confirmed labels, persisted lineage and no duplicates on repeat
+publication. Reload and verify authorized Staff reads without raw workbook
+access. Preserve original real observations during correction testing; use
+isolated fixtures instead of changing valid historical counts merely to test.
+The home KPI must continue to describe the latest completed Sunday, not relabel
+January samples as current attendance.
+
 An Admin still needs to configure the real adult ministry/service mapping and
 deliberately promote any historical samples after reviewing source authority.
 That is not supplied by task acceptance, a prior workbook review or synthetic
