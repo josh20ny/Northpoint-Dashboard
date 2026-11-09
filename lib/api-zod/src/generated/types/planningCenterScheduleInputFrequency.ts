@@ -11,7 +11,6 @@ export type PlanningCenterScheduleInputFrequency = typeof PlanningCenterSchedule
 
 export const PlanningCenterScheduleInputFrequency = {
   daily: 'daily',
-  twice_daily: 'twice_daily',
-  every_6_hours: 'every_6_hours',
   weekly: 'weekly',
+  custom: 'custom',
 } as const;

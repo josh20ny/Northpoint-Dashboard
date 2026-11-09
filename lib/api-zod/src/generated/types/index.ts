@@ -66,6 +66,8 @@ export * from './planningCenterSchedule';
 export * from './planningCenterScheduleFrequency';
 export * from './planningCenterScheduleInput';
 export * from './planningCenterScheduleInputFrequency';
+export * from './planningCenterScheduleInputIntervalUnit';
+export * from './planningCenterScheduleIntervalUnit';
 export * from './planningCenterScheduleStatus';
 export * from './planningCenterSync';
 export * from './planningCenterSyncInput';

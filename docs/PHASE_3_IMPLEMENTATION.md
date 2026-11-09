@@ -81,16 +81,23 @@ Phase 3 is not complete or approved for a live-data release.
 
 An authenticated Admin can configure **Scheduled refresh** in Integrations.
 The default remains disabled, daily at **1:00 AM America/Chicago**. Admins can
-choose daily, twice daily, every six hours, or selected weekdays, with an HH:mm
-start/anchor time and IANA time zone. Twice-daily and six-hour patterns repeat
-at local-clock offsets from the anchor, wrapping through the same daily pattern.
-Selected weekdays use Sunday=0 through Saturday=6 and require at least one day.
+choose **Daily**, **Weekly**, or **Custom**, with an HH:mm start time and IANA
+time zone. Weekly schedules select weekdays. Custom schedules repeat every
+1–365 hours, days, or weeks from an explicit local calendar start date.
+For example, every 2 days, every 3 days, or every 2 weeks. Custom weeks begin
+Monday; the start date selects the first eligible week, and selected weekdays
+before the start date are excluded. Day intervals count calendar days, not
+elapsed 24-hour periods. The anchor does not move when a run is delayed,
+paused, resumed or restarted. Selected weekdays use Sunday=0 through Saturday=6
+and require at least one day.
+Legacy twice-daily and six-hour settings migrate to equivalent custom 12-hour
+and 6-hour patterns without changing enabled state, due time or active progress.
 These are wall-clock schedules, so elapsed intervals may vary at DST transitions.
 Repeated local times run at the first occurrence only; nonexistent local times
 shift forward by the clock gap (for example 02:30 becomes 03:30).
 
 Settings are persisted and audited through the current Admin/CSRF boundary;
-invalid times, zones, frequencies and weekdays are rejected. Saving keeps the
+invalid times, zones, frequencies, interval counts, start dates and weekdays are rejected. Saving keeps the
 enabled/paused state, recalculates the next future start when settings change,
 and retains current import progress. The editor preserves unsaved changes during
 status polling, has explicit Save/Discard controls, and displays saved settings

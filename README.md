@@ -146,7 +146,7 @@ workbook retains its accepted 2026-11-07 cutoff and original fingerprint caveat.
 Planning Center authorization and organization confirmation are complete in
 development. All three backfills/revision rescans and repaired relationships were
 verified. Opt-in run-to-completion resumes partial runs; Admins can configure
-refresh frequency, start/anchor time, weekdays and time zone for
+Daily/Weekly/Custom frequency, custom intervals and start date, time, weekdays and time zone for
 People → Services → Check-Ins (daily 1 AM Central by default). Unattended hosting,
 first scheduled-cycle acceptance, deletion/retention rules and release acceptance
 remain unfinished. Metrics and later phases remain out of scope.

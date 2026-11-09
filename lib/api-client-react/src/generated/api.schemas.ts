@@ -120,9 +120,17 @@ export type PlanningCenterScheduleFrequency = typeof PlanningCenterScheduleFrequ
 
 export const PlanningCenterScheduleFrequency = {
   daily: 'daily',
-  twice_daily: 'twice_daily',
-  every_6_hours: 'every_6_hours',
   weekly: 'weekly',
+  custom: 'custom',
+} as const;
+
+export type PlanningCenterScheduleIntervalUnit = typeof PlanningCenterScheduleIntervalUnit[keyof typeof PlanningCenterScheduleIntervalUnit];
+
+
+export const PlanningCenterScheduleIntervalUnit = {
+  hours: 'hours',
+  days: 'days',
+  weeks: 'weeks',
 } as const;
 
 export type PlanningCenterScheduleStatus = typeof PlanningCenterScheduleStatus[keyof typeof PlanningCenterScheduleStatus];
@@ -141,6 +149,14 @@ export interface PlanningCenterSchedule {
   timeZone: string;
   localTime: string;
   frequency: PlanningCenterScheduleFrequency;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  intervalCount: number;
+  intervalUnit: PlanningCenterScheduleIntervalUnit;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  anchorDate: string;
   /**
      * @minItems 1
      * @maxItems 7
@@ -166,9 +182,17 @@ export type PlanningCenterScheduleInputFrequency = typeof PlanningCenterSchedule
 
 export const PlanningCenterScheduleInputFrequency = {
   daily: 'daily',
-  twice_daily: 'twice_daily',
-  every_6_hours: 'every_6_hours',
   weekly: 'weekly',
+  custom: 'custom',
+} as const;
+
+export type PlanningCenterScheduleInputIntervalUnit = typeof PlanningCenterScheduleInputIntervalUnit[keyof typeof PlanningCenterScheduleInputIntervalUnit];
+
+
+export const PlanningCenterScheduleInputIntervalUnit = {
+  hours: 'hours',
+  days: 'days',
+  weeks: 'weeks',
 } as const;
 
 export interface PlanningCenterScheduleInput {
@@ -181,6 +205,14 @@ export interface PlanningCenterScheduleInput {
   /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
   localTime?: string;
   frequency?: PlanningCenterScheduleInputFrequency;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  intervalCount?: number;
+  intervalUnit?: PlanningCenterScheduleInputIntervalUnit;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  anchorDate?: string;
   /**
      * @minItems 1
      * @maxItems 7

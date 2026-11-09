@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PlanningCenterScheduleInputFrequency } from './planningCenterScheduleInputFrequency';
+import type { PlanningCenterScheduleInputIntervalUnit } from './planningCenterScheduleInputIntervalUnit';
 
 export interface PlanningCenterScheduleInput {
   enabled: boolean;
@@ -17,6 +18,14 @@ export interface PlanningCenterScheduleInput {
   /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
   localTime?: string;
   frequency?: PlanningCenterScheduleInputFrequency;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  intervalCount?: number;
+  intervalUnit?: PlanningCenterScheduleInputIntervalUnit;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  anchorDate?: string;
   /**
      * @minItems 1
      * @maxItems 7

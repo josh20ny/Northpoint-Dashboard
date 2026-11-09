@@ -32,6 +32,9 @@ const saved = () => ({
   local_time: "01:00",
   frequency: "daily",
   week_days: [0],
+  interval_count: 1,
+  interval_unit: "days",
+  anchor_date: "1970-01-05",
 });
 let schedule: ReturnType<typeof saved> | null;
 let runStatus: string;
@@ -64,7 +67,7 @@ beforeEach(() => {
     if (sql.startsWith("SELECT u.id")) return { rows: [], rowCount: authorized ? 1 : 0 };
     if (sql.startsWith("SELECT account_ref,state"))
       return { rows: [{ account_ref: "1", state: "connected" }] };
-    if (sql.startsWith("SELECT * FROM pco_sync_schedules"))
+    if (sql.startsWith("SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules"))
       return { rows: schedule ? [schedule] : [] };
     if (sql.startsWith("SELECT status FROM pco_sync_runs"))
       return { rows: [{ status: runStatus }] };
@@ -246,6 +249,9 @@ describe("durable schedule coordinator", () => {
       "09:45",
       "weekly",
       "[1,3]",
+      1,
+      "days",
+      "1970-01-05",
     ]);
     expect(query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO audit_events"), [
       actor,
@@ -279,6 +285,13 @@ describe("durable schedule coordinator", () => {
     { localTime: "1:00" },
     { localTime: "10:60" },
     { frequency: "hourly" },
+    { frequency: "twice_daily" },
+    { intervalCount: 0 },
+    { intervalCount: 366 },
+    { intervalCount: 2.5 },
+    { intervalUnit: "months" },
+    { anchorDate: "2026-02-30" },
+    { anchorDate: "not-a-date" },
     { weekDays: [] },
     { weekDays: [7] },
     { weekDays: [1, 1] },
@@ -296,9 +309,6 @@ describe("durable schedule coordinator", () => {
 
 describe("configurable refresh calendar", () => {
   it.each([
-    ["twice_daily", "01:00", "2026-11-09T07:00:00Z", "2026-11-09T19:00:00Z"],
-    ["every_6_hours", "01:15", "2026-11-09T07:15:00Z", "2026-11-09T13:15:00Z"],
-    ["every_6_hours", "22:40", "2026-11-09T05:00:00Z", "2026-11-09T10:40:00Z"],
     ["daily", "02:30", "2026-03-08T06:00:00Z", "2026-03-08T08:30:00Z"],
     ["daily", "01:30", "2026-11-01T06:31:00Z", "2026-11-02T07:30:00Z"],
     ["daily", "23:59", "2026-12-31T06:00:00Z", "2027-01-01T05:59:00Z"],
@@ -343,5 +353,61 @@ describe("configurable refresh calendar", () => {
         localTime: "06:10",
       }),
     ).toEqual(new Date("2026-11-09T06:10:00Z"));
+  });
+  it.each([
+    [2, "days", "2026-11-09", "2026-11-10T00:00:00Z", "2026-11-11T07:00:00Z"],
+    [3, "days", "2026-11-09", "2026-11-10T00:00:00Z", "2026-11-12T07:00:00Z"],
+    [2, "weeks", "2026-11-09", "2026-11-10T00:00:00Z", "2026-11-23T07:00:00Z"],
+    [3, "weeks", "2026-11-09", "2026-11-10T00:00:00Z", "2026-11-30T07:00:00Z"],
+    [2, "days", "2026-12-31", "2026-12-31T07:00:00Z", "2027-01-02T07:00:00Z"],
+    [3, "days", "2024-02-27", "2024-02-28T00:00:00Z", "2024-03-01T07:00:00Z"],
+    [2, "days", "2026-03-07", "2026-03-08T00:00:00Z", "2026-03-09T06:00:00Z"],
+    [365, "weeks", "2026-11-09", "2026-11-10T00:00:00Z", "2033-11-07T07:00:00Z"],
+    [2, "days", "2030-01-01", "2026-11-10T00:00:00Z", "2030-01-01T07:00:00Z"],
+    [12, "hours", "1970-01-05", "2026-11-09T07:00:00Z", "2026-11-09T19:00:00Z"],
+    [6, "hours", "1970-01-05", "2026-11-09T07:00:00Z", "2026-11-09T13:00:00Z"],
+  ] as const)(
+    "custom every %s %s from %s",
+    (intervalCount, intervalUnit, anchorDate, input, expected) => {
+      expect(
+        nextScheduledAt(new Date(input), {
+          ...defaultSchedule,
+          frequency: "custom",
+          intervalCount,
+          intervalUnit,
+          anchorDate,
+          weekDays: [1],
+        }),
+      ).toEqual(new Date(expected));
+    },
+  );
+  it("uses Monday-based alternate weeks and multiple selected weekdays", () => {
+    const s = {
+      ...defaultSchedule,
+      frequency: "custom" as const,
+      intervalCount: 2,
+      intervalUnit: "weeks" as const,
+      anchorDate: "2026-11-11",
+      weekDays: [1, 3, 5],
+    };
+    expect(nextScheduledAt(new Date("2026-11-11T08:00:00Z"), s)).toEqual(
+      new Date("2026-11-13T07:00:00Z"),
+    );
+    expect(nextScheduledAt(new Date("2026-11-13T08:00:00Z"), s)).toEqual(
+      new Date("2026-11-23T07:00:00Z"),
+    );
+  });
+  it("persists the interval and anchor date without moving them on pause/resume", async () => {
+    schedule!.enabled = false;
+    await setSchedule(admin, {
+      enabled: false,
+      frequency: "custom",
+      intervalCount: 3,
+      intervalUnit: "days",
+      anchorDate: "2026-11-09",
+    });
+    const call = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO pco_sync_schedules"))!;
+    expect(call[1].slice(-3)).toEqual([3, "days", "2026-11-09"]);
+    expect(inserts()).toHaveLength(0);
   });
 });

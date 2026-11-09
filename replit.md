@@ -47,8 +47,9 @@ configuration, audit log, historical workbook exploration/raw staging,
 reference schemas, documentation and health. Planning Center OAuth and restricted
 source ingestion support manual pages or opt-in run-to-completion on the API.
 Admins must be able to adjust scheduled refresh timing and frequency.
-The scheduler defaults to daily 1 AM Central; Admins can choose daily, twice-daily,
-six-hour or selected-weekday patterns, start/anchor time and time zone.
+The frequency choices must be Daily, Weekly and Custom. Custom supports every N
+days or weeks (and hours), anchored to a start date; weekly patterns select weekdays.
+The scheduler defaults to daily 1 AM Central; start time and time zone remain editable.
 It processes People, Services and Check-Ins sequentially and requires a running API. Reliable unattended hosting is
 still outstanding. No operational metrics or individual attendance/giving views.
 

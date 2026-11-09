@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   check,
   boolean,
+  date,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { usersTable } from "./access";
@@ -129,6 +130,9 @@ export const pcoSyncSchedules = pgTable(
     localTime: text("local_time").notNull().default("01:00"),
     frequency: text("frequency").notNull().default("daily"),
     weekDays: jsonb("week_days").notNull().default([0]),
+    intervalCount: integer("interval_count").notNull().default(1),
+    intervalUnit: text("interval_unit").notNull().default("days"),
+    anchorDate: date("anchor_date", { mode: "string" }).notNull().default("1970-01-05"),
     authorizedBy: uuid("authorized_by")
       .notNull()
       .references(() => usersTable.id),
@@ -143,10 +147,9 @@ export const pcoSyncSchedules = pgTable(
   (t) => [
     admin(),
     check("pco_schedule_singleton", sql`${t.id} = 'planning_center'`),
-    check(
-      "pco_schedule_frequency",
-      sql`${t.frequency} IN ('daily','twice_daily','every_6_hours','weekly')`,
-    ),
+    check("pco_schedule_frequency", sql`${t.frequency} IN ('daily','weekly','custom')`),
+    check("pco_schedule_interval_count", sql`${t.intervalCount} BETWEEN 1 AND 365`),
+    check("pco_schedule_interval_unit", sql`${t.intervalUnit} IN ('hours','days','weeks')`),
     check("pco_schedule_time", sql`${t.localTime} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`),
     check(
       "pco_schedule_status",

@@ -27,6 +27,9 @@ interface Schedule {
   local_time: string;
   frequency: PlanningCenterSchedule["frequency"];
   week_days: number[];
+  interval_count: number;
+  interval_unit: PlanningCenterSchedule["intervalUnit"];
+  anchor_date: string;
 }
 const iso = (v: Date | null | undefined) => v?.toISOString() ?? null;
 function view(s?: Schedule): PlanningCenterSchedule {
@@ -36,6 +39,9 @@ function view(s?: Schedule): PlanningCenterSchedule {
     localTime: s?.local_time ?? defaultSchedule.localTime,
     frequency: s?.frequency ?? defaultSchedule.frequency,
     weekDays: s?.week_days ?? defaultSchedule.weekDays,
+    intervalCount: s?.interval_count ?? defaultSchedule.intervalCount,
+    intervalUnit: s?.interval_unit ?? defaultSchedule.intervalUnit,
+    anchorDate: s?.anchor_date ?? defaultSchedule.anchorDate,
     nextRunAt: s?.enabled ? iso(s.next_run_at) : null,
     lastStartedAt: iso(s?.last_started_at),
     lastFinishedAt: iso(s?.last_finished_at),
@@ -45,9 +51,10 @@ function view(s?: Schedule): PlanningCenterSchedule {
   };
 }
 export async function scheduleView(c: PoolClient, account: string) {
-  const s = await c.query<Schedule>("SELECT * FROM pco_sync_schedules WHERE account_ref=$1", [
-    account,
-  ]);
+  const s = await c.query<Schedule>(
+    "SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules WHERE account_ref=$1",
+    [account],
+  );
   return view(s.rows[0]);
 }
 export async function setSchedule(
@@ -60,6 +67,9 @@ export async function setSchedule(
         localTime?: string;
         frequency?: PlanningCenterSchedule["frequency"];
         weekDays?: number[];
+        intervalCount?: number;
+        intervalUnit?: PlanningCenterSchedule["intervalUnit"];
+        anchorDate?: string;
       },
 ) {
   const parsed = SetPlanningCenterScheduleBody.strict().safeParse(
@@ -72,6 +82,14 @@ export async function setSchedule(
     throw new AccessError(400, "Choose a valid IANA time zone");
   if (b.weekDays && new Set(b.weekDays).size !== b.weekDays.length)
     throw new AccessError(400, "Choose each weekday only once");
+  if (
+    b.anchorDate &&
+    (b.anchorDate < "1900-01-01" ||
+      b.anchorDate > "9998-12-31" ||
+      !Number.isFinite(Date.parse(`${b.anchorDate}T00:00:00Z`)) ||
+      new Date(`${b.anchorDate}T00:00:00Z`).toISOString().slice(0, 10) !== b.anchorDate)
+  )
+    throw new AccessError(400, "Choose a valid start date");
   if (enabled) requireConfiguration();
   return adminTransaction(p, async (c) => {
     const v = (
@@ -94,7 +112,7 @@ export async function setSchedule(
     }
     const old = (
       await c.query<Schedule>(
-        "SELECT * FROM pco_sync_schedules WHERE id='planning_center' FOR UPDATE",
+        "SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules WHERE id='planning_center' FOR UPDATE",
       )
     ).rows[0];
     // A paused cycle retains its current run and remaining products. Reauthorizing
@@ -106,11 +124,17 @@ export async function setSchedule(
       localTime: b.localTime ?? previous.localTime,
       frequency: b.frequency ?? previous.frequency,
       weekDays: (b.weekDays ?? previous.weekDays).slice().sort((a, b) => a - b),
+      intervalCount: b.intervalCount ?? previous.intervalCount,
+      intervalUnit: b.intervalUnit ?? previous.intervalUnit,
+      anchorDate: b.anchorDate ?? previous.anchorDate,
     };
     const changed =
       settings.timeZone !== previous.timeZone ||
       settings.localTime !== previous.localTime ||
       settings.frequency !== previous.frequency ||
+      settings.intervalCount !== previous.intervalCount ||
+      settings.intervalUnit !== previous.intervalUnit ||
+      settings.anchorDate !== previous.anchorDate ||
       JSON.stringify(settings.weekDays) !== JSON.stringify(previous.weekDays);
     if (same && old.active_run_id) {
       await c.query(
@@ -125,16 +149,17 @@ export async function setSchedule(
         ? old.next_run_at
         : nextScheduledAt(new Date(), settings);
     const updated = await c.query<Schedule>(
-      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at,time_zone,local_time,frequency,week_days)
-       VALUES ('planning_center',$1,$2,$3,$4,$5,$6,$7,$8)
+      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at,time_zone,local_time,frequency,week_days,interval_count,interval_unit,anchor_date)
+       VALUES ('planning_center',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT(id) DO UPDATE SET account_ref=$1,enabled=$2,authorized_by=$3,next_run_at=$4,
        time_zone=$5,local_time=$6,frequency=$7,week_days=$8,
+       interval_count=$9,interval_unit=$10,anchor_date=$11,
        active_run_id=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.active_run_id END,
        remaining=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.remaining ELSE '[]'::jsonb END,
        status=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.status ELSE 'idle' END,
        last_started_at=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.last_started_at END,
        last_finished_at=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.last_finished_at END,
-       error=NULL RETURNING *`,
+       error=NULL RETURNING *,anchor_date::text AS anchor_date`,
       [
         v.account_ref,
         enabled,
@@ -144,6 +169,9 @@ export async function setSchedule(
         settings.localTime,
         settings.frequency,
         JSON.stringify(settings.weekDays),
+        settings.intervalCount,
+        settings.intervalUnit,
+        settings.anchorDate,
       ],
     );
     await recordAudit(
@@ -167,7 +195,7 @@ export async function setSchedule(
 export async function advanceSchedule(c: PoolClient, now = new Date()) {
   const s = (
     await c.query<Schedule>(
-      "SELECT * FROM pco_sync_schedules WHERE id='planning_center' AND enabled FOR UPDATE",
+      "SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules WHERE id='planning_center' AND enabled FOR UPDATE",
     )
   ).rows[0];
   if (!s) return;

@@ -12,19 +12,30 @@ import { Panel, StatusPill } from "@/components/kit";
 import { FormError, SectionHeading } from "@/components/admin-controls";
 import { btn, btnPrimary, csrfRequest, Note } from "@/components/import-common";
 
-type Settings = Pick<PlanningCenterSchedule, "frequency" | "localTime" | "timeZone" | "weekDays">;
+type Settings = Pick<
+  PlanningCenterSchedule,
+  | "frequency"
+  | "localTime"
+  | "timeZone"
+  | "weekDays"
+  | "intervalCount"
+  | "intervalUnit"
+  | "anchorDate"
+>;
 const settings = (s: PlanningCenterSchedule): Settings => ({
   frequency: s.frequency,
   localTime: s.localTime,
   timeZone: s.timeZone,
   weekDays: s.weekDays,
+  intervalCount: s.intervalCount,
+  intervalUnit: s.intervalUnit,
+  anchorDate: s.anchorDate,
 });
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const frequencies = {
   daily: "Daily",
-  twice_daily: "Twice daily",
-  every_6_hours: "Every 6 hours",
-  weekly: "Selected weekdays",
+  weekly: "Weekly",
+  custom: "Custom",
 };
 const zones = Array.from(
   new Set(["America/Chicago", "UTC", ...Intl.supportedValuesOf("timeZone")]),
@@ -69,7 +80,36 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
     );
   const valid =
     /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.localTime) &&
-    (draft.frequency !== "weekly" || draft.weekDays.length > 0);
+    (!(
+      draft.frequency === "weekly" ||
+      (draft.frequency === "custom" && draft.intervalUnit === "weeks")
+    ) ||
+      draft.weekDays.length > 0) &&
+    (draft.frequency !== "custom" ||
+      (Number.isInteger(draft.intervalCount) &&
+        draft.intervalCount >= 1 &&
+        draft.intervalCount <= 365 &&
+        /^\d{4}-\d{2}-\d{2}$/.test(draft.anchorDate) &&
+        Number.isFinite(Date.parse(`${draft.anchorDate}T00:00:00Z`)) &&
+        new Date(`${draft.anchorDate}T00:00:00Z`).toISOString().slice(0, 10) === draft.anchorDate));
+  const weekly =
+    draft.frequency === "weekly" ||
+    (draft.frequency === "custom" && draft.intervalUnit === "weeks");
+  const savedWeekly =
+    s.frequency === "weekly" || (s.frequency === "custom" && s.intervalUnit === "weeks");
+  const today = () => {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: draft.timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+        .formatToParts(new Date())
+        .map((part) => [part.type, part.value]),
+    );
+    return `${p.year}-${p.month}-${p.day}`;
+  };
   const date = (value: string | null) =>
     value
       ? new Date(value).toLocaleString("en-US", {
@@ -94,8 +134,13 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
           />
         </div>
         <p data-testid="text-schedule-summary">
-          Saved: {frequencies[s.frequency]}, {s.localTime} · {s.timeZone}
-          {s.frequency === "weekly" && ` · ${s.weekDays.map((d) => days[d]).join(", ")}`}
+          Saved:{" "}
+          {s.frequency === "custom"
+            ? `Every ${s.intervalCount} ${s.intervalUnit}`
+            : frequencies[s.frequency]}
+          , {s.localTime} · {s.timeZone}
+          {savedWeekly && ` · ${s.weekDays.map((d) => days[d]).join(", ")}`}
+          {s.frequency === "custom" && ` · Starting ${s.anchorDate}`}
         </p>
         <form
           onSubmit={(e) => {
@@ -114,6 +159,9 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
                   change({
                     frequency: e.target.value as Settings["frequency"],
                     weekDays: draft.weekDays.length ? draft.weekDays : [0],
+                    ...(e.target.value === "custom" && draft.frequency !== "custom"
+                      ? { anchorDate: today() }
+                      : {}),
                   })
                 }
                 data-testid="select-schedule-frequency"
@@ -126,9 +174,7 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
               </select>
             </label>
             <label>
-              {draft.frequency === "twice_daily" || draft.frequency === "every_6_hours"
-                ? "Daily anchor time"
-                : "Start time"}
+              Start time
               <input
                 type="time"
                 required
@@ -155,7 +201,64 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
               </select>
             </label>
           </fieldset>
-          {draft.frequency === "weekly" && (
+          {draft.frequency === "custom" && (
+            <fieldset disabled={save.isPending} className="grid gap-3 sm:grid-cols-3">
+              <label>
+                Repeat every
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  step={1}
+                  required
+                  value={draft.intervalCount || ""}
+                  className={inputClass}
+                  data-testid="input-schedule-interval"
+                  onChange={(e) =>
+                    change({ intervalCount: e.target.value === "" ? 0 : Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Unit
+                <select
+                  className={inputClass}
+                  value={draft.intervalUnit}
+                  data-testid="select-schedule-unit"
+                  onChange={(e) =>
+                    change({
+                      intervalUnit: e.target.value as Settings["intervalUnit"],
+                      weekDays: draft.weekDays.length ? draft.weekDays : [0],
+                    })
+                  }
+                >
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="hours">Hours</option>
+                </select>
+              </label>
+              <label>
+                Starting on
+                <input
+                  type="date"
+                  min="1900-01-01"
+                  max="9998-12-31"
+                  required
+                  className={inputClass}
+                  value={draft.anchorDate}
+                  data-testid="input-schedule-start-date"
+                  onChange={(e) => change({ anchorDate: e.target.value })}
+                />
+              </label>
+              <p className="text-muted-foreground sm:col-span-3">
+                For example: every 2 days, every 3 days, or every 2 weeks.
+                {draft.intervalUnit === "weeks" &&
+                  " Weeks begin Monday; the starting date determines the first eligible week. Choose weekdays below."}{" "}
+                The pattern stays anchored to this date even if a run is delayed.
+              </p>
+            </fieldset>
+          )}
+          {weekly && (
             <fieldset disabled={save.isPending}>
               <legend className="mb-1">Run on these weekdays</legend>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -185,11 +288,6 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
             </fieldset>
           )}
           <p className="text-muted-foreground">
-            {draft.frequency === "twice_daily"
-              ? "Runs at the selected time and 12 hours later, wrapping into the same daily pattern. "
-              : draft.frequency === "every_6_hours"
-                ? "Runs at the selected time and 6, 12 and 18 local-clock hours later, repeating daily. "
-                : ""}
             Times follow the selected zone. A skipped daylight-saving time shifts forward by the
             clock change; a repeated time runs only once. Imports can take several hours.
           </p>

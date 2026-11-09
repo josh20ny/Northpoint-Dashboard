@@ -2,13 +2,22 @@ import type { PlanningCenterSchedule } from "@workspace/api-zod";
 
 export type ScheduleSettings = Pick<
   PlanningCenterSchedule,
-  "timeZone" | "localTime" | "frequency" | "weekDays"
+  | "timeZone"
+  | "localTime"
+  | "frequency"
+  | "weekDays"
+  | "intervalCount"
+  | "intervalUnit"
+  | "anchorDate"
 >;
 export const defaultSchedule: ScheduleSettings = {
   timeZone: "America/Chicago",
   localTime: "01:00",
   frequency: "daily",
   weekDays: [0],
+  intervalCount: 1,
+  intervalUnit: "days",
+  anchorDate: "1970-01-05",
 };
 export function validTimeZone(zone: string) {
   try {
@@ -43,18 +52,39 @@ export function nextScheduledAt(now: Date, settings: ScheduleSettings): Date {
   );
   const [hour, minute] = settings.localTime.split(":").map(Number);
   const start = hour! * 60 + minute!;
-  const interval =
-    settings.frequency === "twice_daily"
-      ? 720
-      : settings.frequency === "every_6_hours"
-        ? 360
-        : 1440;
-  const slots = Array.from({ length: 1440 / interval }, (_, i) => (start + i * interval) % 1440);
+  const custom = settings.frequency === "custom";
+  const anchor = new Date(`${settings.anchorDate}T00:00:00Z`).getTime();
+  const count = settings.intervalCount;
+  // Week intervals are calendar weeks beginning Monday, not elapsed 168-hour blocks.
+  const weekStart = (day: number) => day - ((new Date(day).getUTCDay() + 6) % 7) * DAY;
+  const firstDay = custom ? Math.max(midnight, anchor) : midnight;
+  const horizon = !custom
+    ? 9
+    : settings.intervalUnit === "weeks"
+      ? count * 7 + 8
+      : settings.intervalUnit === "days"
+        ? count + 2
+        : Math.ceil(count / 24) + 2;
   const candidates: number[] = [];
-  for (let d = 0; d < 9; d++) {
-    const day = midnight + d * DAY;
-    if (settings.frequency === "weekly" && !settings.weekDays.includes(new Date(day).getUTCDay()))
+  for (let d = 0; d < horizon; d++) {
+    const day = firstDay + d * DAY;
+    const weekly = settings.frequency === "weekly" || (custom && settings.intervalUnit === "weeks");
+    if (weekly && !settings.weekDays.includes(new Date(day).getUTCDay())) continue;
+    if (custom && settings.intervalUnit === "days" && ((day - anchor) / DAY) % count !== 0)
       continue;
+    if (
+      custom &&
+      settings.intervalUnit === "weeks" &&
+      ((weekStart(day) - weekStart(anchor)) / (7 * DAY)) % count !== 0
+    )
+      continue;
+    const slots =
+      custom && settings.intervalUnit === "hours"
+        ? Array.from({ length: 24 }, (_, h) => h * 60 + minute!).filter((slot) => {
+            const distance = (day - anchor) / 60_000 + slot - start;
+            return distance >= 0 && distance % (count * 60) === 0;
+          })
+        : [start];
     for (const slot of slots) {
       const target = day + slot * 60_000;
       const offsets = new Set(
