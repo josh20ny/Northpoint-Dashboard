@@ -72,6 +72,60 @@ informed approval. Preserve prior revisions and do not alter metric formulas.
 Only then record the owner's development closeout decision, separately from
 production readiness. This checklist itself is not that approval.
 
+#### Non-destructive acceptance pass — 2026-11-09
+
+The owner selected non-destructive checks. All database checks below were
+read-only; no provider credential was accessed/decrypted, no Admin impersonated,
+no import started, and no schedule or source data changed.
+
+- **Lineage PASS:** all 138,134 current source entities reference an existing
+  raw revision with matching provider/account/product/type/external ID, and
+  an existing run with matching account/product. Zero duplicate identity groups.
+- **Services linkage PASS:** all 3,232 plans retain the service-type relationship
+  field and resolve its target. All 12,321 plan times resolve the parent plan
+  recorded in their collection. The source contains 22 service types.
+- **Check-Ins linkage PASS:** all 101,547 CheckIn records retain the requested
+  person/event-period/event-times/locations relationship fields. All 310,602
+  non-null event-period, event-time and location references resolve within the
+  same source account/product. This does not merge person IDs across products
+  or establish metric/attendance headcount semantics.
+- **Explicit null/empty exceptions PASS:** all 206 null-person check-ins are
+  marked one-time guests. All 169 empty-location check-ins were created on
+  October 29, 2023 in America/Chicago, consistent with the owner-confirmed
+  high-school evening-event explanation. No location or numeric attendance
+  interpretation was manufactured.
+- **Saved-page consistency PASS:** all eight existing runs are complete,
+  have zero pending pages, and visited-page counts equal committed page counts.
+  None remains automatically running.
+- **Observed manual recovery PASS:** both recorded pause events have a later
+  enable event and completion for the same run. This upgrades manual pause/
+  resume evidence from aggregate counts to per-run correlation. It does not
+  establish abrupt process-restart or credential-revocation recovery.
+- **Health/access boundary PASS:** readiness reports connected/applied/ready;
+  logged-out GET requests to the protected Planning Center status, schedule
+  and sync paths return 401. All six PCO tables have enabled and forced RLS.
+  Catalog metadata and unauthenticated denial do not replace cross-role tests
+  or a signed-in Admin UI walkthrough.
+- **Fresh lifecycle baseline PENDING:** zero tracking-version-1 runs exist.
+  All current runs predate tracking. Zero missing flags must not be interpreted
+  as a completed absence assessment.
+- **Scheduled cycle PENDING:** schedule remains disabled, weekly at 01:00
+  America/Chicago, idle, without a recorded start or finish.
+- **Controlled restart and live credential-failure recovery PENDING:** no such
+  exercise was performed during this pass. Existing synthetic results remain
+  valid for the unchanged implementation; the guarded real-account database
+  fixture suite was not run.
+
+**Next safe action:** an authenticated Admin starts **People → Incremental →
+Run to completion** in Administration → Integrations. Then inspect the newly
+tracked completed run before proceeding with Services and Check-Ins one at a
+time. Starting imports must use actual Admin authorization, not a fabricated
+principal or a direct database insert. Establishing these manual baselines does
+not by itself demonstrate the scheduler. A controlled restart needs an active
+run and an agreed interruption point; no idle restart is counted as recovery.
+Final development closeout remains pending the remaining demonstrations or
+explicit owner-approved exceptions.
+
 ### Administration flow
 
 1. Open **Administration → Integrations** as an invited, authenticated Admin.
