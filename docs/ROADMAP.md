@@ -19,8 +19,11 @@ Development OAuth configuration and organization confirmation are complete.
 Live backfills, incremental rescans and repaired source relationships are verified
 in development. An Admin-configurable refresh scheduler is implemented
 (daily 1 AM Central by default, with time/frequency/weekday/time-zone controls);
-reliable unattended hosting, first scheduled-cycle acceptance, retention/deletion
-rules and final operational acceptance remain outstanding.
+development lifecycle rules and tracking are implemented. Final development
+acceptance is next: fresh lifecycle baselines, a scheduled cycle and controlled
+interruption/credential-lifecycle evidence or explicit owner-approved exceptions.
+Unattended hosting is deferred by the owner's development-only choice;
+production retention/privacy deletion and release approval remain separate gates.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
 
 | Phase | Build | Exit gate |

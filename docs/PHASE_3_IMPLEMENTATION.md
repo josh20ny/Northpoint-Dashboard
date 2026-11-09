@@ -32,8 +32,45 @@ Migrations are applied in development only. Provider configuration, consent and
 organization confirmation have been completed in development. All three product
 backfills and incremental rescans completed; relationship repair rescans for
 Services and Check-Ins were verified with locally resolvable source links.
-Unattended hosting and pre-production retention decisions remain outstanding;
-Phase 3 is not complete or approved for a live-data release.
+Development lifecycle rules are approved (D-024), with tracking implemented.
+The owner chose development-only hosting; unattended production hosting is
+explicitly deferred, not demonstrated. Pre-production retention/privacy-deletion
+decisions remain open. Phase 3 is ready for final development acceptance, but
+closeout has not yet been signed off and no production/live-data release is approved.
+
+### Final development acceptance checklist — checked 2026-11-09
+
+This is an evidence checklist, not a claim that synthetic coverage demonstrates
+every real-provider failure mode. Read-only development metadata was checked;
+no credentials were revoked, imports started, or schedule settings changed.
+
+| Case | Evidence / result | Acceptance status |
+|---|---|---|
+| OAuth consent, organization confirmation, restricted product scopes | Owner completed real connection; stored state is `connected`, People/Services/Check-Ins only, no recorded connection error | Demonstrated in development; stored status is not a fresh provider health probe |
+| Backfill all three products | People 197 pages / 19,674 fetched; Services 3,278 / 15,572; Check-Ins 1,016 / 132,921. All complete, zero pending pages | Demonstrated |
+| Incremental revision replay | People 197 pages / 19,693 fetched / 34 revisions; Services 3,279 / 15,575 / 21; Check-Ins 1,017 / 132,933 / 92 | Demonstrated |
+| Repaired relationship ingestion | Subsequent Services 3,279 pages / 3,232 revisions and Check-Ins 1,017 / 102,500 completed; prior stored-link review resolved references without fabricating null/empty relationships | Demonstrated; source linkage, not approved metric definitions |
+| Current staging inventory | People 19,693; Services 15,575; Check-Ins 102,866 = 138,134 minimized source entities | Read-only verified; resources/revisions are not attendance headcounts |
+| Explained historical exceptions | Four online-only Sundays during building move; 169 no-location check-ins at the high-school evening event (details below) | Owner-confirmed; no invented zeros, locations, or metric exclusions |
+| Manual pause/resume | Two pause and ten enable audit events exist; owner-operated real runs subsequently completed | Demonstrated at control level; does not prove abrupt restart, expiry, or revocation recovery |
+| Controlled interruption / restart | Durable page commits, advisory-lock coordination and rollback have synthetic coverage; overnight inactivity occurred but its exact cause was not established | Controlled real-account demonstration still pending |
+| First scheduled three-product cycle | Stored schedule disabled, weekly at 01:00 America/Chicago, idle; no last-start or last-finish recorded | Not demonstrated; do not silently enable or change owner settings |
+| New lifecycle baseline | All eight existing runs are pre-tracking; zero positive observations since tracking and zero missing flags | Not yet assessed, not proof of zero missing records. New completed scans for all three products still needed |
+| Expired token / rejected refresh / revoked provider permission | Synthetic success/rejection, 401/403, safe interruption and retained-history coverage | Real credential-lifecycle failure/reconnect demonstration pending; natural expiry/refresh success is not independently attested by stored run completion |
+| Admin authority removal and protected UI | Current-membership checks, CSRF and RLS tests; logged-out status request denied (401) | Synthetic/security checks verified; do not remove a real Admin or bypass sign-in for testing |
+| Current implementation checks | 215 tests passed, 34 DB-fixture tests skipped to protect real connection; typecheck/lint, isolated temporary-table lifecycle SQL checks and readiness passed | Verified for lifecycle implementation; skipped fixtures are not fresh live evidence |
+| Hosting / retention | Development-only hosting accepted; no automatic purge approved in development | Explicit production deferrals, not production acceptance |
+
+**Closeout sequence:** establish fresh tracked scans and inspect their summaries;
+demonstrate a planned interruption/resumption without losing saved pages; verify
+the first scheduled cycle if accepting the scheduler as live-demonstrated; then
+either perform a controlled credential/reconnect exercise or obtain explicit
+owner acceptance of that unverified live case as a documented development-only
+exception. Revocation/disconnect will stop imports and may require owner OAuth
+consent and organization confirmation again, so it must not be done without
+informed approval. Preserve prior revisions and do not alter metric formulas.
+Only then record the owner's development closeout decision, separately from
+production readiness. This checklist itself is not that approval.
 
 ### Administration flow
 
