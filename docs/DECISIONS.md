@@ -26,8 +26,32 @@
 | D-021 | OPEN | Exact regularity criteria & denominator for engaged levels | Rule registry and backtests |
 | D-022 | OPEN | Health thresholds and weekly summary destination and auto-send gate | Seed draft only |
 | D-023 | OPEN | Which source is authoritative for each numeric measure | Reconcile mapping with owners |
+| D-024 | APPROVED | Preserve source history; separate explicit lifecycle markers from completed-scan absence; no automatic purge in development | Missing is not deleted; retention/privacy deletion require pre-production decisions |
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
+
+## D-024 — Planning Center lifecycle rules — 2026-11-09
+
+**APPROVED**, owner: product owner. Inactive/archive markers retain source
+history and never erase past attendance. Only explicit provider deletion evidence
+may support a deletion label; a missing record is instead “Not seen in latest
+completed scan.” Permissions, filters and accessible history can explain absence.
+Failed, paused, partial or cancelled scans must never infer absence. Reappearance
+clears the missing flag while preserving observation and source evidence.
+No automatic purge in development; this is not a decision to retain forever.
+Fixed retention periods and privacy-deletion procedures require separate
+pre-production approval. No metric formulas or historical totals change.
+
+Alternatives: infer deletion from absence, automatically purge, or leave lifecycle
+untracked. Rejected because they confuse access/coverage with source deletion.
+Migration impact: additive per-run observation ledger and presence references,
+Admin-only forced RLS and append-only observation protection. Legacy/in-flight
+runs are not retroactively declared complete lifecycle assessments.
+Tests: page-savepoint integration, independent observation of older payloads,
+completion-only assessment guard, reappearance, metadata-only summary, and
+preserved authorization boundaries. Universal deleted-object discovery remains
+unsupported; a stored `deleted_at` is presented as an explicit source marker,
+not a claim that every deletion is discoverable.
 
 ## Phase 2 sample gate and direct Planning Center authorization — 2026-11-08
 

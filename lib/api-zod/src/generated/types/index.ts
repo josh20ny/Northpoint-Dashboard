@@ -62,6 +62,8 @@ export * from './planningCenterAutomationInput';
 export * from './planningCenterConfirmation';
 export * from './planningCenterConnection';
 export * from './planningCenterConnectionState';
+export * from './planningCenterLifecycle';
+export * from './planningCenterLifecycleProduct';
 export * from './planningCenterSchedule';
 export * from './planningCenterScheduleFrequency';
 export * from './planningCenterScheduleInput';

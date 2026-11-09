@@ -222,6 +222,28 @@ export interface PlanningCenterScheduleInput {
   weekDays?: number[];
 }
 
+export type PlanningCenterLifecycleProduct = typeof PlanningCenterLifecycleProduct[keyof typeof PlanningCenterLifecycleProduct];
+
+
+export const PlanningCenterLifecycleProduct = {
+  people: 'people',
+  services: 'services',
+  check_ins: 'check_ins',
+} as const;
+
+export interface PlanningCenterLifecycle {
+  product: PlanningCenterLifecycleProduct;
+  total: number;
+  observed: number;
+  notSeen: number;
+  unassessed: number;
+  inactive: number;
+  archived: number;
+  deletionMarkers: number;
+  /** @nullable */
+  lastAssessedAt: string | null;
+}
+
 export interface PlanningCenterWorkspace {
   configured: boolean;
   missingConfiguration: string[];
@@ -231,6 +253,7 @@ export interface PlanningCenterWorkspace {
   connection: PlanningCenterConnection | null;
   syncs: PlanningCenterSync[];
   sourceRecords: number;
+  lifecycle: PlanningCenterLifecycle[];
   schedule: PlanningCenterSchedule;
   asOf: string;
 }

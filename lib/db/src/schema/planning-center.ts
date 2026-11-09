@@ -11,6 +11,7 @@ import {
   check,
   boolean,
   date,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { usersTable } from "./access";
@@ -82,6 +83,7 @@ export const pcoSyncRuns = pgTable(
     automatic: boolean("automatic").notNull().default(false),
     automaticRequestedBy: uuid("automatic_requested_by").references(() => usersTable.id),
     lastAutomaticAt: timestamp("last_automatic_at", { withTimezone: true }),
+    lifecycleVersion: integer("lifecycle_version").notNull().default(1),
   },
   (t) => [
     admin(),
@@ -114,11 +116,28 @@ export const pcoSourceEntities = pgTable(
       .references(() => pcoSyncRuns.id),
     normalized: jsonb("normalized").notNull(),
     seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
+    observedRunId: uuid("observed_run_id").references(() => pcoSyncRuns.id),
+    missingRunId: uuid("missing_run_id").references(() => pcoSyncRuns.id),
   },
   (t) => [
     admin(),
     uniqueIndex("pco_entity_identity").on(t.accountRef, t.product, t.objectType, t.externalId),
   ],
+).enableRLS();
+// Positive observations are independent of payload version selection.
+// Immutable per-run evidence supports completed-scan absence assessments.
+export const pcoSourceObservations = pgTable(
+  "pco_source_observations",
+  {
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => pcoSyncRuns.id),
+    entityId: uuid("entity_id")
+      .notNull()
+      .references(() => pcoSourceEntities.id),
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [admin(), primaryKey({ columns: [t.runId, t.entityId] })],
 ).enableRLS();
 export const pcoSyncSchedules = pgTable(
   "pco_sync_schedules",

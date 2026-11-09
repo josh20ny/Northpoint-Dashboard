@@ -34,11 +34,19 @@ export async function databaseReadiness() {
           AND conname='import_review_method')
         AND (SELECT count(*) FROM pg_class WHERE oid IN
           (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
-           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules'))
-          AND relrowsecurity AND relforcerowsecurity)=5
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules'),
+           to_regclass('pco_source_observations'))
+          AND relrowsecurity AND relforcerowsecurity)=6
         AND (SELECT count(*) FROM pg_policy WHERE polname='pco_admin_only' AND polrelid IN
           (to_regclass('pco_connections'),to_regclass('pco_oauth_flows'),
-           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules')))=5
+           to_regclass('pco_sync_runs'),to_regclass('pco_source_entities'),to_regclass('pco_sync_schedules'),
+           to_regclass('pco_source_observations')))=6
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('pco_source_observations')
+          AND tgname='pco_observations_append_only' AND tgenabled<>'D')
+        AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_source_entities' AND column_name IN ('observed_run_id','missing_run_id'))=2
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_sync_runs' AND column_name='lifecycle_version')
         AND (SELECT count(*) FROM information_schema.columns WHERE table_schema='public'
           AND table_name='pco_sync_schedules' AND column_name IN ('time_zone','local_time','frequency','week_days','interval_count','interval_unit','anchor_date'))=7
         AND (SELECT count(*) FROM pg_trigger WHERE tgname='pco_no_delete' AND tgenabled<>'D'

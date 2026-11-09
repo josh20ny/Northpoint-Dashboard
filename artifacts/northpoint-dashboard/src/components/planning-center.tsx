@@ -22,6 +22,7 @@ import { EmptyRecord, FormError, SectionHeading } from "@/components/admin-contr
 import { Skeleton } from "@/components/ui/skeleton";
 import { btn, btnPrimary, csrfRequest, Note } from "@/components/import-common";
 import { RefreshSchedule } from "@/components/planning-center-schedule";
+import { SourceLifecycle } from "@/components/planning-center-lifecycle";
 
 const PRODUCTS: [PlanningCenterSyncInputProduct, string][] = [
   ["people", "People"],
@@ -413,8 +414,8 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
         </p>
         <p>
           <strong className="text-foreground">Incremental</strong> rescans accessible records and
-          stores only changed revisions. Deleted or missing records are not inferred. Requires a
-          completed backfill for that product.
+          stores only changed revisions. Absence is flagged only after a complete scan, never as
+          deletion. Requires a completed backfill for that product.
         </p>
       </div>
       <p className="mt-3 text-[12.5px]">
@@ -516,6 +517,7 @@ export function PlanningCenterAdmin() {
           />
           <RefreshSchedule ws={ws} />
           <Syncs ws={ws} />
+          <SourceLifecycle ws={ws} />
         </>
       )}
     </section>

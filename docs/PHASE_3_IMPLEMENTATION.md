@@ -32,7 +32,7 @@ Migrations are applied in development only. Provider configuration, consent and
 organization confirmation have been completed in development. All three product
 backfills and incremental rescans completed; relationship repair rescans for
 Services and Check-Ins were verified with locally resolvable source links.
-Unattended hosting, lifecycle acceptance and retention decisions remain outstanding;
+Unattended hosting and pre-production retention decisions remain outstanding;
 Phase 3 is not complete or approved for a live-data release.
 
 ### Administration flow
@@ -156,6 +156,17 @@ without committing part of a page. Last successful sync is not advanced on failu
   definition, canonical identity merge or Staff-facing person endpoint is added.
 - Missing records do not imply deletion. Explicit source archive/inactive markers
   are preserved. Deleted-object discovery/webhook validation remains future work.
+  D-024 approves development lifecycle tracking: Admin summary separates positive
+  observations, not-seen-in-completed-scan flags, legacy/unassessed records and
+  explicit inactive/archive/deletion markers. Per-run observation evidence is
+  independent of payload revision selection; a stale payload still proves presence.
+  New successful full accessible scans (backfill or current full-rescan incremental)
+  assess absence atomically with completion. Failed/partial scans never do.
+  Positive reappearance clears absence immediately. Previous runs and already
+  in-flight runs have no retroactive absence assessment. No automatic purge,
+  historical metric rewrite, universal deletion discovery or lifetime completeness
+  claim is introduced. If incremental becomes delta-filtered, it must not run this
+  full-scan absence assessment without a new coverage contract.
 - The status endpoint returns configuration presence, organization metadata and
   run counts only. Tokens, payloads and personal records are never in its response.
 

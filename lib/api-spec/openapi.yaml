@@ -567,7 +567,23 @@ components:
         enabled: { type: boolean }
     PlanningCenterSync:
       type: object
-      required: [id, product, mode, status, fetched, revised, pages, pendingPages, startedAt, finishedAt, error, retryAt, automatic, lastAutomaticAt]
+      required:
+        [
+          id,
+          product,
+          mode,
+          status,
+          fetched,
+          revised,
+          pages,
+          pendingPages,
+          startedAt,
+          finishedAt,
+          error,
+          retryAt,
+          automatic,
+          lastAutomaticAt,
+        ]
       properties:
         id: { type: string, format: uuid }
         product: { type: string, enum: [people, services, check_ins] }
@@ -585,7 +601,8 @@ components:
         lastAutomaticAt: { type: ["string", "null"] }
     PlanningCenterConnection:
       type: object
-      required: [accountRef, accountName, state, scopes, connectedBy, updatedAt, lastSuccessAt, error]
+      required:
+        [accountRef, accountName, state, scopes, connectedBy, updatedAt, lastSuccessAt, error]
       properties:
         accountRef: { type: string }
         accountName: { type: string }
@@ -597,7 +614,23 @@ components:
         error: { type: ["string", "null"] }
     PlanningCenterSchedule:
       type: object
-      required: [enabled, timeZone, localTime, frequency, weekDays, intervalCount, intervalUnit, anchorDate, nextRunAt, lastStartedAt, lastFinishedAt, activeRunId, status, error]
+      required:
+        [
+          enabled,
+          timeZone,
+          localTime,
+          frequency,
+          weekDays,
+          intervalCount,
+          intervalUnit,
+          anchorDate,
+          nextRunAt,
+          lastStartedAt,
+          lastFinishedAt,
+          activeRunId,
+          status,
+          error,
+        ]
       properties:
         enabled: { type: boolean }
         timeZone: { type: string }
@@ -606,7 +639,14 @@ components:
         intervalCount: { type: integer, minimum: 1, maximum: 365 }
         intervalUnit: { type: string, enum: [hours, days, weeks] }
         anchorDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
-        weekDays: { type: array, items: { type: integer, minimum: 0, maximum: 6 }, minItems: 1, maxItems: 7, uniqueItems: true }
+        weekDays:
+          {
+            type: array,
+            items: { type: integer, minimum: 0, maximum: 6 },
+            minItems: 1,
+            maxItems: 7,
+            uniqueItems: true,
+          }
         nextRunAt: { type: ["string", "null"] }
         lastStartedAt: { type: ["string", "null"] }
         lastFinishedAt: { type: ["string", "null"] }
@@ -624,10 +664,53 @@ components:
         intervalCount: { type: integer, minimum: 1, maximum: 365 }
         intervalUnit: { type: string, enum: [hours, days, weeks] }
         anchorDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
-        weekDays: { type: array, items: { type: integer, minimum: 0, maximum: 6 }, minItems: 1, maxItems: 7, uniqueItems: true }
+        weekDays:
+          {
+            type: array,
+            items: { type: integer, minimum: 0, maximum: 6 },
+            minItems: 1,
+            maxItems: 7,
+            uniqueItems: true,
+          }
+    PlanningCenterLifecycle:
+      type: object
+      required:
+        [
+          product,
+          total,
+          observed,
+          notSeen,
+          unassessed,
+          inactive,
+          archived,
+          deletionMarkers,
+          lastAssessedAt,
+        ]
+      properties:
+        product: { type: string, enum: [people, services, check_ins] }
+        total: { type: integer }
+        observed: { type: integer }
+        notSeen: { type: integer }
+        unassessed: { type: integer }
+        inactive: { type: integer }
+        archived: { type: integer }
+        deletionMarkers: { type: integer }
+        lastAssessedAt: { type: ["string", "null"] }
     PlanningCenterWorkspace:
       type: object
-      required: [configured, missingConfiguration, callbackUrl, requestedScopes, connection, syncs, sourceRecords, asOf, schedule]
+      required:
+        [
+          configured,
+          missingConfiguration,
+          callbackUrl,
+          requestedScopes,
+          connection,
+          syncs,
+          sourceRecords,
+          asOf,
+          schedule,
+          lifecycle,
+        ]
       properties:
         configured: { type: boolean }
         missingConfiguration: { type: array, items: { type: string } }
@@ -639,6 +722,7 @@ components:
             - { type: "null" }
         syncs: { type: array, items: { $ref: "#/components/schemas/PlanningCenterSync" } }
         sourceRecords: { type: integer }
+        lifecycle: { type: array, items: { $ref: "#/components/schemas/PlanningCenterLifecycle" } }
         schedule: { $ref: "#/components/schemas/PlanningCenterSchedule" }
         asOf: { type: string }
     WorkbookBytes: { type: string, format: binary }
@@ -665,7 +749,20 @@ components:
         createdAt: { type: string }
     ImportUploadAttempt:
       type: object
-      required: [id, sha256, filename, snapshotDate, objectPath, status, storageState, failurePhase, linkedBatchId, createdAt, updatedAt]
+      required:
+        [
+          id,
+          sha256,
+          filename,
+          snapshotDate,
+          objectPath,
+          status,
+          storageState,
+          failurePhase,
+          linkedBatchId,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id: { type: string, format: uuid }
         sha256: { type: string }
@@ -674,7 +771,8 @@ components:
         objectPath: { type: string }
         status: { type: string, enum: [pending, linked, failed] }
         storageState: { type: string, enum: [unknown, stored] }
-        failurePhase: { type: ["string", "null"], enum: [storage, storage_confirmation, catalog, null] }
+        failurePhase:
+          { type: ["string", "null"], enum: [storage, storage_confirmation, catalog, null] }
         linkedBatchId: { type: ["string", "null"], format: uuid }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

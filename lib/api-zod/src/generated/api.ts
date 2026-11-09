@@ -50,6 +50,17 @@ export const GetPlanningCenterResponse = zod.object({
   "lastAutomaticAt": zod.string().nullable()
 })),
   "sourceRecords": zod.number().int(),
+  "lifecycle": zod.array(zod.object({
+  "product": zod.enum(['people', 'services', 'check_ins']),
+  "total": zod.number().int(),
+  "observed": zod.number().int(),
+  "notSeen": zod.number().int(),
+  "unassessed": zod.number().int(),
+  "inactive": zod.number().int(),
+  "archived": zod.number().int(),
+  "deletionMarkers": zod.number().int(),
+  "lastAssessedAt": zod.string().nullable()
+})),
   "schedule": zod.object({
   "enabled": zod.boolean(),
   "timeZone": zod.string(),

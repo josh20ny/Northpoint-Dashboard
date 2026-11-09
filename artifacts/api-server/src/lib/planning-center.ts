@@ -6,6 +6,7 @@ import { adminTransaction, AccessError, type AdminActor } from "./administration
 import { recordAudit } from "./audit";
 import { hashToken } from "./security";
 import { scheduleView } from "./planning-center-schedule";
+import { observeSource, assessCompletedScan, lifecycleSummary } from "./planning-center-lifecycle";
 import * as provider from "./planning-center-client";
 import {
   roots,
@@ -126,6 +127,7 @@ export async function workspace(p: Principal) {
         syncs: runs.rows.map(syncView),
         schedule: await scheduleView(c, account),
         sourceRecords: count.rows[0]!.n,
+        lifecycle: await lifecycleSummary(c, account),
         asOf: new Date().toISOString(),
       }),
     ) as unknown;
@@ -466,6 +468,7 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
           JSON.stringify(normalized(entity, new URL(path, provider.PCO_ORIGIN).pathname)),
         ],
       );
+      await observeSource(c, v.account_ref, r.product, entity.type, entity.id, r.id);
     }
     const visited = [...r.visited, path];
     const queue = [...r.queue.slice(1), ...parsed.nextPages];
@@ -491,10 +494,12 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
         ],
       )
     ).rows[0]!;
-    if (!unique.size)
+    if (!unique.size) {
+      await assessCompletedScan(c, id);
       await c.query(
         "UPDATE pco_connections SET last_success_at=now(),error=NULL,updated_at=now() WHERE id='planning_center'",
       );
+    }
     await recordAudit(
       p.userId!,
       unique.size ? "planning_center.page_staged" : "planning_center.sync_completed",
