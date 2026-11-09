@@ -52,6 +52,7 @@ days or weeks (and hours), anchored to a start date; weekly patterns select week
 The scheduler defaults to daily 1 AM Central; start time and time zone remain editable.
 It processes People, Services and Check-Ins sequentially and requires a running API. Reliable unattended hosting is
 still outstanding. No operational metrics or individual attendance/giving views.
+The owner chose to keep development only; unattended production hosting is deferred.
 
 ## User preferences
 
