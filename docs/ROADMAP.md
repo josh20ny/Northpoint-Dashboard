@@ -27,7 +27,8 @@ The schedule remains disabled; unattended freshness must not be assumed.
 Unattended hosting is deferred by the owner's development-only choice;
 production retention/privacy deletion and release approval remain separate gates.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
-Phase 4 is complete for development after final source-to-API reconciliation.
+Phase 4 is closed for development with owner approval on November 9, 2026
+(America/Chicago), after final reconciliation and dashboard card refinements.
 It provides manual auditorium headcounts,
 immediate saves, immutable corrections, typed aggregate reads, the home KPI and
 attendance drilldown, plus deliberate evidence-bound historical promotion.
@@ -61,6 +62,19 @@ or full-project historical acceptance.
 | 13 | Special events, Camp 75, polish, disaster recovery, migration | Admin signoff, launch checklist passed |
 
 **Ordering note:** phase 4 needs source validation and can initially use native manual counts before all PCO connectors are complete. Phases may overlap only after interfaces are tested; do not build all ministry pages before a complete vertical slice.
+
+## Deferred page cleanup and next phase
+
+The owner wants to return to the **Imports** and **Integrations** pages later
+to simplify and clean them up. This is intentionally deferred, not a blocker
+to closing Phase 4 or preparing Phase 5. No redesign, import-policy change,
+provider change or additional data operation is authorized by this note.
+
+**Next:** prepare Phase 5's restricted giving models, groups, serving and
+child/student modules against their documented sources and role boundaries.
+Phase 5 implementation has not started as part of this closeout. Preserve the
+previous-Sunday cross-ministry dashboard and per-ministry attendance/KPI scope.
+Existing production-readiness gates remain separate and unchanged.
 
 ## First ten implementation tasks
 1. Scaffold Git-compatible monorepo, lint/format/typecheck/test and `.env.example`.

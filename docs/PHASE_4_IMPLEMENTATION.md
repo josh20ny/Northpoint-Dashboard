@@ -2,7 +2,10 @@
 
 ## Development closeout: reconciled
 
-Phase 4's adult-attendance development exit gate is met. The final reconciliation
+Phase 4 is closed for development with owner approval on November 9, 2026
+(America/Chicago). Imports and Integrations page cleanup is deferred; see the
+roadmap's deferred-page-cleanup section. Phase 5 preparation is next, not started
+by this closeout. The final reconciliation
 found no discrepancies across 80 accepted workbook service observations, 40
 historical weekly totals, the four unrecorded Sundays and the November 8 manual
 counts. It checked all 45 completed-week comparison endpoints and all 52

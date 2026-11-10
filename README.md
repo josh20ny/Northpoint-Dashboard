@@ -1,6 +1,8 @@
 # Northpoint Dashboard 2.0
 
-**Status:** Phase 4 adult-attendance development complete and reconciled; see
+**Status:** Phase 4 adult-attendance development closed with owner approval
+(November 9, 2026, America/Chicago), reconciled and ready for Phase 5 preparation.
+Imports and Integrations page cleanup is deferred; see `docs/ROADMAP.md`. See
 `docs/PHASE_4_IMPLEMENTATION.md` for setup, verification and release limits.
 Phase 2 sample-review gate met; Phase 3 direct Planning Center
 connection and resumable source ingestion with opt-in server-side run-to-completion

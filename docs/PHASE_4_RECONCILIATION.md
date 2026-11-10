@@ -2,6 +2,11 @@
 
 **Result: PASS — no discrepancies in the reconciled scope.**
 
+**Owner closeout:** Phase 4 closed for development on November 9, 2026
+(America/Chicago), following reconciliation and the requested dashboard card
+simplification, alignment and number-size refinements. The owner deferred
+Imports and Integrations page cleanup until later; see `ROADMAP.md`.
+
 Verified November 9, 2026, America/Chicago
 (`2026-11-10T03:38:05.527Z` UTC), against the development database.
 
@@ -91,7 +96,8 @@ Generated evidence is excluded from Git/deployment; this summary is retained.
 
 ## Exit decision and limits
 
-**Phase 4's adult-attendance development exit gate is met.** Source, database,
+**Phase 4's adult-attendance development exit gate is met and owner-approved
+for closeout.** Source, database,
 API, previously verified UI and automated checks agree for this scope.
 
 This is not full-year 2026 verification, an independent second-source audit,
