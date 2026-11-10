@@ -3,7 +3,10 @@ import { AccessError } from "./administration";
 
 export const PCO_ORIGIN = "https://api.planningcenteronline.com";
 export const PCO_SCOPES = ["people", "services", "check_ins"] as const;
-export type Product = (typeof PCO_SCOPES)[number];
+export const PCO_PRODUCTS = [...PCO_SCOPES, "giving", "groups", "serving"] as const;
+export type Product = (typeof PCO_PRODUCTS)[number];
+export const productScope = (product: Product) => (product === "serving" ? "services" : product);
+export const allowedScopes = [...PCO_SCOPES, "giving", "groups"] as const;
 export const callbackPath = "/api/v1/admin/planning-center/callback";
 export function configuration() {
   const missing = [
@@ -149,6 +152,7 @@ export async function providerRequest(path: string, init: RequestInit = {}, maxB
 export async function exchangeToken(
   params: Record<string, string>,
   previous?: Tokens,
+  requestedScopes: readonly string[] = previous?.scopes ?? PCO_SCOPES,
 ): Promise<Tokens> {
   requireConfiguration();
   const data = await providerRequest(
@@ -179,7 +183,9 @@ export async function exchangeToken(
       : typeof data.token_type !== "string" || data.token_type.toLowerCase() !== "bearer") ||
     !scopes ||
     !PCO_SCOPES.every((s) => scopes.includes(s)) ||
-    scopes.some((s) => !PCO_SCOPES.includes(s as Product))
+    scopes.some((s) => !allowedScopes.some((allowed) => allowed === s)) ||
+    requestedScopes.some((s) => !scopes.includes(s)) ||
+    scopes.some((s) => !requestedScopes.includes(s))
   )
     throw new ProviderError(422);
   return {
@@ -209,6 +215,9 @@ export const versions: Record<Product, string> = {
   people: "2025-11-10",
   services: "2018-11-01",
   check_ins: "2025-05-28",
+  giving: "2019-10-18",
+  groups: "2023-07-10",
+  serving: "2018-11-01",
 };
 export function apiGet(path: string, token: string, product: Product) {
   return providerRequest(path, {

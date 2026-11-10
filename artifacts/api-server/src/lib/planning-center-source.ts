@@ -1,4 +1,10 @@
 import { PCO_ORIGIN, ProviderError, type Product, digest } from "./planning-center-client";
+import {
+  isMinistryProduct,
+  ministryPagePath,
+  ministryRoots,
+  parseMinistryPage,
+} from "./ministry-source";
 
 // Read-only, deliberately minimal fields. No health, contact, financial, security,
 // background-check or person-name fields are fetched or retained.
@@ -32,13 +38,16 @@ const relationshipFields: Record<string, Record<string, { type: string; many?: b
 export interface Page {
   path: string;
   type: string;
+  since?: string;
+  windowField?: "received_at" | "updated_at";
 }
-const allowedPaths: Record<Product, RegExp> = {
+const allowedPaths: Record<string, RegExp> = {
   people: /^\/people\/v2\/people$/,
   services: /^\/services\/v2\/service_types(?:\/[0-9]+\/plans(?:\/[0-9]+\/plan_times)?)?$/,
   check_ins: /^\/check-ins\/v2\/(?:events|check_ins)$/,
 };
 export function pagePath(page: Page, product: Product) {
+  if (isMinistryProduct(product)) return ministryPagePath(page, product);
   const u = new URL(page.path, PCO_ORIGIN);
   if (
     u.origin !== PCO_ORIGIN ||
@@ -62,15 +71,29 @@ export function pagePath(page: Page, product: Product) {
       [...attrs, ...Object.keys(relationshipFields[type] ?? {})].join(","),
     );
   if (page.type === "CheckIn") query.set("include", "event_period,event_times,locations");
+  if (page.since && page.type === "CheckIn")
+    query.set(
+      `where[${page.windowField === "updated_at" ? "updated_at" : "created_at"}][gte]`,
+      `${page.since}T00:00:00Z`,
+    );
   return `${u.pathname}?${query}`;
 }
 export function roots(product: Product): Page[] {
+  if (isMinistryProduct(product)) return ministryRoots(product);
   if (product === "people") return [{ path: "/people/v2/people", type: "Person" }];
   if (product === "services") return [{ path: "/services/v2/service_types", type: "ServiceType" }];
   return [
     { path: "/check-ins/v2/events", type: "Event" },
     { path: "/check-ins/v2/check_ins", type: "CheckIn" },
   ];
+}
+export function scanRoots(product: Product, since?: string | null): Page[] {
+  const pages = roots(product).map((p) => (since ? { ...p, since } : p));
+  if (since && (product === "giving" || product === "check_ins")) {
+    const original = pages.find((p) => p.type === (product === "giving" ? "Donation" : "CheckIn"))!;
+    pages.push({ ...original, windowField: "updated_at" });
+  }
+  return pages;
 }
 type Relation = { type: string; id: string };
 export interface SourceEntity {
@@ -131,6 +154,7 @@ export function sourceEntity(value: unknown): SourceEntity {
   return { type: v.type, id: v.id, attributes, relationships };
 }
 export function parsePage(value: Record<string, unknown>, page: Page, product: Product) {
+  if (isMinistryProduct(product)) return parseMinistryPage(value, page, product);
   if (!Array.isArray(value.data) || value.data.length > 100) throw new ProviderError(422);
   const main = value.data.map(sourceEntity);
   if (main.some((e) => e.type !== page.type)) throw new ProviderError(422);

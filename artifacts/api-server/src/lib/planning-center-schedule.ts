@@ -3,8 +3,8 @@ import { SetPlanningCenterScheduleBody, type PlanningCenterSchedule } from "@wor
 import type { Principal } from "./auth";
 import { AccessError, adminTransaction } from "./administration";
 import { recordAudit } from "./audit";
-import { roots } from "./planning-center-source";
-import { requireConfiguration, type Product } from "./planning-center-client";
+import { scanRoots } from "./planning-center-source";
+import { requireConfiguration, productScope, type Product } from "./planning-center-client";
 import { defaultSchedule, nextScheduledAt, validTimeZone } from "./planning-center-calendar";
 
 const PRODUCTS: Product[] = ["people", "services", "check_ins"];
@@ -21,6 +21,7 @@ interface Schedule {
   last_finished_at: Date | null;
   active_run_id: string | null;
   remaining: Product[];
+  products?: Product[];
   status: PlanningCenterSchedule["status"];
   error: string | null;
   time_zone: string;
@@ -35,6 +36,7 @@ const iso = (v: Date | null | undefined) => v?.toISOString() ?? null;
 function view(s?: Schedule): PlanningCenterSchedule {
   return {
     enabled: s?.enabled ?? false,
+    products: s?.products ?? PRODUCTS,
     timeZone: s?.time_zone ?? defaultSchedule.timeZone,
     localTime: s?.local_time ?? defaultSchedule.localTime,
     frequency: s?.frequency ?? defaultSchedule.frequency,
@@ -63,6 +65,7 @@ export async function setSchedule(
     | boolean
     | {
         enabled: boolean;
+        products?: Product[];
         timeZone?: string;
         localTime?: string;
         frequency?: PlanningCenterSchedule["frequency"];
@@ -93,23 +96,12 @@ export async function setSchedule(
   if (enabled) requireConfiguration();
   return adminTransaction(p, async (c) => {
     const v = (
-      await c.query<{ account_ref: string; state: string }>(
-        "SELECT account_ref,state FROM pco_connections WHERE id='planning_center' FOR UPDATE",
+      await c.query<{ account_ref: string; state: string; scopes: string[] }>(
+        "SELECT account_ref,state,scopes FROM pco_connections WHERE id='planning_center' FOR UPDATE",
       )
     ).rows[0];
     if (!v || (enabled && v.state !== "connected"))
       throw new AccessError(409, "A confirmed Planning Center connection is required");
-    if (enabled) {
-      const baseline = await c.query<{ product: string }>(
-        "SELECT DISTINCT product FROM pco_sync_runs WHERE account_ref=$1 AND mode='backfill' AND status='complete'",
-        [v.account_ref],
-      );
-      if (PRODUCTS.some((product) => !baseline.rows.some((r) => r.product === product)))
-        throw new AccessError(
-          409,
-          "Complete all three backfills before enabling scheduled refreshes",
-        );
-    }
     const old = (
       await c.query<Schedule>(
         "SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules WHERE id='planning_center' FOR UPDATE",
@@ -119,6 +111,27 @@ export async function setSchedule(
     // adopts only this schedule's run, never unrelated manual work.
     const same = old?.account_ref === v.account_ref;
     const previous = view(same ? old : undefined);
+    const products = b.products ?? (same ? old?.products : undefined) ?? PRODUCTS;
+    if (enabled) {
+      if (products.some((product) => !v.scopes.includes(productScope(product))))
+        throw new AccessError(409, "Authorize each selected product before scheduling it");
+      const baseline = await c.query<{ product: string }>(
+        `SELECT DISTINCT product FROM pco_sync_runs WHERE account_ref=$1 AND status='complete'
+         AND (mode='backfill' OR (mode='current' AND coverage_start IS NOT NULL))`,
+        [v.account_ref],
+      );
+      if (products.some((product) => !baseline.rows.some((r) => r.product === product)))
+        throw new AccessError(
+          409,
+          "Complete a backfill or current-window scan for each selected product first",
+        );
+    }
+    if (
+      same &&
+      old.active_run_id &&
+      JSON.stringify(products) !== JSON.stringify(old.products ?? PRODUCTS)
+    )
+      throw new AccessError(409, "Finish the paused or active cycle before changing its products");
     const settings = {
       timeZone: b.timeZone ?? previous.timeZone,
       localTime: b.localTime ?? previous.localTime,
@@ -129,6 +142,7 @@ export async function setSchedule(
       anchorDate: b.anchorDate ?? previous.anchorDate,
     };
     const changed =
+      JSON.stringify(products) !== JSON.stringify(previous.products) ||
       settings.timeZone !== previous.timeZone ||
       settings.localTime !== previous.localTime ||
       settings.frequency !== previous.frequency ||
@@ -149,11 +163,11 @@ export async function setSchedule(
         ? old.next_run_at
         : nextScheduledAt(new Date(), settings);
     const updated = await c.query<Schedule>(
-      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at,time_zone,local_time,frequency,week_days,interval_count,interval_unit,anchor_date)
-       VALUES ('planning_center',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      `INSERT INTO pco_sync_schedules(id,account_ref,enabled,authorized_by,next_run_at,time_zone,local_time,frequency,week_days,interval_count,interval_unit,anchor_date,products)
+       VALUES ('planning_center',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT(id) DO UPDATE SET account_ref=$1,enabled=$2,authorized_by=$3,next_run_at=$4,
        time_zone=$5,local_time=$6,frequency=$7,week_days=$8,
-       interval_count=$9,interval_unit=$10,anchor_date=$11,
+       interval_count=$9,interval_unit=$10,anchor_date=$11,products=$12,
        active_run_id=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.active_run_id END,
        remaining=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.remaining ELSE '[]'::jsonb END,
        status=CASE WHEN pco_sync_schedules.account_ref=$1 THEN pco_sync_schedules.status ELSE 'idle' END,
@@ -172,6 +186,7 @@ export async function setSchedule(
         settings.intervalCount,
         settings.intervalUnit,
         settings.anchorDate,
+        JSON.stringify(products),
       ],
     );
     await recordAudit(
@@ -275,10 +290,12 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
     ).rowCount
   )
     return;
-  const products = s.active_run_id ? s.remaining : PRODUCTS;
+  const products = s.active_run_id ? s.remaining : (s.products ?? PRODUCTS);
   const product = products[0]!;
   const baseline = await c.query(
-    "SELECT id FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 AND mode='backfill' AND status='complete' LIMIT 1",
+    `SELECT id,mode,coverage_start FROM pco_sync_runs WHERE account_ref=$1 AND product=$2
+     AND status='complete' AND (mode='backfill' OR (mode='current' AND coverage_start IS NOT NULL))
+     ORDER BY CASE mode WHEN 'backfill' THEN 0 ELSE 1 END,started_at DESC LIMIT 1`,
     [s.account_ref, product],
   );
   if (!baseline.rowCount) {
@@ -289,9 +306,22 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
   }
   const run = (
     await c.query<{ id: string }>(
-      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,automatic,automatic_requested_by)
-     VALUES ($1,$2,'incremental',$3,$4,true,$4) RETURNING id`,
-      [s.account_ref, product, JSON.stringify(roots(product)), s.authorized_by],
+      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,automatic,automatic_requested_by,coverage_start,lifecycle_version)
+     VALUES ($1,$2,$5,$3,$4,true,$4,$6,$7) RETURNING id`,
+      [
+        s.account_ref,
+        product,
+        JSON.stringify(
+          scanRoots(
+            product,
+            baseline.rows[0].mode === "current" ? String(baseline.rows[0].coverage_start) : null,
+          ),
+        ),
+        s.authorized_by,
+        baseline.rows[0].mode === "current" ? "current" : "incremental",
+        baseline.rows[0].mode === "current" ? baseline.rows[0].coverage_start : null,
+        baseline.rows[0].mode === "current" ? 2 : 1,
+      ],
     )
   ).rows[0]!;
   await c.query(

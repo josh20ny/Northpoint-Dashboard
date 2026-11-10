@@ -66,7 +66,11 @@ beforeEach(() => {
     if (sql.startsWith("SELECT id FROM users")) return { rows: [], rowCount: authorized ? 1 : 0 };
     if (sql.startsWith("SELECT u.id")) return { rows: [], rowCount: authorized ? 1 : 0 };
     if (sql.startsWith("SELECT account_ref,state"))
-      return { rows: [{ account_ref: "1", state: "connected" }] };
+      return {
+        rows: [
+          { account_ref: "1", state: "connected", scopes: ["people", "services", "check_ins"] },
+        ],
+      };
     if (sql.startsWith("SELECT *,anchor_date::text AS anchor_date FROM pco_sync_schedules"))
       return { rows: schedule ? [schedule] : [] };
     if (sql.startsWith("SELECT status FROM pco_sync_runs"))
@@ -75,6 +79,11 @@ beforeEach(() => {
       return {
         rows: [],
         rowCount: sql.includes("mode='backfill'") ? Number(baseline) : Number(occupied),
+      };
+    if (sql.startsWith("SELECT id,mode,coverage_start FROM pco_sync_runs"))
+      return {
+        rows: baseline ? [{ id, mode: "backfill", coverage_start: null }] : [],
+        rowCount: Number(baseline),
       };
     if (sql.startsWith("SELECT DISTINCT product"))
       return {
@@ -127,7 +136,15 @@ describe("durable schedule coordinator", () => {
   it("starts People with delegated authority and saves the following products", async () => {
     await advanceSchedule(c, now);
     expect(inserts()).toHaveLength(1);
-    expect(inserts()[0]![1]).toEqual(["1", "people", expect.any(String), actor]);
+    expect(inserts()[0]![1]).toEqual([
+      "1",
+      "people",
+      expect.any(String),
+      actor,
+      "incremental",
+      null,
+      1,
+    ]);
     expect(writes()[0]![1]).toEqual([
       id,
       '["services","check_ins"]',
@@ -252,6 +269,7 @@ describe("durable schedule coordinator", () => {
       1,
       "days",
       "1970-01-05",
+      JSON.stringify(["people", "services", "check_ins"]),
     ]);
     expect(query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO audit_events"), [
       actor,
@@ -407,7 +425,7 @@ describe("configurable refresh calendar", () => {
       anchorDate: "2026-11-09",
     });
     const call = query.mock.calls.find(([sql]) => sql.includes("INSERT INTO pco_sync_schedules"))!;
-    expect(call[1].slice(-3)).toEqual([3, "days", "2026-11-09"]);
+    expect(call[1].slice(8, 11)).toEqual([3, "days", "2026-11-09"]);
     expect(inserts()).toHaveLength(0);
   });
 });

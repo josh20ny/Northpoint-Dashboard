@@ -4,6 +4,10 @@ import { useGetFoundation } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, Panel, QueryError, StatusPill, usePageTitle } from "@/components/kit";
 import AttendanceDetails from "@/pages/attendance";
+import { GivingTransactions, MinistryDataView } from "@/components/ministry-data";
+import { GivingHealth, GivingPolicyForm } from "@/components/giving-admin";
+import { isDataMinistry } from "@/lib/ministry-data";
+import { useAuth } from "@workspace/replit-auth-web";
 
 const FUTURE = [
   [
@@ -26,6 +30,7 @@ const SPD_PENDING = [
 export default function Ministry() {
   const { slug } = useParams<{ slug: string }>();
   const q = useGetFoundation();
+  const { user } = useAuth();
   const m = q.data?.ministries.find((x) => x.slug === slug);
   usePageTitle(m?.name ?? "Ministry");
 
@@ -94,6 +99,30 @@ export default function Ministry() {
           <AttendanceDetails />
         </section>
       )}
+      {slug === "service-programming" && (
+        <section className="mb-8" aria-label="Serving" data-testid="section-ministry-serving">
+          <MinistryDataView ministry={slug} mode="serving" />
+        </section>
+      )}
+      {isDataMinistry(slug) && (
+        <>
+          <section className="mb-8" aria-label="Ministry data" data-testid="section-ministry-data">
+            <MinistryDataView ministry={slug} />
+          </section>
+          {slug === "giving" && user?.role === "admin" && (
+            <section className="mb-8" aria-label="Giving transactions" data-testid="section-giving-transactions">
+              <GivingTransactions />
+            </section>
+          )}
+          {slug === "giving" && user?.role === "admin" && (
+            <section className="mb-8 space-y-5" aria-label="Giving formula and units" data-testid="section-giving-policy">
+              <GivingPolicyForm />
+              <GivingHealth />
+            </section>
+          )}
+        </>
+      )}
+      {!isDataMinistry(slug) && (<>
       <Panel
         title={
           slug === "service-programming"
@@ -119,6 +148,7 @@ export default function Ministry() {
           ? "The other KPIs listed above are not connected yet."
           : "No ministry reports are available."}
       </p>
+      </>)}
     </>
   );
 }

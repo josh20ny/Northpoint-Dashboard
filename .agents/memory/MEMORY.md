@@ -7,3 +7,4 @@
 - [Historical event context](historical-event-context.md) — owner-confirmed context for interpreting exceptional historical check-ins.
 - [Adult attendance policy](adult-attendance-policy.md) — auditorium attendees only; breaks stay unrecorded; manual counts need corrections, not approval.
 - [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday overview across all ministries; each ministry needs attendance and all documented KPIs.
+- [Giving policy](giving-policy.md) — broad totals for all roles; person-linked data Admin-only; first recorded person/family gift; lapse after three missed expected gifts.

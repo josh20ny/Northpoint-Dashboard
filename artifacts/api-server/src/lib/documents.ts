@@ -13,6 +13,7 @@ const documentFiles = [
   "docs/DATABASE.md",
   "docs/METRICS.md",
   "docs/DECISIONS.md",
+  "docs/PHASE5_STATUS.md",
   "docs/ROADMAP.md",
   "docs/PERMISSIONS.md",
   "docs/SECURITY.md",

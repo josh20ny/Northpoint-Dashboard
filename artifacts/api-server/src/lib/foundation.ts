@@ -33,12 +33,12 @@ const integrations = [
 export async function foundationStatus() {
   const now = new Date();
   return {
-    phase: 2,
-    mode: "foundation_only",
+    phase: 5,
+    mode: "ministry_development",
     timezone: REPORTING_TIMEZONE,
     weekEnding: reportingWeekEnding(now),
     asOf: now.toISOString(),
-    quality: "no_live_data",
+    quality: "coverage_varies_by_ministry",
     auth: {
       enabled: process.env.AUTH_PROVIDER === "replit",
       provider: process.env.AUTH_PROVIDER === "replit" ? "replit" : "disabled",

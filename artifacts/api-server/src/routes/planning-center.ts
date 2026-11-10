@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type RequestHandler } from "express
 import {
   GetPlanningCenterResponse,
   AuthorizePlanningCenterResponse,
+  AuthorizePlanningCenterBody,
   ConfirmPlanningCenterBody,
   StartPlanningCenterSyncBody,
   StartPlanningCenterSyncResponse,
@@ -69,9 +70,19 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
   r.post(
     `${base}/authorize`,
     safe(async (req, res) => {
+      const input =
+        req.body == null ? undefined : AuthorizePlanningCenterBody.strict().safeParse(req.body);
+      if (input && !input.success) {
+        res.status(400).json({ error: "Invalid authorization request" });
+        return;
+      }
       res.json(
         AuthorizePlanningCenterResponse.parse(
-          await pco.authorize(res.locals.principal, sessionToken(req)),
+          await pco.authorize(
+            res.locals.principal,
+            sessionToken(req),
+            input?.success ? input.data : undefined,
+          ),
         ),
       );
     }),
@@ -130,7 +141,7 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
         .status(201)
         .json(
           StartPlanningCenterSyncResponse.parse(
-            await pco.startSync(res.locals.principal, b.data.product, b.data.mode),
+            await pco.startSync(res.locals.principal, b.data.product, b.data.mode, b.data.since),
           ),
         );
     }),

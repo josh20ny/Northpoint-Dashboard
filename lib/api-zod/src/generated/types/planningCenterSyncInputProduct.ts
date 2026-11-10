@@ -13,4 +13,7 @@ export const PlanningCenterSyncInputProduct = {
   people: 'people',
   services: 'services',
   check_ins: 'check_ins',
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
 } as const;

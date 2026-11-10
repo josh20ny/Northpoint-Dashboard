@@ -33,6 +33,7 @@ export async function adminTransaction<T>(
     );
     if (!current.rowCount) throw new AccessError(403, "Forbidden");
     await c.query("SELECT set_config('np.role','admin',true)");
+    await c.query("SELECT set_config('np.user_id',$1,true)", [p.userId]);
     const value = await fn(c);
     await c.query("COMMIT");
     return value;

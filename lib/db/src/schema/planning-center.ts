@@ -84,11 +84,15 @@ export const pcoSyncRuns = pgTable(
     automaticRequestedBy: uuid("automatic_requested_by").references(() => usersTable.id),
     lastAutomaticAt: timestamp("last_automatic_at", { withTimezone: true }),
     lifecycleVersion: integer("lifecycle_version").notNull().default(1),
+    coverageStart: date("coverage_start", { mode: "string" }),
   },
   (t) => [
     admin(),
-    check("pco_sync_product", sql`${t.product} IN ('people','services','check_ins')`),
-    check("pco_sync_mode", sql`${t.mode} IN ('backfill','incremental')`),
+    check(
+      "pco_sync_product",
+      sql`${t.product} IN ('people','services','check_ins','giving','groups','serving')`,
+    ),
+    check("pco_sync_mode", sql`${t.mode} IN ('backfill','incremental','current')`),
     check(
       "pco_sync_status",
       sql`${t.status} IN ('running','retry','complete','failed','cancelled')`,
@@ -160,6 +164,7 @@ export const pcoSyncSchedules = pgTable(
     lastFinishedAt: timestamp("last_finished_at", { withTimezone: true }),
     activeRunId: uuid("active_run_id").references(() => pcoSyncRuns.id),
     remaining: jsonb("remaining").notNull().default([]),
+    products: jsonb("products").notNull().default(["people", "services", "check_ins"]),
     status: text("status").notNull().default("idle"),
     error: text("error"),
   },

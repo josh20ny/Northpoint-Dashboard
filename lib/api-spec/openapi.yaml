@@ -11,6 +11,111 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /v1/admin/ministry-data/giving-policy:
+    get:
+      operationId: getGivingPolicy
+      responses:
+        "200":
+          description: Admin-only current formula version and approved defaults
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GivingPolicy" }
+    post:
+      operationId: saveGivingPolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GivingPolicyInput" }
+      responses:
+        "201":
+          description: Immutable formula version saved; prior publications need recalculation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GivingPolicy" }
+  /v1/admin/ministry-data/giving-health:
+    get:
+      operationId: getGivingHealth
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 10000, default: 1 } }
+      responses:
+        "200":
+          description: Admin-only versioned donor signals for future health integration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GivingHealthPage" }
+  /v1/ministry-data/{ministry}:
+    get:
+      operationId: getMinistryData
+      parameters:
+        - { name: ministry, in: path, required: true, schema: { type: string } }
+        - { name: start, in: query, schema: { type: string } }
+        - { name: end, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Safe published ministry aggregates only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinistryDataWorkspace" }
+  /v1/admin/ministry-data:
+    get:
+      operationId: getMinistryDataAdmin
+      responses:
+        "200":
+          description: Source mappings and metadata, not donor records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinistryDataAdmin" }
+  /v1/admin/ministry-data/mappings:
+    post:
+      operationId: createMinistrySourceMapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MinistrySourceMappingInput" }
+      responses:
+        "201":
+          description: Effective-dated mapping recorded
+  /v1/admin/ministry-data/publish:
+    post:
+      operationId: publishMinistryData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MinistryPublicationInput" }
+      responses:
+        "200":
+          description: Complete source dataset normalized atomically
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinistryPublicationResult" }
+  /v1/admin/ministry-data/history:
+    post:
+      operationId: importMinistryHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MinistryHistoryInput" }
+      responses:
+        "200":
+          description: Accepted mapped history imported without weekly reviews
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinistryPublicationResult" }
+  /v1/admin/ministry-data/giving-transactions:
+    get:
+      operationId: getGivingTransactions
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 10000, default: 1 } }
+      responses:
+        "200":
+          description: Admin-only audited person-linked giving
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GivingTransactionPage" }
   /v1/attendance:
     get:
       operationId: getAttendance
@@ -118,6 +223,11 @@ paths:
   /v1/admin/planning-center/authorize:
     post:
       operationId: authorizePlanningCenter
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlanningCenterAuthorizationInput" }
       responses:
         "200":
           description: One-time OAuth URL
@@ -625,6 +735,185 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    GivingPolicyInput:
+      type: object
+      required: [minimumGifts, toleranceDays, missedExpected, grouping, cadences, note, previousId]
+      properties:
+        minimumGifts: { type: integer, minimum: 3, maximum: 24 }
+        toleranceDays: { type: integer, minimum: 0, maximum: 3 }
+        missedExpected: { type: integer, minimum: 1, maximum: 12 }
+        grouping: { type: string, enum: [person, joint_giving_unit] }
+        cadences:
+          type: array
+          minItems: 1
+          maxItems: 5
+          uniqueItems: true
+          items: { type: string, enum: [weekly, every_other_week, monthly, quarterly, annual] }
+        note: { type: string, minLength: 10, maxLength: 1000 }
+        previousId: { type: string }
+    GivingPolicy:
+      allOf:
+        - { $ref: "#/components/schemas/GivingPolicyInput" }
+        - type: object
+          required: [id, createdAt, origin]
+          properties:
+            id: { type: string }
+            createdAt: { type: [string, "null"] }
+            origin: { type: string, enum: [owner_default, admin_version] }
+    GivingUnit:
+      type: object
+      required: [unitId, personIds, firstRecordedAt, lastGiftDate, cadence, expectedDates, missedExpected, lapsed, reason]
+      properties:
+        unitId: { type: string }
+        personIds: { type: array, items: { type: string } }
+        firstRecordedAt: { type: [string, "null"] }
+        lastGiftDate: { type: [string, "null"] }
+        cadence: { type: [string, "null"] }
+        expectedDates: { type: array, items: { type: string } }
+        missedExpected: { type: [integer, "null"] }
+        lapsed: { type: [boolean, "null"] }
+        reason: { type: string }
+    GivingHealthPage:
+      type: object
+      required: [units, page, hasMore, sourceAsOf, policyVersion, issues]
+      properties:
+        units: { type: array, items: { $ref: "#/components/schemas/GivingUnit" } }
+        page: { type: integer }
+        hasMore: { type: boolean }
+        sourceAsOf: { type: [string, "null"] }
+        policyVersion: { type: [string, "null"] }
+        issues: { type: array, items: { type: string } }
+    PlanningCenterAuthorizationInput:
+      type: object
+      required: [additionalProducts, replaceExisting, acknowledgeSensitiveData]
+      properties:
+        additionalProducts:
+          type: array
+          maxItems: 2
+          uniqueItems: true
+          items: { type: string, enum: [giving, groups] }
+        replaceExisting: { type: boolean }
+        acknowledgeSensitiveData: { type: boolean }
+    MinistryMetric:
+      type: object
+      required: [measure, title, scope, week, value, unit, quality, denominator, flags, source, sourceAsOf, definitionVersion]
+      properties:
+        measure: { type: string }
+        title: { type: string }
+        scope: { type: string }
+        week: { type: string }
+        value: { type: [integer, "null"] }
+        unit: { type: string }
+        quality: { type: string }
+        denominator: { type: [integer, "null"] }
+        flags: { type: array, items: { type: string } }
+        source: { type: string }
+        sourceAsOf: { type: string }
+        definitionVersion: { type: string }
+    MinistryKpi:
+      type: object
+      required: [key, title, status, reason]
+      properties:
+        key: { type: string }
+        title: { type: string }
+        status: { type: string }
+        reason: { type: string }
+    MinistryDataWorkspace:
+      type: object
+      required: [ministry, start, end, latestCompletedWeek, timezone, asOf, metrics, kpis, issues]
+      properties:
+        ministry: { type: string }
+        start: { type: string }
+        end: { type: string }
+        latestCompletedWeek: { type: string }
+        timezone: { type: string }
+        asOf: { type: string }
+        metrics: { type: array, items: { $ref: "#/components/schemas/MinistryMetric" } }
+        kpis: { type: array, items: { $ref: "#/components/schemas/MinistryKpi" } }
+        issues: { type: array, items: { type: string } }
+    MinistrySourceMappingInput:
+      type: object
+      required: [product, objectType, externalId, ministry, measure, scope, effectiveFrom, effectiveTo, note]
+      properties:
+        product: { type: string, enum: [check_ins, serving, groups, giving] }
+        objectType: { type: string }
+        externalId: { type: string, pattern: "^[0-9]{1,30}$" }
+        ministry: { type: string }
+        measure: { type: string }
+        scope: { type: string, minLength: 1, maxLength: 80 }
+        effectiveFrom: { type: string }
+        effectiveTo: { type: [string, "null"] }
+        note: { type: string, minLength: 3, maxLength: 1000 }
+        supersedesId: { type: [string, "null"], format: uuid }
+        enabled: { type: boolean, default: true }
+    MinistrySourceMapping:
+      allOf:
+        - { $ref: "#/components/schemas/MinistrySourceMappingInput" }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+    MinistrySourceOption:
+      type: object
+      required: [product, objectType, externalId, label]
+      properties:
+        product: { type: string }
+        objectType: { type: string }
+        externalId: { type: string }
+        label: { type: string }
+    MinistryDataAdmin:
+      type: object
+      required: [mappings, sources, batches, asOf]
+      properties:
+        mappings: { type: array, items: { $ref: "#/components/schemas/MinistrySourceMapping" } }
+        sources: { type: array, items: { $ref: "#/components/schemas/MinistrySourceOption" } }
+        batches: { type: array, items: { $ref: "#/components/schemas/ImportBatch" } }
+        asOf: { type: string }
+    MinistryPublicationInput:
+      type: object
+      required: [product, start, end]
+      properties:
+        product: { type: string, enum: [giving, groups, serving, check_ins] }
+        start: { type: string }
+        end: { type: string }
+    MinistryHistoryInput:
+      type: object
+      required: [batchId, mappingId, ministry, measure, scope, year]
+      properties:
+        batchId: { type: string, format: uuid }
+        mappingId: { type: string, format: uuid }
+        ministry: { type: string }
+        measure: { type: string }
+        scope: { type: string, minLength: 1, maxLength: 80 }
+        year: { type: [integer, "null"], minimum: 1900, maximum: 2100 }
+    MinistryPublicationResult:
+      type: object
+      required: [publicationId, values, issues, reused]
+      properties:
+        publicationId: { type: string }
+        values: { type: integer }
+        issues: { type: array, items: { type: string } }
+        reused: { type: boolean }
+    GivingTransaction:
+      type: object
+      required: [id, personId, receivedAt, amountMinor, currency, status, refunded, recurringId]
+      properties:
+        id: { type: string }
+        personId: { type: [string, "null"] }
+        receivedAt: { type: [string, "null"] }
+        amountMinor: { type: [integer, "null"] }
+        currency: { type: [string, "null"] }
+        status: { type: [string, "null"] }
+        refunded: { type: [boolean, "null"] }
+        recurringId: { type: [string, "null"] }
+    GivingTransactionPage:
+      type: object
+      required: [transactions, page, hasMore, asOf]
+      properties:
+        transactions: { type: array, items: { $ref: "#/components/schemas/GivingTransaction" } }
+        page: { type: integer }
+        hasMore: { type: boolean }
+        asOf: { type: string }
     AttendanceDefinitionInput:
       type: object
       required: [ministryId, effectiveFrom, note]
@@ -820,8 +1109,9 @@ components:
       type: object
       required: [product, mode]
       properties:
-        product: { type: string, enum: [people, services, check_ins] }
-        mode: { type: string, enum: [backfill, incremental] }
+        product: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
+        mode: { type: string, enum: [backfill, incremental, current] }
+        since: { type: [string, "null"] }
     PlanningCenterAutomationInput:
       type: object
       required: [enabled]
@@ -848,8 +1138,9 @@ components:
         ]
       properties:
         id: { type: string, format: uuid }
-        product: { type: string, enum: [people, services, check_ins] }
-        mode: { type: string, enum: [backfill, incremental] }
+        product: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
+        mode: { type: string, enum: [backfill, incremental, current] }
+        coverageStart: { type: [string, "null"] }
         status: { type: string, enum: [running, retry, complete, failed, cancelled] }
         fetched: { type: integer }
         revised: { type: integer }
@@ -894,6 +1185,9 @@ components:
           error,
         ]
       properties:
+        products:
+          type: array
+          items: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
         enabled: { type: boolean }
         timeZone: { type: string }
         localTime: { type: string }
@@ -919,6 +1213,12 @@ components:
       type: object
       required: [enabled]
       properties:
+        products:
+          type: array
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+          items: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
         enabled: { type: boolean }
         timeZone: { type: string, minLength: 1, maxLength: 100 }
         localTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }

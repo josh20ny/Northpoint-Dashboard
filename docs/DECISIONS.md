@@ -31,6 +31,38 @@
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
 
+## Phase 5 source trust, order and Giving visibility — 2026-11-10
+
+**APPROVED**, owner: product owner. Accept accurately retrieved PCO data without
+granular verification of every source value; verify faithful ingestion, storage,
+calculations and display. Build current/future ingestion first, then historical
+backfills for all Phase 5 areas within Phase 5. Most PCO history starts around
+2022; this is not a fixed universal cutoff. Use PCO and the accepted workbook
+for historical coverage, particularly Giving, without double-counting overlaps.
+
+The owner clarified: “For now everyone can see giving numbers broadly, but
+anything specific tied to a person ID or name should only be visible to admins.”
+Signed-in Staff, Leadership and Admin may see broad aggregate giving; donor
+IDs/names, individual giving signals and transactions remain Admin-only.
+No numeric small-cell threshold, arbitrary donor filter or person-level
+financial cross-domain join is approved by this clarification.
+
+The owner defined first-time giving as the first recorded giving event for the
+person/family at Northpoint, and lapse as three consecutive missed expected
+gifts after a consistent cadence. They accepted four gifts/three matching
+intervals with up to two days' variation as the starting consistency rule and
+required an Admin-adjusted, versioned formula. These restricted signals should
+feed later health work. Use explicit PCO joint-giver relationships, not guessed
+households or implicit cross-product person-ID matches. Irregular/insufficient
+patterns remain unclassified. No financial signal is itself a health score.
+
+Alternatives: Admin-only totals, exhaustive source-value review, or deferring
+all historical backfills. Migration impact: additive restricted source/domain
+and safe aggregate models only. Tests must verify source-to-storage/display
+fidelity, idempotency, dates/currency precision, overlap handling and all-role
+isolation of person-linked financial fields. Live consent changes, sensitive
+development data, production and scheduling still require their separate gates.
+
 ## Phase 4 adult attendance rules — 2026-11-09
 
 ### Rolling-window clarification and existing prior-year source — 2026-11-09

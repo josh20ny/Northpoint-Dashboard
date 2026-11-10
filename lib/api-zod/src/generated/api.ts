@@ -8,6 +8,291 @@
 import * as zod from 'zod';
 
 
+export const getGivingPolicyResponseOneMinimumGiftsMin = 3;
+export const getGivingPolicyResponseOneMinimumGiftsMax = 24;
+
+export const getGivingPolicyResponseOneToleranceDaysMin = 0;
+export const getGivingPolicyResponseOneToleranceDaysMax = 3;
+
+export const getGivingPolicyResponseOneMissedExpectedMax = 12;
+
+export const getGivingPolicyResponseOneCadencesMax = 5;
+
+export const getGivingPolicyResponseOneNoteMin = 10;
+export const getGivingPolicyResponseOneNoteMax = 1000;
+
+
+
+export const GetGivingPolicyResponse = zod.object({
+  "minimumGifts": zod.number().int().min(getGivingPolicyResponseOneMinimumGiftsMin).max(getGivingPolicyResponseOneMinimumGiftsMax),
+  "toleranceDays": zod.number().int().min(getGivingPolicyResponseOneToleranceDaysMin).max(getGivingPolicyResponseOneToleranceDaysMax),
+  "missedExpected": zod.number().int().min(1).max(getGivingPolicyResponseOneMissedExpectedMax),
+  "grouping": zod.enum(['person', 'joint_giving_unit']),
+  "cadences": zod.array(zod.enum(['weekly', 'every_other_week', 'monthly', 'quarterly', 'annual'])).min(1).max(getGivingPolicyResponseOneCadencesMax),
+  "note": zod.string().min(getGivingPolicyResponseOneNoteMin).max(getGivingPolicyResponseOneNoteMax),
+  "previousId": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "createdAt": zod.string().nullable(),
+  "origin": zod.enum(['owner_default', 'admin_version'])
+}))
+
+
+export const saveGivingPolicyBodyMinimumGiftsMin = 3;
+export const saveGivingPolicyBodyMinimumGiftsMax = 24;
+
+export const saveGivingPolicyBodyToleranceDaysMin = 0;
+export const saveGivingPolicyBodyToleranceDaysMax = 3;
+
+export const saveGivingPolicyBodyMissedExpectedMax = 12;
+
+export const saveGivingPolicyBodyCadencesMax = 5;
+
+export const saveGivingPolicyBodyNoteMin = 10;
+export const saveGivingPolicyBodyNoteMax = 1000;
+
+
+
+export const SaveGivingPolicyBody = zod.object({
+  "minimumGifts": zod.number().int().min(saveGivingPolicyBodyMinimumGiftsMin).max(saveGivingPolicyBodyMinimumGiftsMax),
+  "toleranceDays": zod.number().int().min(saveGivingPolicyBodyToleranceDaysMin).max(saveGivingPolicyBodyToleranceDaysMax),
+  "missedExpected": zod.number().int().min(1).max(saveGivingPolicyBodyMissedExpectedMax),
+  "grouping": zod.enum(['person', 'joint_giving_unit']),
+  "cadences": zod.array(zod.enum(['weekly', 'every_other_week', 'monthly', 'quarterly', 'annual'])).min(1).max(saveGivingPolicyBodyCadencesMax),
+  "note": zod.string().min(saveGivingPolicyBodyNoteMin).max(saveGivingPolicyBodyNoteMax),
+  "previousId": zod.string()
+})
+
+export const saveGivingPolicyResponseOneMinimumGiftsMin = 3;
+export const saveGivingPolicyResponseOneMinimumGiftsMax = 24;
+
+export const saveGivingPolicyResponseOneToleranceDaysMin = 0;
+export const saveGivingPolicyResponseOneToleranceDaysMax = 3;
+
+export const saveGivingPolicyResponseOneMissedExpectedMax = 12;
+
+export const saveGivingPolicyResponseOneCadencesMax = 5;
+
+export const saveGivingPolicyResponseOneNoteMin = 10;
+export const saveGivingPolicyResponseOneNoteMax = 1000;
+
+
+
+export const SaveGivingPolicyResponse = zod.object({
+  "minimumGifts": zod.number().int().min(saveGivingPolicyResponseOneMinimumGiftsMin).max(saveGivingPolicyResponseOneMinimumGiftsMax),
+  "toleranceDays": zod.number().int().min(saveGivingPolicyResponseOneToleranceDaysMin).max(saveGivingPolicyResponseOneToleranceDaysMax),
+  "missedExpected": zod.number().int().min(1).max(saveGivingPolicyResponseOneMissedExpectedMax),
+  "grouping": zod.enum(['person', 'joint_giving_unit']),
+  "cadences": zod.array(zod.enum(['weekly', 'every_other_week', 'monthly', 'quarterly', 'annual'])).min(1).max(saveGivingPolicyResponseOneCadencesMax),
+  "note": zod.string().min(saveGivingPolicyResponseOneNoteMin).max(saveGivingPolicyResponseOneNoteMax),
+  "previousId": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "createdAt": zod.string().nullable(),
+  "origin": zod.enum(['owner_default', 'admin_version'])
+}))
+
+
+export const getGivingHealthQueryPageDefault = 1;
+export const getGivingHealthQueryPageMax = 10000;
+
+
+
+export const GetGivingHealthQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(getGivingHealthQueryPageMax).default(getGivingHealthQueryPageDefault)
+})
+
+export const GetGivingHealthResponse = zod.object({
+  "units": zod.array(zod.object({
+  "unitId": zod.string(),
+  "personIds": zod.array(zod.string()),
+  "firstRecordedAt": zod.string().nullable(),
+  "lastGiftDate": zod.string().nullable(),
+  "cadence": zod.string().nullable(),
+  "expectedDates": zod.array(zod.string()),
+  "missedExpected": zod.number().int().nullable(),
+  "lapsed": zod.boolean().nullable(),
+  "reason": zod.string()
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean(),
+  "sourceAsOf": zod.string().nullable(),
+  "policyVersion": zod.string().nullable(),
+  "issues": zod.array(zod.string())
+})
+
+
+export const GetMinistryDataParams = zod.object({
+  "ministry": zod.coerce.string()
+})
+
+export const GetMinistryDataQueryParams = zod.object({
+  "start": zod.coerce.string().optional(),
+  "end": zod.coerce.string().optional()
+})
+
+export const GetMinistryDataResponse = zod.object({
+  "ministry": zod.string(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "latestCompletedWeek": zod.string(),
+  "timezone": zod.string(),
+  "asOf": zod.string(),
+  "metrics": zod.array(zod.object({
+  "measure": zod.string(),
+  "title": zod.string(),
+  "scope": zod.string(),
+  "week": zod.string(),
+  "value": zod.number().int().nullable(),
+  "unit": zod.string(),
+  "quality": zod.string(),
+  "denominator": zod.number().int().nullable(),
+  "flags": zod.array(zod.string()),
+  "source": zod.string(),
+  "sourceAsOf": zod.string(),
+  "definitionVersion": zod.string()
+})),
+  "kpis": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "status": zod.string(),
+  "reason": zod.string()
+})),
+  "issues": zod.array(zod.string())
+})
+
+
+export const getMinistryDataAdminResponseMappingsItemOneExternalIdRegExp = new RegExp('^[0-9]{1,30}$');
+export const getMinistryDataAdminResponseMappingsItemOneScopeMax = 80;
+
+export const getMinistryDataAdminResponseMappingsItemOneNoteMin = 3;
+export const getMinistryDataAdminResponseMappingsItemOneNoteMax = 1000;
+
+export const getMinistryDataAdminResponseMappingsItemOneEnabledDefault = true;
+
+export const GetMinistryDataAdminResponse = zod.object({
+  "mappings": zod.array(zod.object({
+  "product": zod.enum(['check_ins', 'serving', 'groups', 'giving']),
+  "objectType": zod.string(),
+  "externalId": zod.string().regex(getMinistryDataAdminResponseMappingsItemOneExternalIdRegExp),
+  "ministry": zod.string(),
+  "measure": zod.string(),
+  "scope": zod.string().min(1).max(getMinistryDataAdminResponseMappingsItemOneScopeMax),
+  "effectiveFrom": zod.string(),
+  "effectiveTo": zod.string().nullable(),
+  "note": zod.string().min(getMinistryDataAdminResponseMappingsItemOneNoteMin).max(getMinistryDataAdminResponseMappingsItemOneNoteMax),
+  "supersedesId": zod.string().uuid().nullish(),
+  "enabled": zod.boolean().default(getMinistryDataAdminResponseMappingsItemOneEnabledDefault)
+}).and(zod.object({
+  "id": zod.string()
+}))),
+  "sources": zod.array(zod.object({
+  "product": zod.string(),
+  "objectType": zod.string(),
+  "externalId": zod.string(),
+  "label": zod.string()
+})),
+  "batches": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "sha256": zod.string(),
+  "filename": zod.string(),
+  "snapshotDate": zod.string(),
+  "state": zod.enum(['active', 'withdrawn']),
+  "createdAt": zod.string()
+})),
+  "asOf": zod.string()
+})
+
+
+export const createMinistrySourceMappingBodyExternalIdRegExp = new RegExp('^[0-9]{1,30}$');
+export const createMinistrySourceMappingBodyScopeMax = 80;
+
+export const createMinistrySourceMappingBodyNoteMin = 3;
+export const createMinistrySourceMappingBodyNoteMax = 1000;
+
+export const createMinistrySourceMappingBodyEnabledDefault = true;
+
+export const CreateMinistrySourceMappingBody = zod.object({
+  "product": zod.enum(['check_ins', 'serving', 'groups', 'giving']),
+  "objectType": zod.string(),
+  "externalId": zod.string().regex(createMinistrySourceMappingBodyExternalIdRegExp),
+  "ministry": zod.string(),
+  "measure": zod.string(),
+  "scope": zod.string().min(1).max(createMinistrySourceMappingBodyScopeMax),
+  "effectiveFrom": zod.string(),
+  "effectiveTo": zod.string().nullable(),
+  "note": zod.string().min(createMinistrySourceMappingBodyNoteMin).max(createMinistrySourceMappingBodyNoteMax),
+  "supersedesId": zod.string().uuid().nullish(),
+  "enabled": zod.boolean().default(createMinistrySourceMappingBodyEnabledDefault)
+})
+
+export const CreateMinistrySourceMappingResponse = zod.void()
+
+
+export const PublishMinistryDataBody = zod.object({
+  "product": zod.enum(['giving', 'groups', 'serving', 'check_ins']),
+  "start": zod.string(),
+  "end": zod.string()
+})
+
+export const PublishMinistryDataResponse = zod.object({
+  "publicationId": zod.string(),
+  "values": zod.number().int(),
+  "issues": zod.array(zod.string()),
+  "reused": zod.boolean()
+})
+
+
+export const importMinistryHistoryBodyScopeMax = 80;
+
+export const importMinistryHistoryBodyYearMin = 1900;
+export const importMinistryHistoryBodyYearMax = 2100;
+
+
+
+export const ImportMinistryHistoryBody = zod.object({
+  "batchId": zod.string().uuid(),
+  "mappingId": zod.string().uuid(),
+  "ministry": zod.string(),
+  "measure": zod.string(),
+  "scope": zod.string().min(1).max(importMinistryHistoryBodyScopeMax),
+  "year": zod.number().int().min(importMinistryHistoryBodyYearMin).max(importMinistryHistoryBodyYearMax).nullable()
+})
+
+export const ImportMinistryHistoryResponse = zod.object({
+  "publicationId": zod.string(),
+  "values": zod.number().int(),
+  "issues": zod.array(zod.string()),
+  "reused": zod.boolean()
+})
+
+
+export const getGivingTransactionsQueryPageDefault = 1;
+export const getGivingTransactionsQueryPageMax = 10000;
+
+
+
+export const GetGivingTransactionsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(getGivingTransactionsQueryPageMax).default(getGivingTransactionsQueryPageDefault)
+})
+
+export const GetGivingTransactionsResponse = zod.object({
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "personId": zod.string().nullable(),
+  "receivedAt": zod.string().nullable(),
+  "amountMinor": zod.number().int().nullable(),
+  "currency": zod.string().nullable(),
+  "status": zod.string().nullable(),
+  "refunded": zod.boolean().nullable(),
+  "recurringId": zod.string().nullable()
+})),
+  "page": zod.number().int(),
+  "hasMore": zod.boolean(),
+  "asOf": zod.string()
+})
+
+
 export const getAttendanceQueryAverageWeeksDefault = 4;
 export const getAttendanceQueryAverageWeeksMax = 52;
 
@@ -302,8 +587,9 @@ export const GetPlanningCenterResponse = zod.object({
 }),zod.null()]),
   "syncs": zod.array(zod.object({
   "id": zod.string().uuid(),
-  "product": zod.enum(['people', 'services', 'check_ins']),
-  "mode": zod.enum(['backfill', 'incremental']),
+  "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
+  "mode": zod.enum(['backfill', 'incremental', 'current']),
+  "coverageStart": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -329,6 +615,7 @@ export const GetPlanningCenterResponse = zod.object({
   "lastAssessedAt": zod.string().nullable()
 })),
   "schedule": zod.object({
+  "products": zod.array(zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving'])).optional(),
   "enabled": zod.boolean(),
   "timeZone": zod.string(),
   "localTime": zod.string(),
@@ -348,6 +635,8 @@ export const GetPlanningCenterResponse = zod.object({
 })
 
 
+export const setPlanningCenterScheduleBodyProductsMax = 6;
+
 export const setPlanningCenterScheduleBodyTimeZoneMax = 100;
 
 export const setPlanningCenterScheduleBodyLocalTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
@@ -362,6 +651,7 @@ export const setPlanningCenterScheduleBodyWeekDaysMax = 7;
 
 
 export const SetPlanningCenterScheduleBody = zod.object({
+  "products": zod.array(zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving'])).min(1).max(setPlanningCenterScheduleBodyProductsMax).optional(),
   "enabled": zod.boolean(),
   "timeZone": zod.string().min(1).max(setPlanningCenterScheduleBodyTimeZoneMax).optional(),
   "localTime": zod.string().regex(setPlanningCenterScheduleBodyLocalTimeRegExp).optional(),
@@ -383,6 +673,7 @@ export const setPlanningCenterScheduleResponseWeekDaysMax = 7;
 
 
 export const SetPlanningCenterScheduleResponse = zod.object({
+  "products": zod.array(zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving'])).optional(),
   "enabled": zod.boolean(),
   "timeZone": zod.string(),
   "localTime": zod.string(),
@@ -399,6 +690,16 @@ export const SetPlanningCenterScheduleResponse = zod.object({
   "error": zod.string().nullable()
 })
 
+
+export const authorizePlanningCenterBodyAdditionalProductsMax = 2;
+
+
+
+export const AuthorizePlanningCenterBody = zod.object({
+  "additionalProducts": zod.array(zod.enum(['giving', 'groups'])).max(authorizePlanningCenterBodyAdditionalProductsMax),
+  "replaceExisting": zod.boolean(),
+  "acknowledgeSensitiveData": zod.boolean()
+})
 
 export const AuthorizePlanningCenterResponse = zod.object({
   "url": zod.string().url()
@@ -425,14 +726,16 @@ export const DisconnectPlanningCenterResponse = zod.void()
 
 
 export const StartPlanningCenterSyncBody = zod.object({
-  "product": zod.enum(['people', 'services', 'check_ins']),
-  "mode": zod.enum(['backfill', 'incremental'])
+  "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
+  "mode": zod.enum(['backfill', 'incremental', 'current']),
+  "since": zod.string().nullish()
 })
 
 export const StartPlanningCenterSyncResponse = zod.object({
   "id": zod.string().uuid(),
-  "product": zod.enum(['people', 'services', 'check_ins']),
-  "mode": zod.enum(['backfill', 'incremental']),
+  "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
+  "mode": zod.enum(['backfill', 'incremental', 'current']),
+  "coverageStart": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -453,8 +756,9 @@ export const AdvancePlanningCenterSyncParams = zod.object({
 
 export const AdvancePlanningCenterSyncResponse = zod.object({
   "id": zod.string().uuid(),
-  "product": zod.enum(['people', 'services', 'check_ins']),
-  "mode": zod.enum(['backfill', 'incremental']),
+  "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
+  "mode": zod.enum(['backfill', 'incremental', 'current']),
+  "coverageStart": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -479,8 +783,9 @@ export const SetPlanningCenterAutomationBody = zod.object({
 
 export const SetPlanningCenterAutomationResponse = zod.object({
   "id": zod.string().uuid(),
-  "product": zod.enum(['people', 'services', 'check_ins']),
-  "mode": zod.enum(['backfill', 'incremental']),
+  "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
+  "mode": zod.enum(['backfill', 'incremental', 'current']),
+  "coverageStart": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),

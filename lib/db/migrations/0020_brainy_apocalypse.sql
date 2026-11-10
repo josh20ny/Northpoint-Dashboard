@@ -1,0 +1,1 @@
+ALTER TABLE "pco_sync_schedules" ADD COLUMN "products" jsonb DEFAULT '["people","services","check_ins"]'::jsonb NOT NULL;

@@ -11,4 +11,6 @@ import type { PlanningCenterSyncInputProduct } from './planningCenterSyncInputPr
 export interface PlanningCenterSyncInput {
   product: PlanningCenterSyncInputProduct;
   mode: PlanningCenterSyncInputMode;
+  /** @nullable */
+  since?: string | null;
 }

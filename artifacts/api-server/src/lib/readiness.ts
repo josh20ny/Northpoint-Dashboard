@@ -66,6 +66,22 @@ export async function databaseReadiness() {
         AND to_regprocedure('np_attendance_source_valid(uuid)') IS NOT NULL
         AND EXISTS (SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('attendance_revisions') AND polname='attendance_write')
         AND to_regclass('attendance_one_root') IS NOT NULL
+        AND (SELECT count(*) FROM pg_class WHERE oid IN (
+          to_regclass('ministry_metric_values'),to_regclass('ministry_publication_evidence'),
+          to_regclass('ministry_publications'),to_regclass('ministry_source_mappings'))
+          AND relrowsecurity AND relforcerowsecurity)=4
+        AND (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'ministry_%_immutable'
+          AND tgenabled<>'D' AND tgrelid IN (
+          to_regclass('ministry_metric_values'),to_regclass('ministry_publication_evidence'),
+          to_regclass('ministry_publications'),to_regclass('ministry_source_mappings')))=4
+        AND to_regprocedure('np_ministry_publication_valid(uuid)') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM pg_class WHERE oid=to_regclass('giving_policy_versions')
+          AND relrowsecurity AND relforcerowsecurity)
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='giving_policy_immutable' AND tgenabled<>'D')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_sync_runs' AND column_name='coverage_start')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_sync_schedules' AND column_name='products')
         AS schema_ready FROM foundation_metadata WHERE key = $1`,
       ["application"],
     );

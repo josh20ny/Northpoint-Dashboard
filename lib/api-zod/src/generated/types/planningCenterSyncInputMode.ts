@@ -12,4 +12,5 @@ export type PlanningCenterSyncInputMode = typeof PlanningCenterSyncInputMode[key
 export const PlanningCenterSyncInputMode = {
   backfill: 'backfill',
   incremental: 'incremental',
+  current: 'current',
 } as const;

@@ -230,8 +230,8 @@ export async function createMapping(p: Principal, id: string, input: ImportMappi
       );
     const existing = await mappings(c, id);
     if (
-      existing.length >= 100 ||
-      existing.filter((m) => m.status === "approved" || m.status === "draft").length >= 20
+      existing.length >= 1000 ||
+      existing.filter((m) => m.status === "approved" || m.status === "draft").length >= 250
     )
       throw new AccessError(409, "Mapping review limit reached");
     if (

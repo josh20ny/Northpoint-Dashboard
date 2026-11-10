@@ -39,6 +39,7 @@ import {
   SubmitButton,
   TextField,
 } from "@/components/admin-controls";
+import { MinistryDataAdminPanel } from "@/components/ministry-data-admin";
 import { AuditTable, MinistryList, ServiceList, UserTable } from "@/components/admin-record-tables";
 import {
   chicagoAbbreviation,
@@ -698,6 +699,8 @@ export default function Administration() {
                 />
               )}
             </Panel>
+
+            <MinistryDataAdminPanel />
 
             <Panel className="p-5 sm:p-6">
               <SectionHeading

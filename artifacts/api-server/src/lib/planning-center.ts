@@ -2,14 +2,21 @@ import { randomBytes } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { PlanningCenterSync } from "@workspace/api-zod";
 import type { Principal } from "./auth";
-import { adminTransaction, AccessError, type AdminActor } from "./administration";
+import {
+  adminTransaction,
+  AccessError,
+  validCalendarDate,
+  type AdminActor,
+} from "./administration";
 import { recordAudit } from "./audit";
 import { hashToken } from "./security";
 import { scheduleView } from "./planning-center-schedule";
+import { refreshPublishedMinistry } from "./ministry-data";
 import { observeSource, assessCompletedScan, lifecycleSummary } from "./planning-center-lifecycle";
 import * as provider from "./planning-center-client";
 import {
   roots,
+  scanRoots,
   pagePath,
   parsePage,
   sourceHash,
@@ -28,7 +35,8 @@ interface Run {
   id: string;
   account_ref: string;
   product: provider.Product;
-  mode: "backfill" | "incremental";
+  mode: "backfill" | "incremental" | "current";
+  coverage_start?: string | null;
   status: PlanningCenterSync["status"];
   queue: Page[];
   visited: string[];
@@ -49,6 +57,7 @@ function syncView(r: Run): PlanningCenterSync {
     id: r.id,
     product: r.product,
     mode: r.mode,
+    coverageStart: r.coverage_start ?? null,
     status: r.status,
     fetched: r.fetched,
     revised: r.revised,
@@ -133,26 +142,64 @@ export async function workspace(p: Principal) {
     ) as unknown;
   });
 }
-export async function authorize(p: Principal, sessionToken: string) {
+export async function authorize(
+  p: Principal,
+  sessionToken: string,
+  options?: {
+    additionalProducts: ("giving" | "groups")[];
+    replaceExisting: boolean;
+    acknowledgeSensitiveData: boolean;
+  },
+) {
   const config = provider.requireConfiguration();
   return adminTransaction(p, async (c) => {
     const existing = await connection(c);
-    if (existing && existing.state !== "disconnected")
+    if (options?.additionalProducts.length && !options.acknowledgeSensitiveData)
+      throw new AccessError(
+        400,
+        "Acknowledge restricted data and environment before requesting additional access",
+      );
+    const upgrading = options?.replaceExisting === true;
+    if (upgrading && (!existing || existing.state !== "connected"))
+      throw new AccessError(409, "A connected organization is required for additive authorization");
+    if (existing && existing.state !== "disconnected" && !upgrading)
       throw new AccessError(409, "Disconnect the existing authorization before reconnecting");
+    const requestedScopes = [
+      ...new Set([
+        ...provider.PCO_SCOPES,
+        ...(upgrading ? existing!.scopes : []),
+        ...(options?.additionalProducts ?? []),
+      ]),
+    ];
     await c.query("DELETE FROM pco_oauth_flows WHERE expires_at < now() OR user_id=$1", [p.userId]);
     const state = randomBytes(32).toString("base64url");
     const verifier = randomBytes(48).toString("base64url");
     await c.query(
       `INSERT INTO pco_oauth_flows(state_hash,user_id,session_hash,verifier_ciphertext,expires_at)
       VALUES ($1,$2,$3,$4,now()+interval '10 minutes')`,
-      [hashToken(state), p.userId, hashToken(sessionToken), provider.encrypt(verifier, "pkce")],
+      [
+        hashToken(state),
+        p.userId,
+        hashToken(sessionToken),
+        provider.encrypt(
+          options
+            ? {
+                verifier,
+                requestedScopes,
+                upgradeAccount: upgrading ? existing!.account_ref : null,
+                previousGrant: upgrading ? provider.digest(existing!.token_ciphertext!) : null,
+              }
+            : verifier,
+          "pkce",
+        ),
+      ],
     );
     const url = new URL("/oauth/authorize", provider.PCO_ORIGIN);
     for (const [key, value] of Object.entries({
       response_type: "code",
       client_id: process.env.PCO_CLIENT_ID!,
       redirect_uri: config.callbackUrl!,
-      scope: provider.PCO_SCOPES.join(" "),
+      scope: requestedScopes.join(" "),
       state,
       code_challenge: Buffer.from(provider.digest(verifier), "hex").toString("base64url"),
       code_challenge_method: "S256",
@@ -189,16 +236,35 @@ export async function complete(
         400,
         "Authorization expired or does not match this session; start again",
       );
-    return provider.decrypt<string>(flow.rows[0].verifier_ciphertext, "pkce");
+    return provider.decrypt<
+      | string
+      | {
+          verifier: string;
+          requestedScopes: string[];
+          upgradeAccount: string | null;
+          previousGrant: string | null;
+        }
+    >(flow.rows[0].verifier_ciphertext, "pkce");
   });
   if (!code) throw new AccessError(400, "Planning Center authorization was not granted");
-  const t = await provider.exchangeToken({
-    grant_type: "authorization_code",
-    code,
-    code_verifier: verifier,
-    redirect_uri: provider.configuration().callbackUrl!,
-  });
+  const requestedScopes =
+    typeof verifier === "string" ? [...provider.PCO_SCOPES] : verifier.requestedScopes;
+  const t = await provider.exchangeToken(
+    {
+      grant_type: "authorization_code",
+      code,
+      code_verifier: typeof verifier === "string" ? verifier : verifier.verifier,
+      redirect_uri: provider.configuration().callbackUrl!,
+    },
+    undefined,
+    requestedScopes,
+  );
   try {
+    if (
+      !requestedScopes.every((s) => t.scopes.includes(s)) ||
+      t.scopes.some((s) => !requestedScopes.includes(s))
+    )
+      throw new AccessError(409, "Granted products differ from the explicitly requested access");
     const org = await provider.apiGet(
       "/people/v2?fields[Organization]=name",
       t.accessToken,
@@ -216,8 +282,50 @@ export async function complete(
       throw new provider.ProviderError(422);
     const accountRef = data.id;
     const accountName = data.attributes.name;
+    const upgrade =
+      typeof verifier !== "string" && verifier.upgradeAccount !== null ? verifier : null;
+    if (upgrade) {
+      if (accountRef !== upgrade.upgradeAccount)
+        throw new AccessError(409, "Additional access must belong to the connected organization");
+      for (const scope of requestedScopes) {
+        const product = scope as provider.Product,
+          root = roots(product)[0]!;
+        parsePage(
+          await provider.apiGet(
+            pagePath(root, product).replace("per_page=100", "per_page=1"),
+            t.accessToken,
+            product,
+          ),
+          root,
+          product,
+        );
+      }
+    }
     await adminTransaction(p, async (c) => {
       const existing = await connection(c);
+      if (upgrade) {
+        if (
+          !existing ||
+          existing.state !== "connected" ||
+          existing.account_ref !== accountRef ||
+          provider.digest(existing.token_ciphertext!) !== upgrade.previousGrant
+        )
+          throw new AccessError(409, "The active grant changed; restart additive authorization");
+        await c.query(
+          `UPDATE pco_connections SET scopes=$1,token_ciphertext=$2,connected_by=$3,error=NULL,updated_at=now()
+          WHERE id='planning_center'`,
+          [JSON.stringify(t.scopes), provider.encrypt(t, `tokens:${accountRef}`), p.userId],
+        );
+        await recordAudit(
+          p.userId!,
+          "planning_center.products_authorized",
+          "integration",
+          null,
+          "success",
+          c,
+        );
+        return;
+      }
       if (existing && existing.state !== "disconnected")
         throw new AccessError(409, "An authorization already exists; disconnect before retrying");
       await c.query(
@@ -323,12 +431,30 @@ export async function disconnect(p: Principal) {
 export async function startSync(
   p: Principal,
   product: provider.Product,
-  mode: "backfill" | "incremental",
+  mode: "backfill" | "incremental" | "current",
+  since?: string | null,
 ) {
   provider.requireConfiguration();
+  if (
+    mode === "current" &&
+    (!since ||
+      !validCalendarDate(since) ||
+      !["giving", "groups", "serving", "check_ins"].includes(product))
+  )
+    throw new AccessError(
+      400,
+      "Current-window ingestion requires a valid starting date and a ministry product",
+    );
+  if (mode !== "current" && since != null)
+    throw new AccessError(400, "Only a current-window scan accepts a starting date");
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
     connected(v);
+    if (!v.scopes.includes(provider.productScope(product)))
+      throw new AccessError(
+        409,
+        "Explicitly authorize this additional product before importing it",
+      );
     if (
       (
         await c.query(
@@ -351,10 +477,19 @@ export async function startSync(
         409,
         "Complete an accessible-history backfill before incremental revision sync",
       );
+    const queue = scanRoots(product, mode === "current" ? since : null);
     const run = await c.query<Run>(
-      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by)
-      VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [v.account_ref, product, mode, JSON.stringify(roots(product)), p.userId],
+      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,lifecycle_version,coverage_start)
+      VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [
+        v.account_ref,
+        product,
+        mode,
+        JSON.stringify(queue),
+        p.userId,
+        mode === "current" ? 2 : 1,
+        mode === "current" ? since : null,
+      ],
     );
     await recordAudit(
       p.userId!,
@@ -471,7 +606,13 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
       await observeSource(c, v.account_ref, r.product, entity.type, entity.id, r.id);
     }
     const visited = [...r.visited, path];
-    const queue = [...r.queue.slice(1), ...parsed.nextPages];
+    const queue = [
+      ...r.queue.slice(1),
+      ...parsed.nextPages.map((next) => ({
+        ...next,
+        ...(page.since ? { since: page.since, windowField: page.windowField } : {}),
+      })),
+    ];
     const unique = new Map<string, Page>();
     for (const q of queue) {
       const k = pagePath(q, r.product);
@@ -496,6 +637,7 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
     ).rows[0]!;
     if (!unique.size) {
       await assessCompletedScan(c, id);
+      await refreshPublishedMinistry(c, p, r.product, v.account_ref);
       await c.query(
         "UPDATE pco_connections SET last_success_at=now(),error=NULL,updated_at=now() WHERE id='planning_center'",
       );

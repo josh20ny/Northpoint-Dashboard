@@ -7,9 +7,11 @@
  */
 import type { PlanningCenterScheduleFrequency } from './planningCenterScheduleFrequency';
 import type { PlanningCenterScheduleIntervalUnit } from './planningCenterScheduleIntervalUnit';
+import type { PlanningCenterScheduleProductsItem } from './planningCenterScheduleProductsItem';
 import type { PlanningCenterScheduleStatus } from './planningCenterScheduleStatus';
 
 export interface PlanningCenterSchedule {
+  products?: PlanningCenterScheduleProductsItem[];
   enabled: boolean;
   timeZone: string;
   localTime: string;

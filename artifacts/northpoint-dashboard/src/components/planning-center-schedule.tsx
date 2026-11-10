@@ -21,7 +21,17 @@ type Settings = Pick<
   | "intervalCount"
   | "intervalUnit"
   | "anchorDate"
->;
+> & { products: ScheduleProduct[] };
+type ScheduleProduct = "people" | "services" | "check_ins" | "giving" | "groups" | "serving";
+const DEFAULT_PRODUCTS: ScheduleProduct[] = ["people", "services", "check_ins"];
+const SCHEDULE_PRODUCTS: [ScheduleProduct, string, string][] = [
+  ["people", "People", "people"],
+  ["services", "Services", "services"],
+  ["check_ins", "Check-Ins", "check_ins"],
+  ["giving", "Giving", "giving"],
+  ["groups", "Groups", "groups"],
+  ["serving", "Serving", "services"],
+];
 const settings = (s: PlanningCenterSchedule): Settings => ({
   frequency: s.frequency,
   localTime: s.localTime,
@@ -30,6 +40,7 @@ const settings = (s: PlanningCenterSchedule): Settings => ({
   intervalCount: s.intervalCount,
   intervalUnit: s.intervalUnit,
   anchorDate: s.anchorDate,
+  products: s.products && s.products.length ? [...(s.products as ScheduleProduct[])] : DEFAULT_PRODUCTS,
 });
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const frequencies = {
@@ -73,12 +84,16 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
     setDirty(true);
     setMessage("");
   };
-  const ready =
-    ws.connection?.state === "connected" &&
-    ["people", "services", "check_ins"].every((p) =>
-      ws.syncs.some((r) => r.product === p && r.mode === "backfill" && r.status === "complete"),
+  const savedProducts = settings(s).products;
+  const hasBaseline = (p: string) =>
+    ws.syncs.some(
+      (r) => r.product === p && (r.mode === "backfill" || r.mode === "current") && r.status === "complete",
     );
+  const granted = (scope: string) => !!ws.connection?.scopes.includes(scope);
+  const ready = ws.connection?.state === "connected" && savedProducts.every(hasBaseline);
+  const cycleOpen = s.status === "running" || !!s.activeRunId;
   const valid =
+    draft.products.length > 0 &&
     /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.localTime) &&
     (!(
       draft.frequency === "weekly" ||
@@ -127,7 +142,9 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
       />
       <div className="space-y-3 text-[12.5px] leading-relaxed">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p>People → Services → Check-Ins · incremental rescans, one at a time.</p>
+          <p data-testid="text-schedule-products">
+            {savedProducts.map((p) => SCHEDULE_PRODUCTS.find((x) => x[0] === p)?.[1] ?? p).join(" → ")} · incremental rescans, one at a time.
+          </p>
           <StatusPill
             status={s.enabled ? "current" : "off"}
             label={s.enabled ? "Enabled" : "Paused"}
@@ -258,6 +275,42 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
               </p>
             </fieldset>
           )}
+          <fieldset disabled={save.isPending || cycleOpen}>
+            <legend className="mb-1">Products to refresh</legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {SCHEDULE_PRODUCTS.map(([p, label, scope]) => {
+                const ok = granted(scope);
+                return (
+                  <label key={p} className={`flex items-center gap-1.5 ${ok ? "" : "text-muted-foreground"}`}>
+                    <input
+                      type="checkbox"
+                      checked={draft.products.includes(p)}
+                      disabled={!ok && !draft.products.includes(p)}
+                      onChange={(e) =>
+                        change({
+                          products: e.target.checked
+                            ? SCHEDULE_PRODUCTS.map((x) => x[0]).filter((x) => x === p || draft.products.includes(x))
+                            : draft.products.filter((x) => x !== p),
+                        })
+                      }
+                      data-testid={`checkbox-schedule-product-${p}`}
+                    />
+                    {label}
+                    {!ok && <span className="text-[11px]">(not granted)</span>}
+                    {ok && !hasBaseline(p) && <span className="text-[11px] text-muted-foreground">(needs a completed current or backfill sync)</span>}
+                  </label>
+                );
+              })}
+            </div>
+            {!draft.products.length && (
+              <p className="mt-1 text-destructive" role="alert">Select at least one product.</p>
+            )}
+            <p className="mt-1 text-muted-foreground">
+              {cycleOpen
+                ? "Products cannot change while a cycle is running or paused. Let it finish first."
+                : "Each selected product needs one completed current or backfill sync. Changing products only takes effect when you save; it does not enable the schedule."}
+            </p>
+          </fieldset>
           {weekly && (
             <fieldset disabled={save.isPending}>
               <legend className="mb-1">Run on these weekdays</legend>
@@ -358,8 +411,8 @@ export function RefreshSchedule({ ws }: { ws: PlanningCenterWorkspace }) {
         {s.error && <Note tone="warn">{s.error}</Note>}
         {!ready && (
           <Note>
-            A confirmed connection and completed backfills for all three products are required to
-            enable this schedule.
+            A confirmed connection and a completed current or backfill sync for every selected
+            product are required to enable this schedule.
           </Note>
         )}
         <p className="text-muted-foreground">

@@ -28,7 +28,26 @@ const PRODUCTS: [PlanningCenterSyncInputProduct, string][] = [
   ["people", "People"],
   ["services", "Services"],
   ["check_ins", "Check-Ins"],
+  ["giving", "Giving"],
+  ["groups", "Groups"],
+  ["serving", "Serving"],
 ];
+/** Planning Center scope each sync product needs. Serving uses the Services scope. */
+const SCOPE_FOR: Record<string, string> = {
+  people: "people",
+  services: "services",
+  check_ins: "check_ins",
+  giving: "giving",
+  groups: "groups",
+  serving: "services",
+};
+const MODE_LABEL: Record<string, string> = {
+  backfill: "Backfill",
+  incremental: "Incremental",
+  current: "Current",
+};
+const ADDITIONAL = ["giving", "groups"] as const;
+type Additional = (typeof ADDITIONAL)[number];
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleString() : "Never");
 const n = (v: number) => v.toLocaleString();
 
@@ -112,6 +131,11 @@ function Connection({ ws }: { ws: PlanningCenterWorkspace }) {
   const disconnect = useDisconnectPlanningCenter(opts);
   const [checked, setChecked] = useState(false);
   const [askDisconnect, setAskDisconnect] = useState(false);
+  const [extra, setExtra] = useState<Additional[]>([]);
+  const [ackEnv, setAckEnv] = useState(false);
+  const [ackGiving, setAckGiving] = useState(false);
+  const [ackGroups, setAckGroups] = useState(false);
+  const [ackConsent, setAckConsent] = useState(false);
   const c = ws.connection;
   const active = c && c.state !== "disconnected";
   const busy = authorize.isPending || confirm.isPending || disconnect.isPending;
@@ -194,7 +218,7 @@ function Connection({ ws }: { ws: PlanningCenterWorkspace }) {
             className={btnPrimary}
             disabled={!ws.configured || busy}
             onClick={() =>
-              authorize.mutate(undefined, { onSuccess: (r) => window.location.assign(r.url) })
+              authorize.mutate({ data: undefined }, { onSuccess: (r) => window.location.assign(r.url) })
             }
             data-testid="button-authorize-pco"
           >
@@ -221,6 +245,96 @@ function Connection({ ws }: { ws: PlanningCenterWorkspace }) {
           </button>
         )}
       </div>
+      {ws.configured && (!c || c.state !== "pending") && (
+        <form
+          className="mt-4 space-y-2.5 rounded-md border bg-muted/20 p-3 text-[12.5px]"
+          aria-label="Add Giving or Groups access"
+          data-testid="form-pco-additional"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const ok =
+              extra.length > 0 &&
+              ackEnv &&
+              ackConsent &&
+              (!extra.includes("giving") || ackGiving) &&
+              (!extra.includes("groups") || ackGroups);
+            if (!ok || busy) return;
+            authorize.mutate(
+              {
+                data: {
+                  additionalProducts: extra,
+                  replaceExisting: !!active,
+                  acknowledgeSensitiveData: true,
+                },
+              },
+              { onSuccess: (r) => window.location.assign(r.url) },
+            );
+          }}
+        >
+          <p className="font-medium">Optional: add Giving or Groups access</p>
+          <p className="text-muted-foreground">
+            The current People, Services and Check-Ins access stays as it is.{" "}
+            {active
+              ? "Your existing connection is kept unless the upgrade succeeds for the same organization."
+              : "This connects with the base access plus the products you choose."}
+          </p>
+          <fieldset className="flex flex-wrap gap-4">
+            <legend className="sr-only">Products to add</legend>
+            {ADDITIONAL.map((p) => (
+              <label key={p} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={extra.includes(p)}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setExtra((x) => (e.target.checked ? [...x, p] : x.filter((y) => y !== p)))
+                  }
+                  data-testid={`checkbox-add-${p}`}
+                />
+                {p === "giving" ? "Giving" : "Groups"}
+                {c?.scopes.includes(p) && (
+                  <span className="text-[11px] text-muted-foreground">(already granted)</span>
+                )}
+              </label>
+            ))}
+          </fieldset>
+          {extra.includes("giving") && (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={ackGiving} disabled={busy} onChange={(e) => setAckGiving(e.target.checked)} data-testid="checkbox-ack-giving" />
+              I understand Giving imports pseudonymous PCO Giving donor IDs and individual transactions into this development database.
+            </label>
+          )}
+          {extra.includes("groups") && (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={ackGroups} disabled={busy} onChange={(e) => setAckGroups(e.target.checked)} data-testid="checkbox-ack-groups" />
+              I understand Groups imports pseudonymous membership and attendance person IDs into this development database.
+            </label>
+          )}
+          <label className="flex items-start gap-2">
+            <input type="checkbox" checked={ackEnv} disabled={busy} onChange={(e) => setAckEnv(e.target.checked)} data-testid="checkbox-ack-environment" />
+            I accept storing this data in this environment and the privacy responsibility that comes with it.
+          </label>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" checked={ackConsent} disabled={busy} onChange={(e) => setAckConsent(e.target.checked)} data-testid="checkbox-ack-consent" />
+            I will review and accept the Planning Center consent screen for these permissions.
+          </label>
+          <button
+            type="submit"
+            className={btnPrimary}
+            disabled={
+              busy ||
+              extra.length === 0 ||
+              !ackEnv ||
+              !ackConsent ||
+              (extra.includes("giving") && !ackGiving) ||
+              (extra.includes("groups") && !ackGroups)
+            }
+            data-testid="button-authorize-additional"
+          >
+            {authorize.isPending ? "Redirecting" : "Continue to Planning Center"}
+          </button>
+        </form>
+      )}
       {askDisconnect && (
         <div className="mt-3 space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-[12.5px]">
           <p>
@@ -275,7 +389,12 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] font-medium">
           {PRODUCTS.find((p) => p[0] === s.product)?.[1]} ·{" "}
-          {s.mode === "backfill" ? "Backfill" : "Incremental"}
+          {MODE_LABEL[s.mode] ?? s.mode}
+          {s.coverageStart && (
+            <span className="font-normal text-muted-foreground" data-testid={`text-coverage-${s.id}`}>
+              {" "}· From {s.coverageStart.slice(0, 10)}
+            </span>
+          )}
         </p>
         <StatusPill
           status={
@@ -392,8 +511,14 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
     ws.syncs.some((s) => s.product === p && s.mode === "backfill" && s.status === "complete");
   const openFor = (p: string) =>
     ws.syncs.some((s) => s.product === p && (s.status === "running" || s.status === "retry"));
+  const granted = (p: string) => !!ws.connection?.scopes.includes(SCOPE_FOR[p] ?? p);
+  const [since, setSince] = useState<Record<string, string>>({});
+  const [askBackfill, setAskBackfill] = useState<string | null>(null);
   const go = (product: PlanningCenterSyncInputProduct, mode: PlanningCenterSyncInputMode) =>
-    start.mutate({ data: { product, mode } });
+    start.mutate(
+      { data: mode === "current" ? { product, mode, since: since[product] } : { product, mode } },
+      { onSuccess: () => setAskBackfill(null) },
+    );
 
   return (
     <Panel className="p-5 sm:p-6">
@@ -417,6 +542,11 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
           stores only changed revisions. Absence is flagged only after a complete scan, never as
           deletion. Requires a completed backfill for that product.
         </p>
+        <p>
+          <strong className="text-foreground">Current</strong> reads only records from the chosen
+          date onward, without a historical backfill. Reports cover that bounded period only;
+          earlier weeks stay missing rather than zero.
+        </p>
       </div>
       <p className="mt-3 text-[12.5px]">
         Source records stored:{" "}
@@ -429,16 +559,21 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
           <Note>Syncs require a confirmed, connected organization.</Note>
         </div>
       )}
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {PRODUCTS.map(([p, label]) => (
           <div key={p} className="rounded-md border bg-muted/20 p-3">
             <p className="text-[13px] font-medium">{label}</p>
+            {connected && !granted(p) && (
+              <p className="mt-1 text-[11px] text-muted-foreground" data-testid={`text-scope-missing-${p}`}>
+                Not granted: needs the {SCOPE_FOR[p]} permission.
+              </p>
+            )}
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
                 type="button"
                 className={btn}
-                disabled={!connected || start.isPending || openFor(p)}
-                onClick={() => go(p, "backfill")}
+                disabled={!connected || !granted(p) || start.isPending || openFor(p)}
+                onClick={() => setAskBackfill(p)}
                 data-testid={`button-backfill-${p}`}
               >
                 Backfill
@@ -446,13 +581,50 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
               <button
                 type="button"
                 className={btn}
-                disabled={!connected || start.isPending || openFor(p) || !backfilled(p)}
+                disabled={!connected || !granted(p) || start.isPending || openFor(p) || !backfilled(p)}
                 onClick={() => go(p, "incremental")}
                 data-testid={`button-incremental-${p}`}
               >
                 Incremental
               </button>
             </div>
+            <div className="mt-2 flex flex-wrap items-end gap-1.5">
+              <label className="grid gap-0.5 text-[11px] text-muted-foreground">
+                Current since
+                <input
+                  type="date"
+                  value={since[p] ?? ""}
+                  onChange={(e) => setSince((x) => ({ ...x, [p]: e.target.value }))}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-[12px] text-foreground"
+                  data-testid={`input-since-${p}`}
+                />
+              </label>
+              <button
+                type="button"
+                className={btn}
+                disabled={
+                  !connected || !granted(p) || start.isPending || openFor(p) ||
+                  !/^\d{4}-\d{2}-\d{2}$/.test(since[p] ?? "")
+                }
+                onClick={() => go(p, "current")}
+                data-testid={`button-current-${p}`}
+              >
+                Current
+              </button>
+            </div>
+            {askBackfill === p && (
+              <div className="mt-2 space-y-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-[11.5px] text-amber-950">
+                <p>Full backfill reads all accessible history for {label}. This can take a long time.</p>
+                <div className="flex gap-1.5">
+                  <button type="button" className={btnPrimary} disabled={start.isPending} onClick={() => go(p, "backfill")} data-testid={`button-confirm-backfill-${p}`}>
+                    {start.isPending ? "Starting" : "Start full backfill"}
+                  </button>
+                  <button type="button" className={btn} onClick={() => setAskBackfill(null)} data-testid={`button-cancel-backfill-${p}`}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             {openFor(p) && (
               <p className="mt-1.5 text-[11px] text-muted-foreground">A sync is open below.</p>
             )}

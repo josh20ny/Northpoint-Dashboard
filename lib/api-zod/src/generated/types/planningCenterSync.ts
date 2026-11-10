@@ -13,6 +13,8 @@ export interface PlanningCenterSync {
   id: string;
   product: PlanningCenterSyncProduct;
   mode: PlanningCenterSyncMode;
+  /** @nullable */
+  coverageStart?: string | null;
   status: PlanningCenterSyncStatus;
   fetched: number;
   revised: number;

@@ -59,10 +59,11 @@ describe("public infrastructure only", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("ok");
   });
-  it("provides honest no-live-data foundation status", async () => {
+  it("reports ministry development without claiming universal live coverage", async () => {
     const response = await request(app).get("/api/v1/foundation");
     expect(response.status).toBe(200);
-    expect(response.body.quality).toBe("no_live_data");
+    expect(response.body.quality).toBe("coverage_varies_by_ministry");
+    expect(response.body.phase).toBe(5);
     expect(response.body.auth.enabled).toBe(false);
     expect(response.body.ministries).toHaveLength(10);
     expect(

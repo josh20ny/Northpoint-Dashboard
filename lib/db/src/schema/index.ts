@@ -28,3 +28,5 @@ export * from "./audit";
 export * from "./planning-center";
 export * from "./attendance";
 export * from "./workbook-authority";
+export * from "./ministry-data";
+export * from "./giving-policy";

@@ -7,8 +7,14 @@
  */
 import type { PlanningCenterScheduleInputFrequency } from './planningCenterScheduleInputFrequency';
 import type { PlanningCenterScheduleInputIntervalUnit } from './planningCenterScheduleInputIntervalUnit';
+import type { PlanningCenterScheduleInputProductsItem } from './planningCenterScheduleInputProductsItem';
 
 export interface PlanningCenterScheduleInput {
+  /**
+     * @minItems 1
+     * @maxItems 6
+     */
+  products?: PlanningCenterScheduleInputProductsItem[];
   enabled: boolean;
   /**
      * @minLength 1

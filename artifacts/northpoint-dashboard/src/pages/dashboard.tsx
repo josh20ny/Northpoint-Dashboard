@@ -26,6 +26,8 @@ import {
   usePageTitle,
 } from "@/components/kit";
 import { useAuth } from "@workspace/replit-auth-web";
+import { MinistrySummaryCard } from "@/components/ministry-data";
+import { DATA_MINISTRIES } from "@/lib/ministry-data";
 
 export default function Dashboard() {
   usePageTitle("Dashboard");
@@ -203,6 +205,21 @@ export default function Dashboard() {
               </dl>
             ) : null}
           </Panel>
+
+          {user && (
+            <Panel className="lg:col-span-2" title="Ministries · previous completed Sunday" delay={150}>
+              <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3" data-testid="section-ministry-summaries">
+                {DATA_MINISTRIES.map((m) => (
+                  <Link key={m.slug} href={`/ministries/${m.slug}`} className="block rounded-lg hover:bg-secondary/40" data-testid={`link-summary-${m.slug}`}>
+                    <MinistrySummaryCard slug={m.slug} name={m.name} />
+                  </Link>
+                ))}
+              </div>
+              <p className="border-t px-5 py-2.5 text-[11.5px] text-muted-foreground">
+                Each ministry shows its own latest completed Sunday. Missing figures are not counted as zero.
+              </p>
+            </Panel>
+          )}
 
           <Panel className="lg:col-span-2" delay={180}>
             <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">

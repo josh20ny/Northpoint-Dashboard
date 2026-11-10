@@ -6,6 +6,7 @@ import operationsRouter from "./operations";
 import importsRouter from "./imports";
 import planningCenterRouter from "./planning-center";
 import attendanceRouter from "./attendance";
+import ministryDataRouter from "./ministry-data";
 
 const router: IRouter = Router();
 
@@ -15,6 +16,7 @@ router.use(authRouter);
 router.use(importsRouter);
 router.use(planningCenterRouter);
 router.use(attendanceRouter);
+router.use(ministryDataRouter);
 router.use(operationsRouter);
 
 export default router;

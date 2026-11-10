@@ -5,6 +5,285 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type GivingPolicyInputGrouping = typeof GivingPolicyInputGrouping[keyof typeof GivingPolicyInputGrouping];
+
+
+export const GivingPolicyInputGrouping = {
+  person: 'person',
+  joint_giving_unit: 'joint_giving_unit',
+} as const;
+
+export type GivingPolicyInputCadencesItem = typeof GivingPolicyInputCadencesItem[keyof typeof GivingPolicyInputCadencesItem];
+
+
+export const GivingPolicyInputCadencesItem = {
+  weekly: 'weekly',
+  every_other_week: 'every_other_week',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+  annual: 'annual',
+} as const;
+
+export interface GivingPolicyInput {
+  /**
+     * @minimum 3
+     * @maximum 24
+     */
+  minimumGifts: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  toleranceDays: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  missedExpected: number;
+  grouping: GivingPolicyInputGrouping;
+  /**
+     * @minItems 1
+     * @maxItems 5
+     */
+  cadences: GivingPolicyInputCadencesItem[];
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  note: string;
+  previousId: string;
+}
+
+export type GivingPolicyOrigin = typeof GivingPolicyOrigin[keyof typeof GivingPolicyOrigin];
+
+
+export const GivingPolicyOrigin = {
+  owner_default: 'owner_default',
+  admin_version: 'admin_version',
+} as const;
+
+export type GivingPolicy = GivingPolicyInput & ({
+  id: string;
+  /** @nullable */
+  createdAt: string | null;
+  origin: GivingPolicyOrigin;
+});
+
+export interface GivingUnit {
+  unitId: string;
+  personIds: string[];
+  /** @nullable */
+  firstRecordedAt: string | null;
+  /** @nullable */
+  lastGiftDate: string | null;
+  /** @nullable */
+  cadence: string | null;
+  expectedDates: string[];
+  /** @nullable */
+  missedExpected: number | null;
+  /** @nullable */
+  lapsed: boolean | null;
+  reason: string;
+}
+
+export interface GivingHealthPage {
+  units: GivingUnit[];
+  page: number;
+  hasMore: boolean;
+  /** @nullable */
+  sourceAsOf: string | null;
+  /** @nullable */
+  policyVersion: string | null;
+  issues: string[];
+}
+
+export type PlanningCenterAuthorizationInputAdditionalProductsItem = typeof PlanningCenterAuthorizationInputAdditionalProductsItem[keyof typeof PlanningCenterAuthorizationInputAdditionalProductsItem];
+
+
+export const PlanningCenterAuthorizationInputAdditionalProductsItem = {
+  giving: 'giving',
+  groups: 'groups',
+} as const;
+
+export interface PlanningCenterAuthorizationInput {
+  /** @maxItems 2 */
+  additionalProducts: PlanningCenterAuthorizationInputAdditionalProductsItem[];
+  replaceExisting: boolean;
+  acknowledgeSensitiveData: boolean;
+}
+
+export interface MinistryMetric {
+  measure: string;
+  title: string;
+  scope: string;
+  week: string;
+  /** @nullable */
+  value: number | null;
+  unit: string;
+  quality: string;
+  /** @nullable */
+  denominator: number | null;
+  flags: string[];
+  source: string;
+  sourceAsOf: string;
+  definitionVersion: string;
+}
+
+export interface MinistryKpi {
+  key: string;
+  title: string;
+  status: string;
+  reason: string;
+}
+
+export interface MinistryDataWorkspace {
+  ministry: string;
+  start: string;
+  end: string;
+  latestCompletedWeek: string;
+  timezone: string;
+  asOf: string;
+  metrics: MinistryMetric[];
+  kpis: MinistryKpi[];
+  issues: string[];
+}
+
+export type MinistrySourceMappingInputProduct = typeof MinistrySourceMappingInputProduct[keyof typeof MinistrySourceMappingInputProduct];
+
+
+export const MinistrySourceMappingInputProduct = {
+  check_ins: 'check_ins',
+  serving: 'serving',
+  groups: 'groups',
+  giving: 'giving',
+} as const;
+
+export interface MinistrySourceMappingInput {
+  product: MinistrySourceMappingInputProduct;
+  objectType: string;
+  /** @pattern ^[0-9]{1,30}$ */
+  externalId: string;
+  ministry: string;
+  measure: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  scope: string;
+  effectiveFrom: string;
+  /** @nullable */
+  effectiveTo: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  note: string;
+  /** @nullable */
+  supersedesId?: string | null;
+  enabled?: boolean;
+}
+
+export type MinistrySourceMapping = MinistrySourceMappingInput & {
+  id: string;
+};
+
+export interface MinistrySourceOption {
+  product: string;
+  objectType: string;
+  externalId: string;
+  label: string;
+}
+
+export type ImportBatchState = typeof ImportBatchState[keyof typeof ImportBatchState];
+
+
+export const ImportBatchState = {
+  active: 'active',
+  withdrawn: 'withdrawn',
+} as const;
+
+export interface ImportBatch {
+  id: string;
+  sha256: string;
+  filename: string;
+  snapshotDate: string;
+  state: ImportBatchState;
+  createdAt: string;
+}
+
+export interface MinistryDataAdmin {
+  mappings: MinistrySourceMapping[];
+  sources: MinistrySourceOption[];
+  batches: ImportBatch[];
+  asOf: string;
+}
+
+export type MinistryPublicationInputProduct = typeof MinistryPublicationInputProduct[keyof typeof MinistryPublicationInputProduct];
+
+
+export const MinistryPublicationInputProduct = {
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
+  check_ins: 'check_ins',
+} as const;
+
+export interface MinistryPublicationInput {
+  product: MinistryPublicationInputProduct;
+  start: string;
+  end: string;
+}
+
+export interface MinistryHistoryInput {
+  batchId: string;
+  mappingId: string;
+  ministry: string;
+  measure: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  scope: string;
+  /**
+     * @minimum 1900
+     * @maximum 2100
+     * @nullable
+     */
+  year: number | null;
+}
+
+export interface MinistryPublicationResult {
+  publicationId: string;
+  values: number;
+  issues: string[];
+  reused: boolean;
+}
+
+export interface GivingTransaction {
+  id: string;
+  /** @nullable */
+  personId: string | null;
+  /** @nullable */
+  receivedAt: string | null;
+  /** @nullable */
+  amountMinor: number | null;
+  /** @nullable */
+  currency: string | null;
+  /** @nullable */
+  status: string | null;
+  /** @nullable */
+  refunded: boolean | null;
+  /** @nullable */
+  recurringId: string | null;
+}
+
+export interface GivingTransactionPage {
+  transactions: GivingTransaction[];
+  page: number;
+  hasMore: boolean;
+  asOf: string;
+}
+
 export interface AttendanceDefinitionInput {
   ministryId: string;
   effectiveFrom: string;
@@ -310,6 +589,9 @@ export const PlanningCenterSyncInputProduct = {
   people: 'people',
   services: 'services',
   check_ins: 'check_ins',
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
 } as const;
 
 export type PlanningCenterSyncInputMode = typeof PlanningCenterSyncInputMode[keyof typeof PlanningCenterSyncInputMode];
@@ -318,11 +600,14 @@ export type PlanningCenterSyncInputMode = typeof PlanningCenterSyncInputMode[key
 export const PlanningCenterSyncInputMode = {
   backfill: 'backfill',
   incremental: 'incremental',
+  current: 'current',
 } as const;
 
 export interface PlanningCenterSyncInput {
   product: PlanningCenterSyncInputProduct;
   mode: PlanningCenterSyncInputMode;
+  /** @nullable */
+  since?: string | null;
 }
 
 export interface PlanningCenterAutomationInput {
@@ -336,6 +621,9 @@ export const PlanningCenterSyncProduct = {
   people: 'people',
   services: 'services',
   check_ins: 'check_ins',
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
 } as const;
 
 export type PlanningCenterSyncMode = typeof PlanningCenterSyncMode[keyof typeof PlanningCenterSyncMode];
@@ -344,6 +632,7 @@ export type PlanningCenterSyncMode = typeof PlanningCenterSyncMode[keyof typeof 
 export const PlanningCenterSyncMode = {
   backfill: 'backfill',
   incremental: 'incremental',
+  current: 'current',
 } as const;
 
 export type PlanningCenterSyncStatus = typeof PlanningCenterSyncStatus[keyof typeof PlanningCenterSyncStatus];
@@ -361,6 +650,8 @@ export interface PlanningCenterSync {
   id: string;
   product: PlanningCenterSyncProduct;
   mode: PlanningCenterSyncMode;
+  /** @nullable */
+  coverageStart?: string | null;
   status: PlanningCenterSyncStatus;
   fetched: number;
   revised: number;
@@ -401,6 +692,18 @@ export interface PlanningCenterConnection {
   error: string | null;
 }
 
+export type PlanningCenterScheduleProductsItem = typeof PlanningCenterScheduleProductsItem[keyof typeof PlanningCenterScheduleProductsItem];
+
+
+export const PlanningCenterScheduleProductsItem = {
+  people: 'people',
+  services: 'services',
+  check_ins: 'check_ins',
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
+} as const;
+
 export type PlanningCenterScheduleFrequency = typeof PlanningCenterScheduleFrequency[keyof typeof PlanningCenterScheduleFrequency];
 
 
@@ -431,6 +734,7 @@ export const PlanningCenterScheduleStatus = {
 } as const;
 
 export interface PlanningCenterSchedule {
+  products?: PlanningCenterScheduleProductsItem[];
   enabled: boolean;
   timeZone: string;
   localTime: string;
@@ -463,6 +767,18 @@ export interface PlanningCenterSchedule {
   error: string | null;
 }
 
+export type PlanningCenterScheduleInputProductsItem = typeof PlanningCenterScheduleInputProductsItem[keyof typeof PlanningCenterScheduleInputProductsItem];
+
+
+export const PlanningCenterScheduleInputProductsItem = {
+  people: 'people',
+  services: 'services',
+  check_ins: 'check_ins',
+  giving: 'giving',
+  groups: 'groups',
+  serving: 'serving',
+} as const;
+
 export type PlanningCenterScheduleInputFrequency = typeof PlanningCenterScheduleInputFrequency[keyof typeof PlanningCenterScheduleInputFrequency];
 
 
@@ -482,6 +798,11 @@ export const PlanningCenterScheduleInputIntervalUnit = {
 } as const;
 
 export interface PlanningCenterScheduleInput {
+  /**
+     * @minItems 1
+     * @maxItems 6
+     */
+  products?: PlanningCenterScheduleInputProductsItem[];
   enabled: boolean;
   /**
      * @minLength 1
@@ -566,23 +887,6 @@ export interface ImportStateInput {
      * @maxLength 1000
      */
   note: string;
-}
-
-export type ImportBatchState = typeof ImportBatchState[keyof typeof ImportBatchState];
-
-
-export const ImportBatchState = {
-  active: 'active',
-  withdrawn: 'withdrawn',
-} as const;
-
-export interface ImportBatch {
-  id: string;
-  sha256: string;
-  filename: string;
-  snapshotDate: string;
-  state: ImportBatchState;
-  createdAt: string;
 }
 
 export type ImportUploadAttemptStatus = typeof ImportUploadAttemptStatus[keyof typeof ImportUploadAttemptStatus];
@@ -1101,6 +1405,27 @@ export interface DocumentContent {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetGivingHealthParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
+};
+
+export type GetMinistryDataParams = {
+start?: string;
+end?: string;
+};
+
+export type GetGivingTransactionsParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
+};
 
 export type GetAttendanceParams = {
 start?: string;
