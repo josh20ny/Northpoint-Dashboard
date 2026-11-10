@@ -36,7 +36,9 @@ Individual week publication is no longer required for this accepted source.
 The actual adult ministry/definition is configured; manual occurrence setup
 remains separate from unresolved historical start times. Other ministry
 history still needs its documented mappings and module implementations.
-Four-week and YoY policies remain unapproved/unavailable. See
+Rolling averages now default to four calendar weeks, with selectable 1–52-week
+windows and explicit completeness denominators. YoY uses the existing accepted
+2025 in-person totals with documented numbered-Sunday alignment. See
 `PHASE_4_IMPLEMENTATION.md`; this is not production or full historical acceptance.
 
 | Phase | Build | Exit gate |

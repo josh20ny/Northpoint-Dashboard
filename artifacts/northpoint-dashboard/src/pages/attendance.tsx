@@ -15,6 +15,13 @@ import {
   SectionHeading,
   TextField,
 } from "@/components/admin-controls";
+import {
+  AverageWeeksControl,
+  DEFAULT_AVERAGE_WEEKS,
+  RollingAverageView,
+  YearComparisonView,
+} from "@/components/attendance-comparison";
+import { keepPreviousData } from "@tanstack/react-query";
 import { DefinitionSetup } from "@/components/attendance-admin";
 import {
   WeeklyAttendanceEntry,
@@ -50,14 +57,22 @@ export default function AttendanceDetails() {
   const [draftEnd, setDraftEnd] = useState("");
   const [range, setRange] = useState<{ start?: string; end?: string } | undefined>(undefined);
   const [definitionId, setDefinitionId] = useState("");
-  const params =
-    range || definitionId
-      ? { ...(range ?? {}), ...(definitionId ? { definitionId } : {}) }
-      : undefined;
+  const [averageWeeks, setAverageWeeks] = useState(DEFAULT_AVERAGE_WEEKS);
+  const params = {
+    ...(range ?? {}),
+    ...(definitionId ? { definitionId } : {}),
+    averageWeeks,
+  };
   const q = useGetAttendance(params, {
-    query: { enabled: !!user, queryKey: getGetAttendanceQueryKey(params), ...attendancePolling },
+    query: {
+      enabled: !!user,
+      queryKey: getGetAttendanceQueryKey(params),
+      placeholderData: keepPreviousData,
+      ...attendancePolling,
+    },
   });
   const w = q.data;
+  const stale = q.isPlaceholderData;
   const [editTarget, setEditTarget] = useState<EntryTarget | null>(null);
   const filterError = rangeError(draftStart, draftEnd);
   // Seed only: the entry form owns its own single-week query.
@@ -253,7 +268,13 @@ export default function AttendanceDetails() {
               </button>
             </div>
           )}
-          <Summary w={w} />
+          <Summary
+            w={w}
+            averageWeeks={averageWeeks}
+            onAverageWeeks={setAverageWeeks}
+            stale={stale}
+            showCell={user.role !== "staff"}
+          />
           <WeeklyTable
             w={w}
             onEdit={(date, slot) => setEditTarget({ date, slot, nonce: Date.now() })}
@@ -281,7 +302,19 @@ export default function AttendanceDetails() {
   );
 }
 
-function Summary({ w }: { w: AttendanceWorkspace }) {
+function Summary({
+  w,
+  averageWeeks,
+  onAverageWeeks,
+  stale,
+  showCell,
+}: {
+  w: AttendanceWorkspace;
+  averageWeeks: number;
+  onAverageWeeks: (n: number) => void;
+  stale: boolean;
+  showCell: boolean;
+}) {
   const latest = [...w.weeks].reverse().find((x) => x.week <= w.latestCompletedWeek);
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] [&>section]:min-w-0">
@@ -322,8 +355,21 @@ function Summary({ w }: { w: AttendanceWorkspace }) {
       </Panel>
       <Panel title="Context" className="[&>dl>div]:flex-wrap [&_dd]:min-w-0 [&_dd]:break-words">
         <dl>
-          <KV label="4-week average" value={w.fourWeek} testId="text-four-week" />
-          <KV label="Year over year" value={w.yoy} testId="text-yoy" />
+          <div className="space-y-2 px-5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <dt className="text-[12.5px] text-muted-foreground">Rolling average</dt>
+              <AverageWeeksControl value={averageWeeks} onChange={onAverageWeeks} updating={stale} />
+            </div>
+            <dd>
+              <RollingAverageView avg={w.rollingAverage} stale={stale} />
+            </dd>
+          </div>
+          <div className="space-y-1 border-t px-5 py-3">
+            <dt className="text-[12.5px] text-muted-foreground">Same week last year</dt>
+            <dd className={stale ? "opacity-50" : undefined}>
+              <YearComparisonView yc={w.yearComparison} showCell={showCell} />
+            </dd>
+          </div>
           <KV
             label="Last count entered"
             value={latest?.lastUpdatedAt ? formatDate(latest.lastUpdatedAt, true) : "None"}

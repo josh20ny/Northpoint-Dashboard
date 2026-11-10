@@ -29,7 +29,13 @@ export function createAttendanceRouter(provider: AuthProvider = sessionAuthProvi
     if (!q.success) throw new AccessError(400, "Invalid attendance date range");
     res.json(
       GetAttendanceResponse.parse(
-        await readAttendance(res.locals.principal, q.data.start, q.data.end, q.data.definitionId),
+        await readAttendance(
+          res.locals.principal,
+          q.data.start,
+          q.data.end,
+          q.data.definitionId,
+          q.data.averageWeeks,
+        ),
       ),
     );
   });

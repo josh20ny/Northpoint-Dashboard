@@ -18,6 +18,7 @@ paths:
         - { name: start, in: query, schema: { type: string } }
         - { name: end, in: query, schema: { type: string } }
         - { name: definitionId, in: query, schema: { type: string, format: uuid } }
+        - { name: averageWeeks, in: query, schema: { type: integer, minimum: 1, maximum: 52, default: 4 } }
       responses:
         "200":
           description: Protected adult attendance workspace
@@ -720,7 +721,7 @@ components:
         name: { type: string }
     AttendanceWorkspace:
       type: object
-      required: [definition, definitions, isCurrentDefinition, ministries, services, revisions, weeks, asOf, timezone, metricSlug, definitionText, fourWeek, yoy, latestCompletedWeek, start, end, historyTruncated]
+      required: [definition, definitions, isCurrentDefinition, ministries, services, revisions, weeks, asOf, timezone, metricSlug, definitionText, fourWeek, yoy, rollingAverage, yearComparison, latestCompletedWeek, start, end, historyTruncated]
       properties:
         definition: { oneOf: [{ $ref: "#/components/schemas/AttendanceDefinition" }, { type: "null" }] }
         definitions: { type: array, items: { $ref: "#/components/schemas/AttendanceDefinition" } }
@@ -735,10 +736,45 @@ components:
         definitionText: { type: string }
         fourWeek: { type: string }
         yoy: { type: string }
+        rollingAverage: { $ref: "#/components/schemas/AttendanceRollingAverage" }
+        yearComparison: { $ref: "#/components/schemas/AttendanceYearComparison" }
         latestCompletedWeek: { type: string }
         start: { type: string }
         end: { type: string }
         historyTruncated: { type: boolean }
+    AttendanceRollingAverage:
+      type: object
+      required: [windowWeeks, start, end, value, recordedWeeks, excludedWeeks]
+      properties:
+        windowWeeks: { type: integer }
+        start: { type: string }
+        end: { type: string }
+        value: { type: [number, "null"] }
+        recordedWeeks: { type: integer }
+        excludedWeeks: { type: array, items: { $ref: "#/components/schemas/AttendanceAverageExclusion" } }
+    AttendanceAverageExclusion:
+      type: object
+      required: [week, reason]
+      properties:
+        week: { type: string }
+        reason: { type: string }
+    AttendanceYearComparison:
+      type: object
+      required: [status, currentWeek, currentValue, baselineYear, weekNumber, baselineWeek, baselineValue, change, percentChange, source, sourceCell, sourceBatchId, alignment]
+      properties:
+        status: { type: string, enum: [available, missing_current, missing_baseline, conflicting_baselines, zero_baseline] }
+        currentWeek: { type: string }
+        currentValue: { type: [integer, "null"] }
+        baselineYear: { type: integer }
+        weekNumber: { type: integer }
+        baselineWeek: { type: [string, "null"] }
+        baselineValue: { type: [integer, "null"] }
+        change: { type: [integer, "null"] }
+        percentChange: { type: [number, "null"] }
+        source: { type: string, enum: [recorded, workbook, none] }
+        sourceCell: { type: [string, "null"] }
+        sourceBatchId: { type: [string, "null"], format: uuid }
+        alignment: { type: string }
     AttendanceHistoryCandidate:
       type: object
       required: [week, slot, count, evidenceHash, eligible, reviewMethod, flags]

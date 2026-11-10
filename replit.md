@@ -72,7 +72,10 @@ Accepted mapped history bulk-imports with immutable batch/fingerprint authority
 and honest system attribution; preserve manual corrections and unrecorded dates.
 No fabricated Admin approval is needed. See the superseding decision in
 `docs/DECISIONS.md`.
-Four-week/YoY policies are unapproved, so numeric comparisons stay unavailable.
+Adult comparisons now provide default-four-week rolling averages with selectable
+1–52-week windows, explicit complete-week denominators and exclusions. YoY uses
+the accepted workbook's 2025 in-person total baselines with labelled numbered-
+Sunday alignment, without inventing per-service history or exposing raw imports.
 See `docs/PHASE_4_IMPLEMENTATION.md` for verification and acceptance limits.
 
 ## User preferences

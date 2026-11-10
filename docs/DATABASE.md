@@ -2,6 +2,13 @@
 
 ## Phase 4 implementation note
 
+Comparison migrations 0016/0017 add
+`np_attendance_year_reference(date)`: an authenticated, aggregate-only
+security-definer projection of accepted 2025 in-person totals from the existing
+imported workbook. It checks active source/fingerprint and year/header/value
+mapping, restores caller context, and leaves raw-source RLS unchanged.
+It does not manufacture 2025 per-service attendance revisions.
+
 Migration 0015 adds immutable Admin-only `workbook_source_authorities`, tied to
 the source batch and fingerprint. Owner-directed automated workbook revisions
 may have null actors and `workbook_authoritative` provenance; this is a system

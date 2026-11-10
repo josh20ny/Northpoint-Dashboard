@@ -10,4 +10,9 @@ export type GetAttendanceParams = {
 start?: string;
 end?: string;
 definitionId?: string;
+/**
+ * @minimum 1
+ * @maximum 52
+ */
+averageWeeks?: number;
 };

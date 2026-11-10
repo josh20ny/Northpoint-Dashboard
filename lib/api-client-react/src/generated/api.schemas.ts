@@ -170,6 +170,64 @@ export interface AttendanceMinistry {
   name: string;
 }
 
+export interface AttendanceAverageExclusion {
+  week: string;
+  reason: string;
+}
+
+export interface AttendanceRollingAverage {
+  windowWeeks: number;
+  start: string;
+  end: string;
+  /** @nullable */
+  value: number | null;
+  recordedWeeks: number;
+  excludedWeeks: AttendanceAverageExclusion[];
+}
+
+export type AttendanceYearComparisonStatus = typeof AttendanceYearComparisonStatus[keyof typeof AttendanceYearComparisonStatus];
+
+
+export const AttendanceYearComparisonStatus = {
+  available: 'available',
+  missing_current: 'missing_current',
+  missing_baseline: 'missing_baseline',
+  conflicting_baselines: 'conflicting_baselines',
+  zero_baseline: 'zero_baseline',
+} as const;
+
+export type AttendanceYearComparisonSource = typeof AttendanceYearComparisonSource[keyof typeof AttendanceYearComparisonSource];
+
+
+export const AttendanceYearComparisonSource = {
+  recorded: 'recorded',
+  workbook: 'workbook',
+  none: 'none',
+} as const;
+
+export interface AttendanceYearComparison {
+  status: AttendanceYearComparisonStatus;
+  currentWeek: string;
+  /** @nullable */
+  currentValue: number | null;
+  baselineYear: number;
+  weekNumber: number;
+  /** @nullable */
+  baselineWeek: string | null;
+  /** @nullable */
+  baselineValue: number | null;
+  /** @nullable */
+  change: number | null;
+  /** @nullable */
+  percentChange: number | null;
+  source: AttendanceYearComparisonSource;
+  /** @nullable */
+  sourceCell: string | null;
+  /** @nullable */
+  sourceBatchId: string | null;
+  alignment: string;
+}
+
 export interface AttendanceWorkspace {
   definition: AttendanceDefinition | null;
   definitions: AttendanceDefinition[];
@@ -184,6 +242,8 @@ export interface AttendanceWorkspace {
   definitionText: string;
   fourWeek: string;
   yoy: string;
+  rollingAverage: AttendanceRollingAverage;
+  yearComparison: AttendanceYearComparison;
   latestCompletedWeek: string;
   start: string;
   end: string;
@@ -1046,6 +1106,11 @@ export type GetAttendanceParams = {
 start?: string;
 end?: string;
 definitionId?: string;
+/**
+ * @minimum 1
+ * @maximum 52
+ */
+averageWeeks?: number;
 };
 
 export type UploadWorkbookParams = {

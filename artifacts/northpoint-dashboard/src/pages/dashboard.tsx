@@ -1,5 +1,13 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowUpRight, Lock } from "lucide-react";
+import { keepPreviousData } from "@tanstack/react-query";
+import {
+  AverageWeeksControl,
+  DEFAULT_AVERAGE_WEEKS,
+  RollingAverageView,
+  YearComparisonView,
+} from "@/components/attendance-comparison";
+import { ArrowUpRight, Lock, RefreshCw } from "lucide-react";
 import {
   getGetAttendanceQueryKey,
   useGetAttendance,
@@ -22,9 +30,17 @@ import { useAuth } from "@workspace/replit-auth-web";
 export default function Dashboard() {
   usePageTitle("Dashboard");
   const { enabled, user } = useAuth();
-  const att = useGetAttendance(undefined, {
-    query: { enabled: !!user, queryKey: getGetAttendanceQueryKey(), ...attendancePolling },
+  const [averageWeeks, setAverageWeeks] = useState(DEFAULT_AVERAGE_WEEKS);
+  const attParams = { averageWeeks };
+  const att = useGetAttendance(attParams, {
+    query: {
+      enabled: !!user,
+      queryKey: getGetAttendanceQueryKey(attParams),
+      placeholderData: keepPreviousData,
+      ...attendancePolling,
+    },
   });
+  const stale = att.isPlaceholderData;
   const aw = att.data;
   const latest = aw?.weeks.find((x) => x.week === aw.latestCompletedWeek);
   const q = useGetFoundation();
@@ -78,6 +94,23 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <>
+                    {att.isRefetchError && (
+                      <div
+                        role="alert"
+                        data-testid="status-dashboard-stale"
+                        className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-950"
+                      >
+                        <span>Refresh failed. Showing saved data from {formatDate(aw.asOf, true)}; it may be out of date.</span>
+                        <button
+                          type="button"
+                          data-testid="button-dashboard-retry"
+                          onClick={() => void att.refetch()}
+                          className="inline-flex h-8 items-center gap-2 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+                        </button>
+                      </div>
+                    )}
                     <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                       Adult attendance · week of {formatDate(aw.latestCompletedWeek)}
                     </p>
@@ -107,9 +140,28 @@ export default function Dashboard() {
                     <p className="mt-3 max-w-md text-[12.5px] text-muted-foreground">
                       {latest?.lastUpdatedAt
                         ? `Last count entered ${formatDate(latest.lastUpdatedAt, true)}.`
-                        : "No counts entered."}{" "}
-                      4-week: {aw.fourWeek} YoY: {aw.yoy}
+                        : "No counts entered."}
                     </p>
+                    <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+                      <div>
+                        <div className="mb-1">
+                          <AverageWeeksControl
+                            value={averageWeeks}
+                            onChange={setAverageWeeks}
+                            updating={stale}
+                            testId="select-dashboard-average-weeks"
+                          />
+                        </div>
+                        <RollingAverageView avg={aw.rollingAverage} stale={stale} compact />
+                      </div>
+                      <div className={stale ? "opacity-50" : undefined}>
+                        <p className="mb-1 text-[12px] font-medium">Same week last year</p>
+                        <YearComparisonView
+                          yc={aw.yearComparison}
+                          showCell={user.role !== "staff"}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
               </div>

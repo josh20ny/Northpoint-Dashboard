@@ -26,6 +26,25 @@ adjustable with retained correction history.
 **How to apply:** Manual saves take effect immediately; workbook review and
 historical promotion remain separate.
 
+The rolling average defaults to four weeks; "adjust up or down" means changing
+the number of weeks, not manually adjusting the computed attendance.
+
+**Why:** The owner explicitly selected "Change the number of weeks."
+
+**How to apply:** Keep a calendar-week window and an explicit recorded-week
+denominator. Never zero-fill unrecorded Sundays or silently pull additional
+weeks from outside the chosen window to reach four observations.
+
+Use the accepted workbook's existing prior-year in-person totals for labelled
+week-aligned YoY; do not require another upload or invent service splits.
+
+**Why:** The owner offered a 2025 workbook only if the project lacked that data;
+the existing accepted workbook already includes weekly 2025 in-person totals.
+
+**How to apply:** Keep total-only comparison evidence distinct from detailed
+per-service observations, display alignment/source year, and withhold
+percentages for missing or zero baselines.
+
 Routine adult attendance should be entered as one Sunday with both service
 counts and one save, not a repeated service-setup/publication sequence.
 

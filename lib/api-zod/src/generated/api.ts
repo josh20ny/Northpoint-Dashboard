@@ -8,10 +8,16 @@
 import * as zod from 'zod';
 
 
+export const getAttendanceQueryAverageWeeksDefault = 4;
+export const getAttendanceQueryAverageWeeksMax = 52;
+
+
+
 export const GetAttendanceQueryParams = zod.object({
   "start": zod.coerce.string().optional(),
   "end": zod.coerce.string().optional(),
-  "definitionId": zod.coerce.string().uuid().optional()
+  "definitionId": zod.coerce.string().uuid().optional(),
+  "averageWeeks": zod.coerce.number().int().min(1).max(getAttendanceQueryAverageWeeksMax).default(getAttendanceQueryAverageWeeksDefault)
 })
 
 export const GetAttendanceResponse = zod.object({
@@ -71,6 +77,32 @@ export const GetAttendanceResponse = zod.object({
   "definitionText": zod.string(),
   "fourWeek": zod.string(),
   "yoy": zod.string(),
+  "rollingAverage": zod.object({
+  "windowWeeks": zod.number().int(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "value": zod.number().nullable(),
+  "recordedWeeks": zod.number().int(),
+  "excludedWeeks": zod.array(zod.object({
+  "week": zod.string(),
+  "reason": zod.string()
+}))
+}),
+  "yearComparison": zod.object({
+  "status": zod.enum(['available', 'missing_current', 'missing_baseline', 'conflicting_baselines', 'zero_baseline']),
+  "currentWeek": zod.string(),
+  "currentValue": zod.number().int().nullable(),
+  "baselineYear": zod.number().int(),
+  "weekNumber": zod.number().int(),
+  "baselineWeek": zod.string().nullable(),
+  "baselineValue": zod.number().int().nullable(),
+  "change": zod.number().int().nullable(),
+  "percentChange": zod.number().nullable(),
+  "source": zod.enum(['recorded', 'workbook', 'none']),
+  "sourceCell": zod.string().nullable(),
+  "sourceBatchId": zod.string().uuid().nullable(),
+  "alignment": zod.string()
+}),
   "latestCompletedWeek": zod.string(),
   "start": zod.string(),
   "end": zod.string(),

@@ -8,8 +8,10 @@
 import type { AttendanceDefinition } from './attendanceDefinition';
 import type { AttendanceMinistry } from './attendanceMinistry';
 import type { AttendanceRevision } from './attendanceRevision';
+import type { AttendanceRollingAverage } from './attendanceRollingAverage';
 import type { AttendanceService } from './attendanceService';
 import type { AttendanceWeek } from './attendanceWeek';
+import type { AttendanceYearComparison } from './attendanceYearComparison';
 
 export interface AttendanceWorkspace {
   definition: AttendanceDefinition | null;
@@ -25,6 +27,8 @@ export interface AttendanceWorkspace {
   definitionText: string;
   fourWeek: string;
   yoy: string;
+  rollingAverage: AttendanceRollingAverage;
+  yearComparison: AttendanceYearComparison;
   latestCompletedWeek: string;
   start: string;
   end: string;

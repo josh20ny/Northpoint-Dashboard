@@ -148,7 +148,9 @@ Phase 4 provides protected adult attendance inside
 manual entry, append-only corrections, deliberate historical promotion and a
 home KPI. Auditorium attendees only; volunteers and stage participants excluded.
 Online-only and intentionally off Sundays remain unrecorded, not measured zero.
-Four-week and YoY comparisons remain unavailable pending policy approval.
+Rolling averages default to four calendar weeks and allow 1–52-week windows,
+with recorded denominators and exclusions shown. YoY uses labelled week-aligned
+2025 in-person totals already present in the accepted workbook.
 Phase 2's January 4, 11 and 18 sample weeks have current
 owner-confirmed approvals for both adult services (six exact-evidence approvals).
 This is not independent two-source or full-year verification. The imported

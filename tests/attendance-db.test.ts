@@ -89,6 +89,90 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       c?.release();
       await db?.pool.end();
     });
+    it("calculates a selected window outside a narrow history filter without leaking those extra revisions", async () => {
+      await weekly.saveWeekly(
+        staff,
+        weekInput({
+          serviceDate: "2026-01-11",
+          first: { count: 462, status: "recorded", expectedRevision: null },
+          second: { count: 448, status: "recorded", expectedRevision: null },
+        }),
+      );
+      await weekly.saveWeekly(
+        staff,
+        weekInput({
+          serviceDate: "2026-01-18",
+          first: { count: 421, status: "recorded", expectedRevision: null },
+          second: { count: 410, status: "recorded", expectedRevision: null },
+        }),
+      );
+      const w = await repo.readAttendance(staff, "2026-01-18", "2026-01-18", undefined, 2);
+      expect(w.rollingAverage).toMatchObject({
+        value: 870.5,
+        recordedWeeks: 2,
+        windowWeeks: 2,
+        start: "2026-01-11",
+        end: "2026-01-18",
+      });
+      expect(w.weeks).toHaveLength(1);
+      expect(w.revisions.every((r) => r.serviceDate === "2026-01-18")).toBe(true);
+      await expect(
+        repo.readAttendance(staff, undefined, undefined, undefined, 0),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        repo.readAttendance(staff, undefined, undefined, undefined, 53),
+      ).rejects.toMatchObject({ status: 400 });
+    });
+    it("exposes only an accepted historical aggregate to Staff and restores raw-source restrictions", async () => {
+      const batch = randomUUID(),
+        sha = "a".repeat(64);
+      await c.query(
+        "INSERT INTO import_batches(id,sha256,filename,snapshot_date,object_path,catalog,created_by) VALUES($1,$2,'Synthetic rollback-only comparison.xlsx','2026-11-07','/synthetic/comparison','{}',$3)",
+        [batch, sha, admin.userId],
+      );
+      await c.query(
+        "INSERT INTO workbook_source_authorities(batch_id,sha256,basis,origin) VALUES($1,$2,'Synthetic rollback-only accepted workbook comparison fixture','owner_instruction')",
+        [batch, sha],
+      );
+      for (const [coordinate, value] of [
+        ["P34", "2025.0"],
+        ["P35", "123.0"],
+        ["A35", "1.0"],
+        ["B35", "46026"],
+      ]) {
+        await c.query(
+          "INSERT INTO import_cells(batch_id,sheet,coordinate,cell) VALUES($1,'Historical - Adults',$2,$3)",
+          [batch, coordinate, JSON.stringify({ type: "n", value })],
+        );
+      }
+      const role = `attendance_compare_test_${randomUUID().replaceAll("-", "")}`;
+      await c.query(`CREATE ROLE ${role} NOLOGIN`);
+      await c.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+      await c.query(`GRANT SELECT ON import_cells TO ${role}`);
+      await repo.attendanceTransaction(staff, false, false, async (tx) => {
+        await tx.query(`SET LOCAL ROLE ${role}`);
+        const r = await tx.query("SELECT * FROM np_attendance_year_reference('2026-01-04')");
+        expect(r.rows.find((x) => x.batch_id === batch)).toMatchObject({
+          source_value: "123",
+          source_cell: "Historical - Adults!P35",
+        });
+        expect((await tx.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
+          "staff",
+        );
+        expect(
+          (await tx.query("SELECT * FROM import_cells WHERE batch_id=$1", [batch])).rowCount,
+        ).toBe(0);
+        await tx.query("RESET ROLE");
+      });
+      await repo.attendanceTransaction(admin, true, false, async (tx) => {
+        await tx.query("UPDATE import_batches SET state='archived' WHERE id=$1", [batch]);
+        expect(
+          (await tx.query("SELECT * FROM np_attendance_year_reference('2026-01-04')")).rows.some(
+            (x) => x.batch_id === batch,
+          ),
+        ).toBe(false);
+      });
+    });
     const input = (extras: Partial<AttendanceInput> = {}): AttendanceInput => ({
       requestId: randomUUID(),
       definitionId,

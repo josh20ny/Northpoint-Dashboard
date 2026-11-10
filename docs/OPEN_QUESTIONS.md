@@ -10,7 +10,10 @@ These are **not blockers to building auth, schema, the import explorer, or the f
 
 ## Before dashboards and weekly reports go live
 5. Which adult attendance figures are authoritative for each historical era and how do online connections/multipliers work?
-6. What's the exact rolling-month window and YoY comparison convention?
+6. What's the exact rolling-month window for other metrics? Adult attendance is
+   resolved: default four calendar weeks, adjustable 1–52, only complete valid
+   totals in the current definition; YoY uses same-numbered-Sunday alignment and
+   accepted 2025 in-person total baselines. See `PHASE_4_IMPLEMENTATION.md`.
 7. What constitutes first-time gift (guest welcome gift vs monetary donation)?
 8. Which health thresholds, weights and metric priorities should be seeded? Start unconfigured otherwise.
 9. ClickUp workspace/channel destinations, delivery approval vs auto-send, cutoff timing and alert quiet hours.

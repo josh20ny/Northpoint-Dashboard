@@ -33,6 +33,24 @@ New decisions must be dated with owner, alternatives, migration impact, and test
 
 ## Phase 4 adult attendance rules — 2026-11-09
 
+### Rolling-window clarification and existing prior-year source — 2026-11-09
+
+The owner confirmed "Change the number of weeks" for adjusting the rolling
+four-week average. Default four; support 1–52 calendar weeks. Do not edit the
+calculated attendance number. Use complete valid totals within the selected
+definition/window, include genuine zeros, and exclude rather than zero-fill
+missing/partial/unrecorded/invalidated Sundays. Show the denominator and bounds.
+
+The owner said YoY depends on available 2025 data and offered another workbook
+if missing. Inspection found that the already accepted workbook contains 2025
+in-person weekly totals under `Historical - Adults!P34`. Use its numbered-week
+alignment for 2026 comparisons, labelled explicitly; do not pretend total-only
+history supplies separate first/second service counts. Existing complete
+recorded comparisons take precedence. Do not divide by zero, pick silently
+between conflicting accepted sources or broaden Staff raw-workbook access.
+This supersedes older open-window/comparison statements for this implemented
+adult-attendance comparison surface, not unrelated metric definitions.
+
 ### Simpler routine weekly entry — 2026-11-09
 
 The owner reported that entering the previous Sunday's counts took three steps

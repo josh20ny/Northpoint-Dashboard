@@ -1,5 +1,54 @@
 # Phase 4 — adult attendance
 
+## Current comparisons: rolling window and existing 2025 baseline
+
+The owner confirmed that "adjust up or down" means changing the number of weeks,
+not changing the computed attendance value. Both Home and Service Programming
+default to four weeks and allow every whole-number window from 1 through 52.
+The window contains consecutive calendar Sundays, ending at the earlier of the
+selected history end and the latest completed Sunday. Home always uses the latest
+completed Sunday.
+
+Only complete, valid recorded totals in the selected definition enter the
+average; measured zero is included. Missing, incomplete, invalidated and
+unrecorded Sundays are excluded, never zero-filled. The API returns the actual
+denominator, excluded dates/reasons and window bounds. Short history produces
+an explicitly labelled partial-window average, not a fabricated full window.
+The entry form remains independent of comparison filters and retains drafts.
+
+The existing accepted workbook already contains 2025 in-person totals in
+`Historical - Adults!P35:P86` under the 2025 header P34. No additional upload is
+needed for those baselines. Columns A/B provide the workbook's numbered-week and
+2026 comparison-date alignment. These are weekly totals, not invented service
+splits or newly published 2025 per-service observations.
+
+YoY uses the same numbered Sunday in the previous year. A complete recorded
+baseline takes precedence; a partial or invalidated recorded baseline cannot
+silently fall back to an older workbook value. Otherwise the fixed workbook
+mapping exposes only an accepted, active, matching-fingerprint in-person total.
+Missing/current-incomplete/zero-baseline/conflicting-source cases are explicit;
+zero baselines never produce a percentage. The 53rd Sunday does not spill into
+the wrong baseline year. Source year, date alignment and provenance are returned.
+
+Migrations 0016/0017 add an aggregate-only security-definer function, not broad
+Staff workbook access. It validates the active caller, role, year/header and
+numeric values, and restores caller context on success or error. Raw source
+permissions remain unchanged. Database verification uses a non-owner role,
+because the development connection can bypass RLS.
+
+Verification: 237 default tests, 23 rollback-only attendance database tests,
+workspace TypeScript and lint pass. This supersedes older statements below
+that rolling/YoY comparisons are unavailable or still awaiting window policy.
+
+A signed-in synthetic Staff browser pass verified both pages without submitting
+attendance: Nov 8 shows a four-week average of 728.3 (raw 728.25), one week 633
+and three weeks 715. YoY is 633 vs the workbook's 783, change -150/-19.2%.
+The January 4–18 filter gives 883.7 across three complete weeks, explicitly
+excluding Dec 28; Jan 18 compares 831 with 677 from 2025, +154/+22.7%.
+Changing the window preserved an unsaved entry draft. Home stayed anchored to
+Nov 8 rather than inheriting January's detail range. Phone width 390 had no
+horizontal overflow. Normal auth was restored and synthetic access cleaned up.
+
 ## Current location: Service Programming ministry
 
 Adult attendance details, weekly entry, history and revisions now live at

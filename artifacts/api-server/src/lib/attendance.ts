@@ -21,6 +21,11 @@ import {
   UNRECORDED_SUNDAYS,
 } from "./attendance-calculation";
 import { reportingWeekEnding } from "./reporting-calendar";
+import {
+  attendanceComparisons,
+  comparisonDates,
+  type YearReference,
+} from "./attendance-comparisons";
 
 export async function attendanceTransaction<T>(
   p: Principal,
@@ -99,6 +104,7 @@ export async function readAttendance(
   start?: string,
   end?: string,
   definitionId?: string,
+  averageWeeks = 4,
 ): Promise<AttendanceWorkspace> {
   const now = new Date(),
     latest = completedSunday(now);
@@ -106,6 +112,11 @@ export async function readAttendance(
     to = end ?? reportingWeekEnding(now);
   if (!sunday(from) || !sunday(to) || from > to || shiftDate(from, 735) < to)
     throw new AccessError(400, "Choose Sunday dates spanning no more than two years");
+  if (!Number.isInteger(averageWeeks) || averageWeeks < 1 || averageWeeks > 52)
+    throw new AccessError(400, "Choose an averaging window between 1 and 52 weeks");
+  const anchor = to < latest ? to : latest;
+  const comparison = comparisonDates(anchor, averageWeeks);
+  const readFrom = [from, comparison.start, comparison.prior ?? comparison.start].sort()[0];
   return attendanceTransaction(p, false, false, async (c) => {
     const definitions: AttendanceDefinition[] = JSON.parse(
       JSON.stringify((await c.query(definitionSelect.replace(" LIMIT 1", ""))).rows),
@@ -132,7 +143,7 @@ export async function readAttendance(
       ? (
           await c.query(
             `SELECT r.id FROM attendance_revisions r WHERE r.definition_id=$1 AND r.service_date BETWEEN $2 AND $3 AND NOT EXISTS (SELECT 1 FROM attendance_revisions child WHERE child.previous_id=r.id)`,
-            [definition.id, from, to],
+            [definition.id, readFrom, to > anchor ? to : anchor],
           )
         ).rows.map((r) => r.id)
       : [];
@@ -153,9 +164,20 @@ export async function readAttendance(
         ).rows.map(serializeRevision)
       : [];
     const revisions = [
-      ...current,
+      ...current.filter((r) => r.serviceDate >= from && r.serviceDate <= to),
       ...history.slice(0, 1000).filter((h) => !current.some((r) => r.id === h.id)),
     ].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+    const references: YearReference[] = definition
+      ? (await c.query("SELECT * FROM np_attendance_year_reference($1::date)", [anchor])).rows
+      : [];
+    const comparisons = attendanceComparisons(
+      current,
+      anchor,
+      averageWeeks,
+      chicagoDate(now),
+      definition?.effectiveFrom ?? "9999-12-31",
+      references,
+    );
     await recordAudit(p.userId!, "attendance.read", "attendance", null, "success", c);
     return JSON.parse(
       JSON.stringify({
@@ -176,9 +198,7 @@ export async function readAttendance(
         timezone: "America/Chicago",
         metricSlug: "adult_in_person_attendance",
         definitionText: DEFINITION_TEXT,
-        fourWeek:
-          "Not connected yet: the four-week comparison needs its workbook mapping or calculation. Unrecorded Sundays are not zero-filled.",
-        yoy: "Not connected yet: the year-over-year comparison needs its workbook mapping or calculation.",
+        ...comparisons,
         latestCompletedWeek: latest,
         start: from,
         end: to,

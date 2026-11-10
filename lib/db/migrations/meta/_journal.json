@@ -113,6 +113,20 @@
       "when": 1794276799676,
       "tag": "0015_bitter_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794280558714,
+      "tag": "0016_attendance_comparisons",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794280827077,
+      "tag": "0017_attendance_comparison_role_cast",
+      "breakpoints": true
     }
   ]
 }

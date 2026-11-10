@@ -2,6 +2,16 @@
 
 ## Phase 4 implemented surface
 
+`GET /api/v1/attendance` additionally accepts `averageWeeks` (integer 1–52,
+default 4). `rollingAverage` contains bounds, value/null, recorded denominator
+and excluded dates/reasons; `yearComparison` contains status, both reference
+weeks/values, change/percent/null, alignment and aggregate source provenance.
+Comparison lookback is independent of the requested visible history start;
+lookback revisions are not leaked into that visible history. The legacy
+`fourWeek` and `yoy` text fields remain computed compatibility summaries.
+An accepted 2025 workbook total can supply YoY without granting Staff access to
+raw import cells.
+
 `POST /api/v1/attendance/week` is the normal quick-entry route. Invited
 Staff/Leadership/Admin submit one request UUID, definition/date, first and
 second counts/statuses with their expected revision IDs, and an optional note.
