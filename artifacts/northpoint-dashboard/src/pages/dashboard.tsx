@@ -118,7 +118,7 @@ export default function Dashboard() {
                       Adult attendance · week of {formatDate(aw.latestCompletedWeek)}
                     </p>
                     <p
-                      className="mt-3 font-display text-[44px] font-semibold leading-none tracking-tight"
+                      className="mt-4 font-display text-[48px] font-semibold leading-none tracking-tight tabular-nums"
                       data-testid="text-adult-kpi"
                     >
                       {latest && latest.value !== null ? fmtCount(latest.value) : "No total"}
@@ -140,9 +140,9 @@ export default function Dashboard() {
                         </>
                       )}
                     </div>
-                    <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+                    <div className="mt-5 grid gap-5 border-t pt-5 sm:grid-cols-2 sm:gap-6">
                       <div>
-                        <div className="mb-1">
+                        <div className="mb-2 flex min-h-8 items-center">
                           <AverageWeeksControl
                             value={averageWeeks}
                             onChange={setAverageWeeks}
@@ -153,7 +153,9 @@ export default function Dashboard() {
                         <RollingAverageView avg={aw.rollingAverage} stale={stale} compact />
                       </div>
                       <div className={stale ? "opacity-50" : undefined}>
-                        <p className="mb-1 text-[12px] font-medium">Same week last year</p>
+                        <p className="mb-2 flex min-h-8 items-center text-[12px] font-medium">
+                          Same week last year
+                        </p>
                         <YearComparisonView
                           yc={aw.yearComparison}
                           showCell={user.role !== "staff"}

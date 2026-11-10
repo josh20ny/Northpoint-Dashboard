@@ -55,7 +55,10 @@ export function RollingAverageView({
 }) {
   return (
     <div className={stale ? "opacity-50" : undefined} aria-busy={stale}>
-      <p className="font-mono text-[18px] font-semibold" data-testid="text-rolling-average">
+      <p
+        className={`font-mono font-semibold tabular-nums ${compact ? "text-[24px] leading-8" : "text-[18px]"}`}
+        data-testid="text-rolling-average"
+      >
         {avg.value !== null ? avgFmt(avg.value) : "No average"}
       </p>
       {!compact && (
@@ -112,12 +115,15 @@ export function YearComparisonView({
   return (
     <div data-testid="status-yoy">
       {ok ? (
-        <p className="font-mono text-[18px] font-semibold" data-testid="text-yoy-change">
+        <p
+          className={`font-mono font-semibold tabular-nums ${compact ? "text-[24px] leading-8" : "text-[18px]"}`}
+          data-testid="text-yoy-change"
+        >
           {sign(yc.change!)}
           {fmtCount(Math.abs(yc.change!))}
           {yc.percentChange !== null && (
             <span
-              className={`ml-2 text-[13px] font-normal ${yoyPercentageClass(yc.percentChange)}`}
+              className={`ml-2 inline-block font-normal ${compact ? "text-[16px]" : "text-[13px]"} ${yoyPercentageClass(yc.percentChange)}`}
               data-testid="text-yoy-percentage"
             >
               ({sign(yc.percentChange)}
