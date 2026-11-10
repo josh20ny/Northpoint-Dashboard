@@ -35,3 +35,16 @@ its definition later if we would like”.
 **How to apply:** Keep an Admin-only editable, versioned definition rather than
 a fixed permanent constant. Retain the formula version with classifications
 and future health inputs; never silently mutate historical evidence.
+
+The owner approved current-data setup for Giving and Groups in this development
+environment after disclosure of donor IDs, amounts, joint-giver relationships
+and group memberships, with person-linked financial data Admin-only.
+
+**Why:** The owner selected “Proceed with current-data setup” in response to
+that explicit disclosure. Publishing and enabling unattended scheduling were
+excluded from that approval.
+
+**How to apply:** Do not repeatedly ask for the same development-data approval.
+Actual PCO consent must still be completed by an authenticated Admin; chat
+approval is not a provider grant or permission to impersonate an app user.
+Leave existing scheduler settings unchanged unless separately authorized.
