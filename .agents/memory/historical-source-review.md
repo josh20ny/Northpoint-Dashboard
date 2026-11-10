@@ -20,8 +20,10 @@ the uploaded workbook. Historical backfills, particularly Giving, need both.
 **Why:** The owner stated the source coverage and dual-source requirement.
 
 **How to apply:** Do not hardcode 2022 as a universal cutoff. Prioritize
-current/future ingestion for Phase 5 and defer historical backfill execution,
-while retaining source lineage and overlap handling for both sources.
+current/future ingestion first, then execute historical backfills for all
+Phase 5 areas within Phase 5, retaining source lineage and overlap handling for
+both sources. The owner clarified that backfills do not need deferral; they
+just do not have to come first.
 
 The owner subsequently confirmed: “everything pulled from the workbook
 spreadsheet provided in the files of this project is accurate and should just be
