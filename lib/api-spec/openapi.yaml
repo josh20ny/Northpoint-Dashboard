@@ -37,6 +37,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AttendanceRevision" }
+  /v1/attendance/week:
+    post:
+      operationId: saveAttendanceWeek
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttendanceWeeklyInput" }
+      responses:
+        "200":
+          description: Both service counts saved atomically and visible immediately
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceWeeklyResult" }
   /v1/admin/attendance/definition:
     post:
       operationId: saveAttendanceDefinition
@@ -640,6 +654,29 @@ components:
         status: { type: string, enum: [recorded, unrecorded] }
         note: { type: string, minLength: 3, maxLength: 1000 }
         expectedRevision: { type: [string, "null"], format: uuid }
+    AttendanceWeeklySlotInput:
+      type: object
+      required: [count, status, expectedRevision]
+      properties:
+        count: { type: [integer, "null"], minimum: 0, maximum: 2147483647 }
+        status: { type: string, enum: [recorded, unrecorded] }
+        expectedRevision: { type: [string, "null"], format: uuid }
+    AttendanceWeeklyInput:
+      type: object
+      required: [requestId, definitionId, serviceDate, first, second]
+      properties:
+        requestId: { type: string, format: uuid }
+        definitionId: { type: string, format: uuid }
+        serviceDate: { type: string }
+        first: { $ref: "#/components/schemas/AttendanceWeeklySlotInput" }
+        second: { $ref: "#/components/schemas/AttendanceWeeklySlotInput" }
+        note: { type: string, maxLength: 1000 }
+    AttendanceWeeklyResult:
+      type: object
+      required: [first, second]
+      properties:
+        first: { $ref: "#/components/schemas/AttendanceRevision" }
+        second: { $ref: "#/components/schemas/AttendanceRevision" }
     AttendanceRevision:
       type: object
       required: [id, definitionId, serviceDate, slot, occurrenceId, count, status, note, source, reviewMethod, createdAt, previousId, valid]

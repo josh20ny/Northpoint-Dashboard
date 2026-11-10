@@ -25,3 +25,23 @@ adjustable with retained correction history.
 
 **How to apply:** Manual saves take effect immediately; workbook review and
 historical promotion remain separate.
+
+Routine adult attendance should be entered as one Sunday with both service
+counts and one save, not a repeated service-setup/publication sequence.
+
+**Why:** The owner reported that manual entry still took three steps and asked
+for it to be simpler.
+
+**How to apply:** Default the recent Sunday, prefill saved counts, keep notes
+optional and reuse service links. Date/slot-only aggregate counts must not
+require invented timestamps when timing is unavailable. Keep atomic saves,
+correction history and conflict protection; preserve drafts across history
+filter changes.
+
+Prevent scrolling from changing a focused headcount input.
+
+**Why:** Browser verification demonstrated that a wheel scroll can increment or
+decrement a focused native number input without an intentional count edit.
+
+**How to apply:** Keep count-entry wheel handling that removes numeric-input
+focus before scrolling; do not remove it as cosmetic cleanup.

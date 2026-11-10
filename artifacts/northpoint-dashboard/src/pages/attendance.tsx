@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   getGetAttendanceQueryKey,
   useGetAttendance,
-  useSaveAttendance,
   type AttendanceRevision,
   type AttendanceWorkspace,
 } from "@workspace/api-client-react";
-import { ClipboardPen, ListOrdered, RefreshCw, Rows3 } from "lucide-react";
+import { ListOrdered, RefreshCw, Rows3 } from "lucide-react";
 import {
   KV,
   PageHeader,
@@ -22,22 +20,23 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   EmptyRecord,
-  FormError,
   RestrictedState,
   SectionHeading,
-  SelectField,
   TextField,
 } from "@/components/admin-controls";
 import { DefinitionSetup } from "@/components/attendance-admin";
+import {
+  WeeklyAttendanceEntry,
+  defaultEntryDate,
+  type EntryTarget,
+} from "@/components/weekly-attendance-entry";
 import {
   QUALITY_LABEL,
   QUALITY_TONE,
   SLOTS,
   attendancePolling,
-  csrfRequest,
   currentRevision,
   fmtCount,
-  invalidateAttendance,
   slotLabel,
   type SlotValue,
 } from "@/lib/attendance";
@@ -69,8 +68,13 @@ export default function Attendance() {
     query: { enabled: !!user, queryKey: getGetAttendanceQueryKey(params), ...attendancePolling },
   });
   const w = q.data;
-  const [editTarget, setEditTarget] = useState<{ date: string; slot: SlotValue } | null>(null);
+  const [editTarget, setEditTarget] = useState<EntryTarget | null>(null);
   const filterError = rangeError(draftStart, draftEnd);
+  // Seed only: the entry form owns its own single-week query.
+  const seedRef = useRef<{ userId: string; date: string } | null>(null);
+  if (user && w && seedRef.current?.userId !== user.id)
+    seedRef.current = { userId: user.id, date: defaultEntryDate(w.latestCompletedWeek) };
+  const seed = user && seedRef.current?.userId === user.id ? seedRef.current.date : null;
 
   const header = (
     <PageHeader
@@ -214,6 +218,18 @@ export default function Attendance() {
         </div>
       )}
 
+      {seed && (
+        <div className="mb-5">
+          <WeeklyAttendanceEntry
+            key={`${user.id}:${definitionId || "latest"}`}
+            initialDate={seed}
+            definitionId={definitionId || undefined}
+            csrfToken={csrfToken}
+            target={editTarget}
+          />
+        </div>
+      )}
+
       {q.isError && !w ? (
         <QueryError
           title="Attendance unavailable"
@@ -247,13 +263,9 @@ export default function Attendance() {
             </div>
           )}
           <Summary w={w} />
-          <WeeklyTable w={w} onEdit={(date, slot) => setEditTarget({ date, slot })} />
-          <EntryForm
-            key={w.definition?.id ?? "none"}
+          <WeeklyTable
             w={w}
-            csrfToken={csrfToken}
-            target={editTarget}
-            reloadWorkspace={() => q.refetch().then((result) => result.data)}
+            onEdit={(date, slot) => setEditTarget({ date, slot, nonce: Date.now() })}
           />
           <RevisionLog revisions={w.revisions} truncated={w.historyTruncated} />
           {user.role === "admin" && (
@@ -442,303 +454,6 @@ function WeeklyTable({
           </table>
         </div>
       )}
-    </Panel>
-  );
-}
-
-function EntryForm({
-  w,
-  csrfToken,
-  target,
-  reloadWorkspace,
-}: {
-  w: AttendanceWorkspace;
-  csrfToken: string | null;
-  target: { date: string; slot: SlotValue } | null;
-  reloadWorkspace: () => Promise<AttendanceWorkspace | undefined>;
-}) {
-  const qc = useQueryClient();
-  const mutation = useSaveAttendance(csrfRequest(csrfToken));
-  const [serviceDate, setServiceDate] = useState("");
-  const [slot, setSlot] = useState<SlotValue>("adult_service_1");
-  const [status, setStatus] = useState<"recorded" | "unrecorded">("recorded");
-  const [count, setCount] = useState("");
-  const [occurrenceId, setOccurrenceId] = useState("");
-  const [note, setNote] = useState("");
-  const [saved, setSaved] = useState(false);
-  // Edit baseline: captured only on explicit date/slot selection, Edit click, or reload.
-  const [baseline, setBaseline] = useState<{ expectedRevision: string | null } | null>(null);
-  const pendingRef = useRef<{ sig: string; requestId: string } | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const wRef = useRef(w);
-  wRef.current = w;
-
-  const def = w.definition;
-
-  const load = (date: string, nextSlot: SlotValue, keepNote = false, ws = wRef.current) => {
-    const cur = date ? currentRevision(ws.revisions, date, nextSlot, ws.definition?.id) : undefined;
-    setServiceDate(date);
-    setSlot(nextSlot);
-    setStatus(cur?.status ?? "recorded");
-    setCount(cur && cur.count !== null ? String(cur.count) : "");
-    setOccurrenceId(cur?.occurrenceId ?? "");
-    if (!keepNote) setNote("");
-    setBaseline(date ? { expectedRevision: cur?.id ?? null } : null);
-    pendingRef.current = null;
-    mutation.reset();
-  };
-  const loadRef = useRef(load);
-  loadRef.current = load;
-
-  useEffect(() => {
-    if (!target) return;
-    loadRef.current(target.date, target.slot);
-    setSaved(false);
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [target]);
-
-  const reloadCurrent = (keepNote: boolean) => {
-    void reloadWorkspace().then((fresh) => {
-      if (fresh) loadRef.current(serviceDate, slot, keepNote, fresh);
-    });
-  };
-
-  const live = serviceDate ? currentRevision(w.revisions, serviceDate, slot, def?.id) : undefined;
-  const current = baseline?.expectedRevision
-    ? w.revisions.find((r) => r.id === baseline.expectedRevision)
-    : undefined;
-  const changedSinceBaseline = !!baseline && (live?.id ?? null) !== baseline.expectedRevision;
-  const conflict = !!mutation.error && (mutation.error as { status?: number }).status === 409;
-
-  if (def && !w.isCurrentDefinition)
-    return (
-      <Panel className="p-5 sm:p-6">
-        <SectionHeading
-          icon={ClipboardPen}
-          title="Record a count"
-          detail="Edits are disabled for prior definition versions. Switch to the latest version."
-        />
-      </Panel>
-    );
-  if (!def)
-    return (
-      <Panel className="p-5 sm:p-6">
-        <SectionHeading
-          icon={ClipboardPen}
-          title="Record a count"
-          detail="Unavailable until an admin saves the count definition."
-        />
-      </Panel>
-    );
-
-  const occurrences = w.services.filter((s) => s.serviceDate === serviceDate);
-  const countNum = count.trim() === "" ? null : Number(count);
-  const errors: string[] = [];
-  if (!serviceDate || !baseline) errors.push("Choose a service date.");
-  if (status === "recorded") {
-    if (countNum === null || !Number.isInteger(countNum) || countNum < 0)
-      errors.push("Enter a whole-number count.");
-    if (!occurrenceId) errors.push("Choose the service occurrence for this date.");
-  }
-  if (note.trim().length < 3) errors.push("Note needs at least 3 characters.");
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (errors.length) return;
-    if (!baseline) return;
-    const body = {
-      definitionId: def.id,
-      serviceDate,
-      slot,
-      occurrenceId: occurrenceId || null,
-      count: status === "recorded" ? countNum : null,
-      status,
-      note: note.trim(),
-      expectedRevision: baseline.expectedRevision,
-    };
-    const sig = JSON.stringify(body);
-    // Retry of an identical payload reuses its requestId; any input change gets a new one.
-    if (!pendingRef.current || pendingRef.current.sig !== sig)
-      pendingRef.current = { sig, requestId: crypto.randomUUID() };
-    const requestId = pendingRef.current.requestId;
-    setSaved(false);
-    mutation.mutate(
-      { data: { requestId, ...body } },
-      {
-        onSuccess: (revision) => {
-          pendingRef.current = null;
-          setBaseline({ expectedRevision: revision.id });
-          setNote("");
-          setSaved(true);
-          void invalidateAttendance(qc);
-        },
-      },
-    );
-  };
-
-  return (
-    <Panel className="scroll-mt-6 p-5 sm:p-6">
-      <form ref={formRef} onSubmit={submit} className="space-y-3">
-        <SectionHeading
-          icon={ClipboardPen}
-          title={current ? "Correct a count" : "Record a count"}
-          detail="Seated auditorium attendees only. Exclude volunteers and stage. Saves are visible immediately."
-        />
-        {current && (
-          <p
-            className="rounded-md bg-accent/50 px-3 py-2 text-[12px]"
-            data-testid="text-current-revision"
-          >
-            Editing from: {current.status === "recorded" ? fmtCount(current.count) : "Unrecorded"} ·{" "}
-            {current.source} · {formatDate(current.createdAt, true)}. Saving adds a new revision.
-          </p>
-        )}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <TextField
-            name="entry-date"
-            label="Service date (Sunday)"
-            type="date"
-            required
-            value={serviceDate}
-            onChange={(v) => load(v, slot)}
-          />
-          <SelectField
-            name="entry-slot"
-            label="Service"
-            value={slot}
-            onChange={(v) => load(serviceDate, v as SlotValue)}
-          >
-            {SLOTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            name="entry-status"
-            label="Status"
-            value={status}
-            onChange={(v) => setStatus(v as "recorded" | "unrecorded")}
-          >
-            <option value="recorded">Recorded</option>
-            <option value="unrecorded">Unrecorded (not zero)</option>
-          </SelectField>
-          {status === "recorded" && (
-            <TextField
-              name="entry-count"
-              label="Count"
-              type="number"
-              min={0}
-              step={1}
-              required
-              value={count}
-              onChange={setCount}
-            />
-          )}
-        </div>
-        <label className="block text-[12px] font-medium">
-          Service occurrence{status === "unrecorded" ? " (optional)" : ""}
-          <select
-            data-testid="select-entry-occurrence"
-            value={occurrenceId}
-            onChange={(e) => setOccurrenceId(e.target.value)}
-            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-[13px] font-normal"
-          >
-            <option value="">
-              {occurrences.length ? "Select…" : "None configured for this date"}
-            </option>
-            {occurrences.map((o) => (
-              <option key={o.id} value={o.id}>
-                {formatDate(o.startAt, true)}
-              </option>
-            ))}
-          </select>
-        </label>
-        {serviceDate && occurrences.length === 0 && status === "recorded" && (
-          <p className="text-[12px] text-muted-foreground">
-            Add a service occurrence for this date in Administration, or mark it unrecorded.
-          </p>
-        )}
-        <TextField
-          name="entry-note"
-          label="Note"
-          required
-          maxLength={1000}
-          value={note}
-          onChange={setNote}
-          hint="Source of the count, or why it is unrecorded (online-only, off Sunday)."
-        />
-        {errors.length > 0 && (serviceDate || note) && (
-          <ul className="text-[12px] text-muted-foreground">
-            {errors.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        )}
-        <FormError error={mutation.error} />
-        {conflict ? (
-          <div
-            role="alert"
-            data-testid="status-conflict"
-            className="flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-950"
-          >
-            <span className="flex-1">
-              Someone saved this service since you started. Your edits are kept.
-            </span>
-            <button
-              type="button"
-              data-testid="button-reload-current"
-              onClick={() => reloadCurrent(true)}
-              className="h-8 rounded-md border border-amber-400 px-2.5 font-medium hover:bg-amber-100"
-            >
-              Reload current, keep note
-            </button>
-            <button
-              type="button"
-              data-testid="button-discard-edits"
-              onClick={() => reloadCurrent(false)}
-              className="h-8 rounded-md border border-amber-400 px-2.5 font-medium hover:bg-amber-100"
-            >
-              Discard my edits
-            </button>
-          </div>
-        ) : (
-          changedSinceBaseline && (
-            <p
-              role="status"
-              className="text-[12px] text-amber-900"
-              data-testid="status-newer-revision"
-            >
-              A newer revision exists. Saving will be rejected until you reload.{" "}
-              <button
-                type="button"
-                onClick={() => reloadCurrent(true)}
-                className="font-medium underline"
-              >
-                Reload
-              </button>
-            </p>
-          )
-        )}
-        {mutation.isError && !conflict && (
-          <p className="text-[11.5px] text-muted-foreground">
-            Retrying unchanged input sends the same request.
-          </p>
-        )}
-        {saved && (
-          <p role="status" className="text-[12px] text-muted-foreground">
-            Saved.
-          </p>
-        )}
-        <button
-          type="submit"
-          data-testid="button-save-attendance"
-          disabled={errors.length > 0 || mutation.isPending}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          {mutation.isPending ? "Saving…" : current ? "Save correction" : "Save count"}
-        </button>
-      </form>
     </Panel>
   );
 }

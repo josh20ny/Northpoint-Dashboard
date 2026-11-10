@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from "vitest";
 import type { PoolClient } from "pg";
 import type { Principal } from "../artifacts/api-server/src/lib/auth";
-import type { AttendanceInput } from "../lib/api-zod/src/index";
+import type { AttendanceInput, AttendanceWeeklyInput } from "../lib/api-zod/src/index";
 import request from "supertest";
 import express from "express";
 import { createAttendanceRouter } from "../artifacts/api-server/src/routes/attendance";
@@ -14,6 +14,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
     let repo: typeof import("../artifacts/api-server/src/lib/attendance");
     let historical: typeof import("../artifacts/api-server/src/lib/attendance-history");
     let imports: typeof import("../artifacts/api-server/src/lib/imports");
+    let weekly: typeof import("../artifacts/api-server/src/lib/attendance-weekly");
     let admin: Principal, staff: Principal, ministryId: string, definitionId: string;
     let service1: string, service2: string;
     beforeAll(async () => {
@@ -37,6 +38,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       repo = await import("../artifacts/api-server/src/lib/attendance");
       historical = await import("../artifacts/api-server/src/lib/attendance-history");
       imports = await import("../artifacts/api-server/src/lib/imports");
+      weekly = await import("../artifacts/api-server/src/lib/attendance-weekly");
     });
     beforeEach(async () => {
       await c.query("BEGIN");
@@ -98,6 +100,169 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       note: "Synthetic auditorium headcount",
       expectedRevision: null,
       ...extras,
+    });
+    const weekInput = (extras: Partial<AttendanceWeeklyInput> = {}): AttendanceWeeklyInput => ({
+      requestId: randomUUID(),
+      definitionId,
+      serviceDate: "2026-01-04",
+      first: { count: 446, status: "recorded", expectedRevision: null },
+      second: { count: 464, status: "recorded", expectedRevision: null },
+      ...extras,
+    });
+    it("saves both weekly counts with one authenticated API call and no required note", async () => {
+      const originalOrigin = process.env.AUTH_ORIGIN;
+      process.env.AUTH_ORIGIN = "https://attendance.example.invalid";
+      try {
+        const app = express();
+        app.use(express.json());
+        app.use((_req, res, next) => {
+          res.locals.session = { csrfToken: "weekly-synthetic" };
+          next();
+        });
+        app.use(
+          createAttendanceRouter({
+            name: "synthetic-fixture",
+            enabled: true,
+            authenticate: async () => staff,
+          }),
+        );
+        const body = weekInput();
+        const blocked = await request(app).post("/v1/attendance/week").send(body);
+        expect(blocked.status).toBe(403);
+        const response = await request(app)
+          .post("/v1/attendance/week")
+          .set("Origin", process.env.AUTH_ORIGIN)
+          .set("X-CSRF-Token", "weekly-synthetic")
+          .send(body);
+        expect(response.status).toBe(200);
+        expect(response.body.first).toMatchObject({
+          count: 446,
+          occurrenceId: service1,
+          source: "manual",
+          valid: true,
+        });
+        expect(response.body.second).toMatchObject({
+          count: 464,
+          occurrenceId: service2,
+          source: "manual",
+          valid: true,
+        });
+        expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).weeks[0].value).toBe(
+          910,
+        );
+      } finally {
+        if (originalOrigin === undefined) delete process.env.AUTH_ORIGIN;
+        else process.env.AUTH_ORIGIN = originalOrigin;
+      }
+    });
+    it("records date-level service slots when no schedule exists without creating fake times", async () => {
+      const body = weekInput({ serviceDate: "2026-01-11", note: "ok" });
+      const saved = await weekly.saveWeekly(staff, body);
+      expect(saved.first.occurrenceId).toBeNull();
+      expect(saved.second.occurrenceId).toBeNull();
+      expect(
+        (
+          await c.query(
+            "SELECT id FROM service_occurrences WHERE ministry_id=$1 AND service_date='2026-01-11'",
+            [ministryId],
+          )
+        ).rowCount,
+      ).toBe(0);
+      expect((await repo.readAttendance(staff, "2026-01-11", "2026-01-11")).weeks[0].value).toBe(
+        910,
+      );
+    });
+    it("does not guess service links when more than two occurrences are configured", async () => {
+      for (const hour of ["15", "17", "19"])
+        await c.query(
+          "INSERT INTO service_occurrences(id,ministry_id,service_date,start_at) VALUES($1,$2,'2026-01-18',$3)",
+          [randomUUID(), ministryId, `2026-01-18T${hour}:00:00Z`],
+        );
+      const result = await weekly.saveWeekly(staff, weekInput({ serviceDate: "2026-01-18" }));
+      expect([result.first.occurrenceId, result.second.occurrenceId]).toEqual([null, null]);
+    });
+    it("rolls back both weekly edits if the second service changed in another session", async () => {
+      const saved = await weekly.saveWeekly(staff, weekInput());
+      const correction = await repo.saveManual(
+        staff,
+        input({
+          slot: "adult_service_2",
+          occurrenceId: service2,
+          count: 470,
+          expectedRevision: saved.second.id,
+        }),
+      );
+      await expect(
+        weekly.saveWeekly(
+          staff,
+          weekInput({
+            first: { count: 500, status: "recorded", expectedRevision: saved.first.id },
+            second: { count: 490, status: "recorded", expectedRevision: saved.second.id },
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 409 });
+      const current = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(current.weeks[0].value).toBe(916);
+      expect(current.revisions.some((r) => r.count === 500)).toBe(false);
+      expect(current.revisions.some((r) => r.id === correction.id)).toBe(true);
+    });
+    it("replays one weekly request safely after service metadata changes", async () => {
+      const body = weekInput();
+      const first = await weekly.saveWeekly(staff, body);
+      await c.query("UPDATE service_occurrences SET start_at='2026-01-04T15:30:00Z' WHERE id=$1", [
+        service1,
+      ]);
+      const retry = await weekly.saveWeekly(staff, body);
+      expect(retry.first.id).toBe(first.first.id);
+      expect(retry.second.id).toBe(first.second.id);
+      expect(retry.first.valid).toBe(false);
+      expect(
+        (
+          await c.query(
+            "SELECT count(*)::int AS n FROM attendance_revisions WHERE definition_id=$1",
+            [definitionId],
+          )
+        ).rows[0].n,
+      ).toBe(2);
+      await expect(
+        weekly.saveWeekly(staff, { ...body, first: { ...body.first, count: 447 } }),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+    it("distinguishes zero from unrecorded and rejects impossible weekly values/dates", async () => {
+      const saved = await weekly.saveWeekly(
+        staff,
+        weekInput({
+          first: { count: 0, status: "recorded", expectedRevision: null },
+          second: { count: null, status: "unrecorded", expectedRevision: null },
+        }),
+      );
+      expect(saved.first.count).toBe(0);
+      expect(saved.second.count).toBeNull();
+      const w = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(w.weeks[0]).toMatchObject({ value: null, knownSubtotal: 0, quality: "unrecorded" });
+      await expect(
+        weekly.saveWeekly(staff, weekInput({ serviceDate: "2026-02-30" })),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        weekly.saveWeekly(staff, weekInput({ serviceDate: "2099-01-04" })),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        weekly.saveWeekly(
+          staff,
+          weekInput({
+            serviceDate: "2026-01-11",
+            second: { count: -1, status: "recorded", expectedRevision: null },
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(
+        (
+          await c.query(
+            "SELECT id FROM attendance_revisions WHERE definition_id=$1 AND service_date='2026-01-11'",
+            [definitionId],
+          )
+        ).rowCount,
+      ).toBe(0);
     });
     const deniedSql = async (sql: string, args?: unknown[]) => {
       await c.query("SAVEPOINT denied_sql");

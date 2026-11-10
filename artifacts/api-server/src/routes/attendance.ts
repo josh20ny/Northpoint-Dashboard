@@ -4,6 +4,8 @@ import {
   GetAttendanceResponse,
   SaveAttendanceBody,
   SaveAttendanceResponse,
+  SaveAttendanceWeekBody,
+  SaveAttendanceWeekResponse,
   SaveAttendanceDefinitionBody,
   SaveAttendanceDefinitionResponse,
   GetAttendanceHistoryPreviewParams,
@@ -17,6 +19,7 @@ import { requireCsrf } from "../lib/security";
 import { readAttendance, saveDefinition, saveManual } from "../lib/attendance";
 import { previewHistory, promoteHistory } from "../lib/attendance-history";
 import { AccessError } from "../lib/administration";
+import { saveWeekly } from "../lib/attendance-weekly";
 
 export function createAttendanceRouter(provider: AuthProvider = sessionAuthProvider): IRouter {
   const r = Router();
@@ -30,6 +33,15 @@ export function createAttendanceRouter(provider: AuthProvider = sessionAuthProvi
       ),
     );
   });
+  r.post(
+    "/v1/attendance/week",
+    requirePermission("attendance:write", provider),
+    async (req, res): Promise<void> => {
+      const body = SaveAttendanceWeekBody.strict().safeParse(req.body);
+      if (!body.success) throw new AccessError(400, "Invalid weekly attendance input");
+      res.json(SaveAttendanceWeekResponse.parse(await saveWeekly(res.locals.principal, body.data)));
+    },
+  );
   r.post(
     "/v1/attendance",
     requirePermission("attendance:write", provider),

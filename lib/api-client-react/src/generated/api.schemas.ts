@@ -63,6 +63,36 @@ export interface AttendanceInput {
   expectedRevision: string | null;
 }
 
+export type AttendanceWeeklySlotInputStatus = typeof AttendanceWeeklySlotInputStatus[keyof typeof AttendanceWeeklySlotInputStatus];
+
+
+export const AttendanceWeeklySlotInputStatus = {
+  recorded: 'recorded',
+  unrecorded: 'unrecorded',
+} as const;
+
+export interface AttendanceWeeklySlotInput {
+  /**
+     * @minimum 0
+     * @maximum 2147483647
+     * @nullable
+     */
+  count: number | null;
+  status: AttendanceWeeklySlotInputStatus;
+  /** @nullable */
+  expectedRevision: string | null;
+}
+
+export interface AttendanceWeeklyInput {
+  requestId: string;
+  definitionId: string;
+  serviceDate: string;
+  first: AttendanceWeeklySlotInput;
+  second: AttendanceWeeklySlotInput;
+  /** @maxLength 1000 */
+  note?: string;
+}
+
 export type AttendanceRevisionStatus = typeof AttendanceRevisionStatus[keyof typeof AttendanceRevisionStatus];
 
 
@@ -97,6 +127,11 @@ export interface AttendanceRevision {
   /** @nullable */
   previousId: string | null;
   valid: boolean;
+}
+
+export interface AttendanceWeeklyResult {
+  first: AttendanceRevision;
+  second: AttendanceRevision;
 }
 
 export type AttendanceWeekQuality = typeof AttendanceWeekQuality[keyof typeof AttendanceWeekQuality];

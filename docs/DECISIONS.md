@@ -33,6 +33,17 @@ New decisions must be dated with owner, alternatives, migration impact, and test
 
 ## Phase 4 adult attendance rules — 2026-11-09
 
+### Simpler routine weekly entry — 2026-11-09
+
+The owner reported that entering the previous Sunday's counts took three steps
+and asked for a simpler flow. The implementation now uses a recent-Sunday
+default, both adult service counts and one atomic save. Notes are optional.
+Reuse known service setup without requiring new scheduling records per date;
+when timing is unknown, preserve ministry/date/source-slot aggregate meaning
+instead of inventing instants. This changes entry mechanics, not who is counted
+or the distinction between measured zero and unrecorded. Retain authenticated
+actors, immutable correction history, optimistic conflicts and safe retries.
+
 ### Superseding workbook acceptance — 2026-11-09
 
 **APPROVED, owner instruction:** “everything pulled from the workbook spreadsheet

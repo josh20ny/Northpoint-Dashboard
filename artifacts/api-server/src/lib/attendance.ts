@@ -208,12 +208,22 @@ export async function saveDefinition(p: Principal, input: AttendanceDefinitionIn
   });
 }
 export async function saveManual(p: Principal, input: AttendanceInput) {
+  return attendanceTransaction(p, false, true, (c) => saveManualInTransaction(c, p, input));
+}
+export async function saveManualInTransaction(
+  c: PoolClient,
+  p: Principal,
+  input: AttendanceInput,
+  options: { slotOnly?: boolean; inputHash?: string } = {},
+) {
   if (!sunday(input.serviceDate) || input.serviceDate > chicagoDate(new Date()))
     throw new AccessError(400, "Actual attendance requires a Sunday that is not in the future");
   if (
-    input.note.trim().length < 3 ||
+    input.note.trim().length < (options.slotOnly ? 1 : 3) ||
     (input.status === "recorded"
-      ? !Number.isInteger(input.count) || input.count! < 0 || !input.occurrenceId
+      ? !Number.isInteger(input.count) ||
+        input.count! < 0 ||
+        (!input.occurrenceId && !options.slotOnly)
       : input.count !== null)
   )
     throw new AccessError(
@@ -222,70 +232,69 @@ export async function saveManual(p: Principal, input: AttendanceInput) {
     );
   if (UNRECORDED_SUNDAYS.includes(input.serviceDate) && input.status !== "unrecorded")
     throw new AccessError(400, "This online-only Sunday is unrecorded, not zero");
-  const inputHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
-  return attendanceTransaction(p, false, true, async (c) => {
-    const def = await requireDefinition(c, input.definitionId);
-    const replay = await c.query(`${revisionSelect} WHERE r.request_id=$1`, [input.requestId]);
-    if (replay.rowCount) {
-      const original = await c.query(
-        "SELECT input_hash,created_by FROM attendance_revisions WHERE request_id=$1",
-        [input.requestId],
-      );
-      if (original.rows[0].input_hash !== inputHash || original.rows[0].created_by !== p.userId)
-        throw new AccessError(409, "This request identifier was already used for different input");
-      return serializeRevision(replay.rows[0]);
-    }
-    if (input.serviceDate < def.effectiveFrom)
-      throw new AccessError(400, "This date precedes the attendance definition");
-    const previous = await latestRevision(c, def.id, input.serviceDate, input.slot);
-    if ((previous?.id ?? null) !== input.expectedRevision)
-      throw new AccessError(409, "Attendance changed; reload before correcting it");
-    let snapshot = null;
-    if (input.occurrenceId) {
-      const service = await c.query(
-        `SELECT jsonb_build_object('ministryId',ministry_id,'serviceDate',service_date::text,'startAt',start_at) AS snapshot FROM service_occurrences WHERE id=$1 AND ministry_id=$2 AND service_date=$3`,
-        [input.occurrenceId, def.ministryId, input.serviceDate],
-      );
-      if (!service.rowCount)
-        throw new AccessError(400, "Select a configured adult service on this Sunday");
-      const other = await latestRevision(
-        c,
-        def.id,
-        input.serviceDate,
-        input.slot === "adult_service_1" ? "adult_service_2" : "adult_service_1",
-      );
-      if (other?.occurrenceId === input.occurrenceId)
-        throw new AccessError(409, "The same service cannot fill both attendance slots");
-      snapshot = service.rows[0].snapshot;
-    }
-    const id = randomUUID();
-    await c.query(
-      `INSERT INTO attendance_revisions(id,request_id,input_hash,definition_id,service_date,slot,occurrence_id,occurrence_snapshot,count,status,source,note,previous_id,created_by)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'manual',$11,$12,$13)`,
-      [
-        id,
-        input.requestId,
-        inputHash,
-        def.id,
-        input.serviceDate,
-        input.slot,
-        input.occurrenceId,
-        snapshot,
-        input.count,
-        input.status,
-        input.note.trim(),
-        input.expectedRevision,
-        p.userId,
-      ],
+  const inputHash =
+    options.inputHash ?? createHash("sha256").update(JSON.stringify(input)).digest("hex");
+  const def = await requireDefinition(c, input.definitionId);
+  const replay = await c.query(`${revisionSelect} WHERE r.request_id=$1`, [input.requestId]);
+  if (replay.rowCount) {
+    const original = await c.query(
+      "SELECT input_hash,created_by FROM attendance_revisions WHERE request_id=$1",
+      [input.requestId],
     );
-    await recordAudit(
-      p.userId!,
-      previous ? "attendance.corrected" : "attendance.recorded",
-      "attendance",
-      id,
-      "success",
+    if (original.rows[0].input_hash !== inputHash || original.rows[0].created_by !== p.userId)
+      throw new AccessError(409, "This request identifier was already used for different input");
+    return serializeRevision(replay.rows[0]);
+  }
+  if (input.serviceDate < def.effectiveFrom)
+    throw new AccessError(400, "This date precedes the attendance definition");
+  const previous = await latestRevision(c, def.id, input.serviceDate, input.slot);
+  if ((previous?.id ?? null) !== input.expectedRevision)
+    throw new AccessError(409, "Attendance changed; reload before correcting it");
+  let snapshot = null;
+  if (input.occurrenceId) {
+    const service = await c.query(
+      `SELECT jsonb_build_object('ministryId',ministry_id,'serviceDate',service_date::text,'startAt',start_at) AS snapshot FROM service_occurrences WHERE id=$1 AND ministry_id=$2 AND service_date=$3`,
+      [input.occurrenceId, def.ministryId, input.serviceDate],
+    );
+    if (!service.rowCount)
+      throw new AccessError(400, "Select a configured adult service on this Sunday");
+    const other = await latestRevision(
       c,
+      def.id,
+      input.serviceDate,
+      input.slot === "adult_service_1" ? "adult_service_2" : "adult_service_1",
     );
-    return (await latestRevision(c, def.id, input.serviceDate, input.slot))!;
-  });
+    if (other?.occurrenceId === input.occurrenceId)
+      throw new AccessError(409, "The same service cannot fill both attendance slots");
+    snapshot = service.rows[0].snapshot;
+  }
+  const id = randomUUID();
+  await c.query(
+    `INSERT INTO attendance_revisions(id,request_id,input_hash,definition_id,service_date,slot,occurrence_id,occurrence_snapshot,count,status,source,note,previous_id,created_by)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'manual',$11,$12,$13)`,
+    [
+      id,
+      input.requestId,
+      inputHash,
+      def.id,
+      input.serviceDate,
+      input.slot,
+      input.occurrenceId,
+      snapshot,
+      input.count,
+      input.status,
+      input.note.trim(),
+      input.expectedRevision,
+      p.userId,
+    ],
+  );
+  await recordAudit(
+    p.userId!,
+    previous ? "attendance.corrected" : "attendance.recorded",
+    "attendance",
+    id,
+    "success",
+    c,
+  );
+  return (await latestRevision(c, def.id, input.serviceDate, input.slot))!;
 }

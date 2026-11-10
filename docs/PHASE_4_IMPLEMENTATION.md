@@ -1,5 +1,51 @@
 # Phase 4 — adult attendance
 
+## Routine weekly entry: one form, one save
+
+The normal Attendance entry flow now defaults to the most recent Sunday
+(today when it is Sunday in Chicago), loads any existing first/second counts,
+and saves both services together. Notes are optional; there is no approval or
+per-service submission step. The form stays mounted while history filters
+reload, and Edit 1/Edit 2 loads both counts for that date.
+
+`POST /api/v1/attendance/week` is authenticated, CSRF-protected and atomic.
+Both expected revision IDs are checked; a conflict in either service rolls back
+both edits. A stable request identity safely replays the same logical save,
+even after service metadata changes. Saved values, actors and correction
+history remain intact. No real observation is edited merely for testing.
+
+Existing occurrence links are reused. When exactly two distinct dated service
+times exist, unlinked slots can be matched in chronological order without
+replacing an existing assignment. When timing is absent or ambiguous, the
+counts are recorded against the actual ministry/date/first-or-second slot,
+with null occurrence references. The app does not require new scheduling
+records or invent start times just to store an observed headcount. Existing
+broken occurrence links still produce an actionable conflict, not reassignment.
+
+Unrecorded and measured zero remain distinct for each service. Prior definition
+versions are read-only. Background updates do not overwrite drafts; definition
+changes block saving until an explicit reload. Unsaved entries survive history
+range changes. Both counts, the date and optional fields are locked during save.
+
+Verification: the default 230 tests and full TypeScript/lint checks passed;
+21 rollback-only attendance database tests passed, including the real weekly
+route, atomic rollback on a second-service conflict, schedule-free entry,
+ambiguous scheduling, safe replay and zero/unrecorded behavior.
+
+A focused signed-in Staff browser check confirmed the recent-Sunday default,
+saved-count prefill, one Save action, optional note, retained draft values
+through history filtering, and Edit 2 loading both January counts with the
+second field focused. At 390px the fields stack and document width stays within
+the viewport. Numeric inputs blur on wheel to prevent scrolling from changing a
+focused headcount accidentally. This last focused event-handler fix was checked
+without another browser run.
+
+No real attendance was submitted by the browser test. Request interception was
+unavailable, so browser submit/retry payload capture was skipped. True route
+persistence, request replay and rollback are verified by isolated database/API
+fixtures, not claimed as a real-data browser save. Synthetic auth was cleaned
+up and the normal issuer restored.
+
 ## Current policy: accepted workbook history imports in bulk
 
 The owner's later instruction in `DECISIONS.md` supersedes the initial

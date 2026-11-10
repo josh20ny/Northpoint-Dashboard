@@ -115,6 +115,67 @@ export const SaveAttendanceResponse = zod.object({
 })
 
 
+export const saveAttendanceWeekBodyFirstCountMin = 0;
+export const saveAttendanceWeekBodyFirstCountMax = 2147483647;
+
+export const saveAttendanceWeekBodySecondCountMin = 0;
+export const saveAttendanceWeekBodySecondCountMax = 2147483647;
+
+export const saveAttendanceWeekBodyNoteMax = 1000;
+
+
+
+export const SaveAttendanceWeekBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "first": zod.object({
+  "count": zod.number().int().min(saveAttendanceWeekBodyFirstCountMin).max(saveAttendanceWeekBodyFirstCountMax).nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "expectedRevision": zod.string().uuid().nullable()
+}),
+  "second": zod.object({
+  "count": zod.number().int().min(saveAttendanceWeekBodySecondCountMin).max(saveAttendanceWeekBodySecondCountMax).nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "expectedRevision": zod.string().uuid().nullable()
+}),
+  "note": zod.string().max(saveAttendanceWeekBodyNoteMax).optional()
+})
+
+export const SaveAttendanceWeekResponse = zod.object({
+  "first": zod.object({
+  "id": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "slot": zod.string(),
+  "occurrenceId": zod.string().uuid().nullable(),
+  "count": zod.number().int().nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "note": zod.string(),
+  "source": zod.enum(['manual', 'workbook']),
+  "reviewMethod": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "previousId": zod.string().uuid().nullable(),
+  "valid": zod.boolean()
+}),
+  "second": zod.object({
+  "id": zod.string().uuid(),
+  "definitionId": zod.string().uuid(),
+  "serviceDate": zod.string(),
+  "slot": zod.string(),
+  "occurrenceId": zod.string().uuid().nullable(),
+  "count": zod.number().int().nullable(),
+  "status": zod.enum(['recorded', 'unrecorded']),
+  "note": zod.string(),
+  "source": zod.enum(['manual', 'workbook']),
+  "reviewMethod": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "previousId": zod.string().uuid().nullable(),
+  "valid": zod.boolean()
+})
+})
+
+
 export const saveAttendanceDefinitionBodyNoteMin = 20;
 export const saveAttendanceDefinitionBodyNoteMax = 1000;
 

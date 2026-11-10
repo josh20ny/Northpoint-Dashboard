@@ -2,6 +2,15 @@
 
 ## Phase 4 implemented surface
 
+`POST /api/v1/attendance/week` is the normal quick-entry route. Invited
+Staff/Leadership/Admin submit one request UUID, definition/date, first and
+second counts/statuses with their expected revision IDs, and an optional note.
+It returns `{first,second}` saved revisions. The operation is all-or-nothing;
+identical retries return the same records. Automatic service linkage is
+server-owned, with date/slot-only observations where timing is unresolved.
+It never creates fictitious dated services. The older per-service endpoint
+remains compatible but is no longer the normal manual-entry UI.
+
 Accepted provided-workbook history now bulk-imports through a trusted
 management job and automatically when its approved adult mappings are staged.
 The source-level owner instruction replaces routine per-week publication.
