@@ -2,7 +2,7 @@ import type {
   AttendanceRollingAverage,
   AttendanceYearComparison,
 } from "@workspace/api-client-react";
-import { fmtCount } from "@/lib/attendance";
+import { fmtCount, yoyPercentageClass } from "@/lib/attendance";
 
 export const AVERAGE_WEEK_OPTIONS = Array.from({ length: 52 }, (_, i) => i + 1);
 export const DEFAULT_AVERAGE_WEEKS = 4;
@@ -58,15 +58,25 @@ export function RollingAverageView({
       <p className="font-mono text-[18px] font-semibold" data-testid="text-rolling-average">
         {avg.value !== null ? avgFmt(avg.value) : "No average"}
       </p>
-      <p className="mt-1 text-[12px] text-muted-foreground" data-testid="text-rolling-window">
-        {avg.windowWeeks}-week window, {avg.start} to {avg.end}.{" "}
-        {avg.value !== null
-          ? `Averaged over ${avg.recordedWeeks} complete week${avg.recordedWeeks === 1 ? "" : "s"}.`
-          : "No complete weeks in this window."}
-        {avg.excludedWeeks.length > 0 && ` ${avg.excludedWeeks.length} excluded.`}
-      </p>
+      {!compact && (
+        <p className="mt-1 text-[12px] text-muted-foreground" data-testid="text-rolling-window">
+          {avg.windowWeeks}-week window, {avg.start} to {avg.end}.{" "}
+          {avg.value !== null
+            ? `Averaged over ${avg.recordedWeeks} complete week${avg.recordedWeeks === 1 ? "" : "s"}.`
+            : "No complete weeks in this window."}
+          {avg.excludedWeeks.length > 0 && ` ${avg.excludedWeeks.length} excluded.`}
+        </p>
+      )}
+      {compact && avg.value !== null && avg.excludedWeeks.length > 0 && (
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          Based on {avg.recordedWeeks} recorded week{avg.recordedWeeks === 1 ? "" : "s"}.
+        </p>
+      )}
       {!compact && avg.excludedWeeks.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-[11.5px] text-muted-foreground" data-testid="list-excluded-weeks">
+        <ul
+          className="mt-2 space-y-0.5 text-[11.5px] text-muted-foreground"
+          data-testid="list-excluded-weeks"
+        >
           {avg.excludedWeeks.map((x) => (
             <li key={x.week}>
               <span className="font-mono">{x.week}</span> excluded: {x.reason}
@@ -89,9 +99,11 @@ const STATUS_TEXT: Record<string, string> = {
 export function YearComparisonView({
   yc,
   showCell,
+  compact = false,
 }: {
   yc: AttendanceYearComparison;
   showCell: boolean;
+  compact?: boolean;
 }) {
   const ok = yc.status === "available" && yc.change !== null;
   const sign = (n: number) => (n > 0 ? "+" : n < 0 ? "-" : "");
@@ -104,7 +116,10 @@ export function YearComparisonView({
           {sign(yc.change!)}
           {fmtCount(Math.abs(yc.change!))}
           {yc.percentChange !== null && (
-            <span className="ml-2 text-[13px] font-normal text-muted-foreground">
+            <span
+              className={`ml-2 text-[13px] font-normal ${yoyPercentageClass(yc.percentChange)}`}
+              data-testid="text-yoy-percentage"
+            >
               ({sign(yc.percentChange)}
               {Math.abs(yc.percentChange).toFixed(1)}%)
             </span>
@@ -115,16 +130,17 @@ export function YearComparisonView({
           {STATUS_TEXT[yc.status] ?? "Not available."}
         </p>
       )}
-      <p className="mt-1 text-[12px] text-muted-foreground">
-        Week {yc.weekNumber}: {yc.currentWeek}{" "}
-        ({yc.currentValue !== null ? fmtCount(yc.currentValue) : "no total"}) vs{" "}
-        {yc.baselineYear}
-        {yc.baselineWeek ? ` week of ${yc.baselineWeek}` : ""} (
-        {yc.baselineValue !== null ? fmtCount(yc.baselineValue) : "no total"}).
-        {sourceLabel && ` Baseline from ${sourceLabel}`}
-        {sourceLabel && showCell && yc.sourceCell ? `, cell ${yc.sourceCell}` : ""}
-        {sourceLabel && "."} Aligned by {yc.alignment}.
-      </p>
+      {!compact && (
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          Week {yc.weekNumber}: {yc.currentWeek} (
+          {yc.currentValue !== null ? fmtCount(yc.currentValue) : "no total"}) vs {yc.baselineYear}
+          {yc.baselineWeek ? ` week of ${yc.baselineWeek}` : ""} (
+          {yc.baselineValue !== null ? fmtCount(yc.baselineValue) : "no total"}).
+          {sourceLabel && ` Baseline from ${sourceLabel}`}
+          {sourceLabel && showCell && yc.sourceCell ? `, cell ${yc.sourceCell}` : ""}
+          {sourceLabel && "."} Aligned by {yc.alignment}.
+        </p>
+      )}
     </div>
   );
 }

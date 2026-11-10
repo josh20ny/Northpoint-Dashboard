@@ -73,3 +73,9 @@ export const QUALITY_TONE: Record<string, string> = {
 
 export const fmtCount = (n: number | null | undefined) =>
   n === null || n === undefined ? "—" : n.toLocaleString("en-US");
+
+export function yoyPercentageClass(percent: number) {
+  if (percent < 0) return "text-red-700";
+  if (percent > 10) return "text-emerald-700";
+  return "text-foreground";
+}

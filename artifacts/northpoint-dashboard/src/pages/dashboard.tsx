@@ -7,7 +7,7 @@ import {
   RollingAverageView,
   YearComparisonView,
 } from "@/components/attendance-comparison";
-import { ArrowUpRight, Lock, RefreshCw } from "lucide-react";
+import { Lock, RefreshCw } from "lucide-react";
 import {
   getGetAttendanceQueryKey,
   useGetAttendance,
@@ -140,11 +140,6 @@ export default function Dashboard() {
                         </>
                       )}
                     </div>
-                    <p className="mt-3 max-w-md text-[12.5px] text-muted-foreground">
-                      {latest?.lastUpdatedAt
-                        ? `Last count entered ${formatDate(latest.lastUpdatedAt, true)}.`
-                        : "No counts entered."}
-                    </p>
                     <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
                       <div>
                         <div className="mb-1">
@@ -162,6 +157,7 @@ export default function Dashboard() {
                         <YearComparisonView
                           yc={aw.yearComparison}
                           showCell={user.role !== "staff"}
+                          compact
                         />
                       </div>
                     </div>
@@ -175,20 +171,6 @@ export default function Dashboard() {
                   data-testid="link-attendance"
                 >
                   Service Programming
-                </Link>
-                <Link
-                  href="/system"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                  data-testid="link-system"
-                >
-                  View system status <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-                <Link
-                  href="/documentation"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3.5 text-[13px] font-medium hover:bg-secondary"
-                  data-testid="link-docs"
-                >
-                  View documentation
                 </Link>
               </div>
             </div>
