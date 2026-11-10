@@ -143,7 +143,8 @@ application mechanism per database. No production release is authorized by this 
 
 ## Current roadmap slice
 
-Phase 4 provides protected adult attendance at `/attendance`, with immediate
+Phase 4 provides protected adult attendance inside
+`/ministries/service-programming` (legacy `/attendance` redirects), with immediate
 manual entry, append-only corrections, deliberate historical promotion and a
 home KPI. Auditorium attendees only; volunteers and stage participants excluded.
 Online-only and intentionally off Sundays remain unrecorded, not measured zero.

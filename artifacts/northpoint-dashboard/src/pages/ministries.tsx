@@ -118,7 +118,10 @@ export default function Ministries() {
                     </span>
                   </span>
                   <span className="hidden sm:block">
-                    <StatusPill status={m.status} />
+                    <StatusPill
+                      status={m.status}
+                      label={m.slug === "service-programming" ? "Attendance connected" : undefined}
+                    />
                   </span>
                   <ArrowRight
                     className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"

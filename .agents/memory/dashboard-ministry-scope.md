@@ -15,3 +15,15 @@ adult-only Phase 4 delivery is not the finished dashboard.
 and each ministry detail page. Do not treat adult attendance as the complete
 attendance requirement or invent metrics before their source/definitions are
 validated.
+
+Attendance details and entry belong inside each ministry page, not on a separate
+Attendance tab. Adult attendance belongs in Service Programming alongside the
+other SPD KPIs.
+
+**Why:** The owner explicitly corrected the separate Attendance navigation and
+page structure.
+
+**How to apply:** Keep the main dashboard as the cross-ministry snapshot, link
+its metrics to the relevant ministry, and keep detailed history/entry with that
+ministry's other metrics. Legacy attendance links may redirect to Service
+Programming; do not reintroduce a standalone Attendance navigation item.

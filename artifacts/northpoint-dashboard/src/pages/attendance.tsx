@@ -7,16 +7,7 @@ import {
   type AttendanceWorkspace,
 } from "@workspace/api-client-react";
 import { ListOrdered, RefreshCw, Rows3 } from "lucide-react";
-import {
-  KV,
-  PageHeader,
-  Panel,
-  QueryError,
-  RefreshButton,
-  StatusPill,
-  formatDate,
-  usePageTitle,
-} from "@/components/kit";
+import { KV, Panel, QueryError, RefreshButton, StatusPill, formatDate } from "@/components/kit";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   EmptyRecord,
@@ -53,8 +44,7 @@ function rangeError(start: string, end: string) {
   return null;
 }
 
-export default function Attendance() {
-  usePageTitle("Adult attendance");
+export default function AttendanceDetails() {
   const { user, enabled, isLoading: authLoading, csrfToken } = useAuth();
   const [draftStart, setDraftStart] = useState("");
   const [draftEnd, setDraftEnd] = useState("");
@@ -77,14 +67,15 @@ export default function Attendance() {
   const seed = user && seedRef.current?.userId === user.id ? seedRef.current.date : null;
 
   const header = (
-    <PageHeader
-      eyebrow="Northpoint Austin · Weekly"
-      title="Adult attendance"
-      description="Seated auditorium counts by service, with every edit kept."
-      actions={
-        user ? <RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} /> : undefined
-      }
-    />
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="font-display text-xl font-semibold">Adult attendance</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          Seated auditorium counts by service, with every edit kept.
+        </p>
+      </div>
+      {user && <RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />}
+    </div>
   );
 
   if (authLoading)

@@ -60,7 +60,8 @@ production. Keep the schedule disabled until ready to demonstrate it, treat
 lifecycle absence as unassessed, and never assume unattended freshness. This
 closeout does not authorize metric publication, deletion, or credential changes.
 
-Phase 4 implements protected adult attendance at `/attendance`, a home KPI,
+Phase 4 implements protected adult attendance within Service Programming at
+`/ministries/service-programming`, a home KPI,
 immediate manual saves and immutable corrections. Count seated auditorium
 attendees only; exclude volunteers and people on stage. Online-only/intentionally
 off Sundays are unrecorded, not zero. Manual entries need no approval.

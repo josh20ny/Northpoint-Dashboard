@@ -31,6 +31,10 @@ Planning Center (People, Check-Ins, Giving, Groups, Services and supported volun
 Weekly Mon–Sun, displayed as Sunday-end date in America/Chicago; compare YoY on aligned weeks (explicit policy pending). Support months, quarters, semesters and rolling 1-month/2–24-month trends. Service time effective dating; 9:00 and 11:00 current adult/kid/middle school services, InsideOut 4:30; preserve historical 9:30 where applicable.
 
 ## UX requirements
+Home is the previous-Sunday cross-ministry snapshot. Attendance history, entry
+and all other ministry KPIs belong together on the relevant ministry page;
+there is no separate attendance product/tab. Adult attendance belongs under
+Service Programming. Older attendance links redirect to that ministry.
 First glance must answer top three questions. Use simple cards, sparklines, trend comparison, colored health only with numeric/text labels, clear freshness timestamps; support drilldowns and accessible contrast. Distinguish metrics from interpretations. Responsive desktop-first.
 
 ## Success criteria (initial proposed targets, not approved business KPIs)

@@ -115,11 +115,11 @@ export default function Dashboard() {
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Link
-                  href="/attendance"
+                  href="/ministries/service-programming"
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3.5 text-[13px] font-medium hover:bg-secondary"
                   data-testid="link-attendance"
                 >
-                  Attendance
+                  Service Programming
                 </Link>
                 <Link
                   href="/system"

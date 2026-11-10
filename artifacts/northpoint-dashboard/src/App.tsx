@@ -8,7 +8,6 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Ministries from "@/pages/ministries";
 import Ministry from "@/pages/ministry";
-import Attendance from "@/pages/attendance";
 import Administration from "@/pages/administration";
 import Integrations from "@/pages/integrations";
 import Imports from "@/pages/imports";
@@ -16,7 +15,7 @@ import SystemPage from "@/pages/system";
 import Documentation from "@/pages/documentation";
 import DocumentPage from "@/pages/document";
 import { AppShell } from "@/components/shell";
-import { Route, Switch, useLocation, Router as WouterRouter } from "wouter";
+import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from "wouter";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +29,9 @@ function Router() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Dashboard} />
-          <Route path="/attendance" component={Attendance} />
+          <Route path="/attendance">
+            <Redirect to="/ministries/service-programming" />
+          </Route>
           <Route path="/ministries" component={Ministries} />
           <Route path="/ministries/:slug" component={Ministry} />
           <Route path="/administration" component={Administration} />

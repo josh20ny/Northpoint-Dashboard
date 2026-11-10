@@ -12,6 +12,10 @@ Adult 9:00 and 11:00 in-person attendance, online connections and legacy multipl
 PCO Services is plan authority; manual counts and 2026 SPD sheet supply historical comparison. Historical header refers to 9:30. Never silently equate online connections with viewers/people.
 
 ## Minimum view
+Adult attendance details, history, revisions and the one-save weekly entry form
+live on this ministry page, alongside the other SPD KPIs. The main dashboard
+shows the previous-Sunday snapshot and links here. Do not create a separate
+Attendance navigation tab; the legacy `/attendance` URL redirects here.
 Current week headline metrics, last 4 completed weeks, YoY comparison, date/service filters, trend and targets, current health statuses (when configured), last sync, issues worth attention and drilldowns to service/evidence.
 
 ## Phase and acceptance

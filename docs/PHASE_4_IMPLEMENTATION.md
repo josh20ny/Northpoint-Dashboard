@@ -1,5 +1,15 @@
 # Phase 4 — adult attendance
 
+## Current location: Service Programming ministry
+
+Adult attendance details, weekly entry, history and revisions now live at
+`/ministries/service-programming`, alongside the other documented SPD KPIs.
+There is no separate Attendance navigation item. The dashboard keeps the
+previous-Sunday snapshot and links to Service Programming for detail.
+`/attendance` redirects to that ministry for compatibility with older links.
+Other SPD KPI connections are explicitly marked planned, not fabricated.
+Earlier `/attendance` references below describe previous delivery locations.
+
 ## Routine weekly entry: one form, one save
 
 The normal Attendance entry flow now defaults to the most recent Sunday
