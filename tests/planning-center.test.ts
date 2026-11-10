@@ -19,6 +19,8 @@ import {
 } from "../artifacts/api-server/src/lib/planning-center-source";
 import { createPlanningCenterRouter } from "../artifacts/api-server/src/routes/planning-center";
 import type { AuthProvider, Principal } from "../artifacts/api-server/src/lib/auth";
+import { syncView } from "../artifacts/api-server/src/lib/planning-center";
+import { SetPlanningCenterAutomationResponse } from "../lib/api-zod/src/generated/api";
 
 const person = {
   type: "Person",
@@ -31,6 +33,36 @@ const person = {
   },
 };
 describe("Planning Center secure transport and source contract", () => {
+  it("serializes PostgreSQL civil DATE values before validating current-run responses", () => {
+    for (const zone of ["UTC", "America/Chicago", "Asia/Tokyo"]) {
+      vi.stubEnv("TZ", zone);
+      const run = {
+        id: "00000000-0000-4000-8000-000000000001",
+        account_ref: "1",
+        product: "groups" as const,
+        mode: "current" as const,
+        status: "running" as const,
+        coverage_start: new Date(2026, 10, 10),
+        queue: [],
+        visited: [],
+        fetched: 0,
+        revised: 0,
+        pages: 0,
+        started_at: new Date(),
+        finished_at: null,
+        retry_at: null,
+        error: null,
+        automatic: true,
+        automatic_requested_by: "00000000-0000-4000-8000-000000000001",
+        last_automatic_at: null,
+      };
+      expect(SetPlanningCenterAutomationResponse.parse(syncView(run)).coverageStart).toBe(
+        "2026-11-10",
+      );
+      expect(syncView({ ...run, coverage_start: "2026-10-12" }).coverageStart).toBe("2026-10-12");
+      expect(syncView({ ...run, coverage_start: null }).coverageStart).toBeNull();
+    }
+  });
   beforeEach(() => {
     vi.stubEnv("AUTH_ORIGIN", "https://example.invalid");
     vi.stubEnv("PCO_CLIENT_ID", "synthetic-client");

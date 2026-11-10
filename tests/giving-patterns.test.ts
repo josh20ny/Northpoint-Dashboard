@@ -29,6 +29,32 @@ const joint = (primary: string, other: string): SourceFact => ({
   sourceCollection: `/giving/v2/donor_summaries/${primary}/joint_giver`,
 });
 describe("owner-defined, adjustable Giving signals", () => {
+  it("does not classify unresolved family linkage as a separate healthy/first-time unit", () => {
+    const unavailable = {
+      ...joint("1", "2"),
+      attributes: { linkage_unavailable: true },
+      relationships: {
+        primary: { data: { type: "Person", id: "1" } },
+        joint_giver: { data: null },
+      },
+    };
+    const facts = [
+      person("1", "2026-01-04"),
+      unavailable,
+      ...["2026-01-04", "2026-01-11", "2026-01-18", "2026-01-25"].map((d, i) => gift(String(i), d)),
+    ];
+    expect(analyzeGivingPatterns(facts, new Date("2026-03-01T12:00:00Z"), true)[0]).toMatchObject({
+      firstRecordedAt: null,
+      lapsed: null,
+      reason: "joint_giver_linkage_unavailable",
+    });
+    expect(
+      analyzeGivingPatterns(facts, new Date("2026-03-01T12:00:00Z"), true, {
+        ...DEFAULT_GIVING_POLICY,
+        grouping: "person",
+      })[0].lapsed,
+    ).toBe(true);
+  });
   it("uses lifetime metadata, not a window's first imported gift, and explicit family linkage", () => {
     const facts = [
       person("1", "2018-03-04"),

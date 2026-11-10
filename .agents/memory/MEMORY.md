@@ -8,3 +8,4 @@
 - [Adult attendance policy](adult-attendance-policy.md) — auditorium attendees only; breaks stay unrecorded; manual counts need corrections, not approval.
 - [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday overview across all ministries; each ministry needs attendance and all documented KPIs.
 - [Giving policy](giving-policy.md) — broad totals for all roles; person-linked data Admin-only; first recorded person/family gift; lapse after three missed expected gifts.
+- [PCO runtime contracts](pco-runtime-contracts.md) — pg DATE decoding needs civil serialization; resolve joint-giver linkage through collection reads.

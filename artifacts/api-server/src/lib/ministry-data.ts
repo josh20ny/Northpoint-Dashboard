@@ -485,6 +485,9 @@ async function publishMinistryDataInTransaction(
       givingPolicy,
     );
     const personMetadata = facts.some((f) => f.type === "Person");
+    const linkageComplete = !givingUnits.some(
+      (u) => u.reason === "joint_giver_linkage_unavailable",
+    );
     for (let week = input.start; week <= input.end; week = shiftDate(week, 7)) {
       const units = analyzeGivingPatterns(
         facts,
@@ -498,20 +501,22 @@ async function publishMinistryDataInTransaction(
         measure: "first_time_givers",
         scope: "all",
         week,
-        value: personMetadata
-          ? units.filter(
-              (u) =>
-                u.firstRecordedAt &&
-                u.firstRecordedAt <= week &&
-                u.firstRecordedAt >= shiftDate(week, -6),
-            ).length
-          : null,
+        value:
+          personMetadata && linkageComplete
+            ? units.filter(
+                (u) =>
+                  u.firstRecordedAt &&
+                  u.firstRecordedAt <= week &&
+                  u.firstRecordedAt >= shiftDate(week, -6),
+              ).length
+            : null,
         unit: "giving_units",
-        quality: personMetadata ? "complete" : "missing",
+        quality: personMetadata && linkageComplete ? "complete" : "missing",
         denominator: null,
         flags: [
           "current_pco_joint_giving_units",
           ...(personMetadata ? [] : ["first_gift_metadata_required"]),
+          ...(linkageComplete ? [] : ["giving_unit_linkage_incomplete"]),
         ],
       });
       const eligible = units.filter((u) => u.lapsed !== null),

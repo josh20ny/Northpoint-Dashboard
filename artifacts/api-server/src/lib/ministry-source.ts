@@ -111,14 +111,23 @@ export function ministryPagePath(page: Page, product: MinistryProduct) {
     throw new ProviderError(422);
   const query = new URLSearchParams({ per_page: "100" });
   if (offset !== null) query.set("offset", offset);
-  const type = page.type === "JointGiver" ? "Person" : page.type;
+  const type = page.type === "JointGiver" ? "DonorSummary" : page.type;
   query.set(
     `fields[${type}]`,
     [...attributes[type], ...Object.keys(relationships[type] ?? {})].join(","),
   );
   if (product === "giving" && page.type === "Person") query.set("filter", "has_donated");
-  if (page.type === "DonorSummary") {
-    query.set("filter", "has_joint_giver");
+  if (page.type === "DonorSummary" || page.type === "JointGiver") {
+    query.set("fields[DonorSummary]", "first_donated,joint_giver");
+    query.set("fields[Person]", attributes.Person.join(","));
+    query.set("include", "joint_giver");
+    if (page.type === "DonorSummary") query.set("filter", "has_joint_giver");
+    else {
+      // DonorSummary is collection-only. Old persisted association pages must
+      // resolve through that collection too; an absent singular link can 404.
+      query.set("where[person_id]", u.pathname.split("/")[4]);
+      u.pathname = "/giving/v2/donor_summaries";
+    }
     // Override the documented default 30-day window for family linkage only.
     // This is not used to claim transaction/history coverage.
     query.set("where[received_at][gte]", "1900-01-01T00:00:00Z");
@@ -197,7 +206,35 @@ export function parseMinistryPage(
   value: Record<string, unknown>,
   page: Page,
   product: MinistryProduct,
-) {
+): { entities: SourceEntity[]; nextPages: Page[] } {
+  if (product === "giving" && page.type === "JointGiver" && Array.isArray(value.data)) {
+    const primary = new URL(page.path, PCO_ORIGIN).pathname.split("/")[4];
+    if (value.links && (value.links as { next?: unknown }).next) throw new ProviderError(422);
+    if (value.data.length > 1) throw new ProviderError(422);
+    const result = parseMinistryPage(
+      value,
+      { type: "DonorSummary", path: "/giving/v2/donor_summaries" },
+      product,
+    );
+    const summary = result.entities.find((e) => e.type === "DonorSummary");
+    if (summary && summary.id !== primary) throw new ProviderError(422);
+    return {
+      entities: summary
+        ? result.entities.filter((e) => e.type === "JointGiver")
+        : [
+            {
+              type: "JointGiver",
+              id: primary,
+              attributes: { linkage_unavailable: true },
+              relationships: {
+                primary: { data: { type: "Person", id: primary } },
+                joint_giver: { data: null },
+              },
+            },
+          ],
+      nextPages: [],
+    };
+  }
   // Refund is a documented singleton association; null is valid when absent.
   const raw =
     ["Refund", "JointGiver"].includes(page.type) && !Array.isArray(value.data)
@@ -206,7 +243,11 @@ export function parseMinistryPage(
         : [value.data]
       : value.data;
   if (!Array.isArray(raw) || raw.length > 100) throw new ProviderError(422);
-  if (value.included !== undefined && (!Array.isArray(value.included) || value.included.length))
+  const summaries = product === "giving" && page.type === "DonorSummary";
+  if (
+    value.included !== undefined &&
+    (!Array.isArray(value.included) || (!summaries && value.included.length))
+  )
     throw new ProviderError(422);
   const entities = raw.map((e) => {
     if (page.type !== "JointGiver") return ministryEntity(e, page.type);
@@ -226,6 +267,43 @@ export function parseMinistryPage(
       },
     };
   });
+  if (summaries) {
+    const included = value.included as unknown[] | undefined;
+    if (included && included.length > 100) throw new ProviderError(422);
+    const allowedIds = new Set<string>();
+    for (const e of [...entities]) {
+      const rawSummary = raw.find(
+        (v) => v && typeof v === "object" && (v as { id?: unknown }).id === e.id,
+      ) as { relationships?: Record<string, { data?: unknown }> };
+      const relationship = rawSummary.relationships?.joint_giver;
+      if (!relationship || !Object.hasOwn(relationship, "data")) throw new ProviderError(422);
+      const data = relationship.data;
+      if (
+        data !== null &&
+        (!data ||
+          typeof data !== "object" ||
+          (data as { type?: unknown }).type !== "Person" ||
+          typeof (data as { id?: unknown }).id !== "string" ||
+          !/^[0-9]{1,30}$/.test((data as { id: string }).id))
+      )
+        throw new ProviderError(422);
+      if (data) allowedIds.add((data as { id: string }).id);
+      entities.push({
+        type: "JointGiver",
+        id: e.id,
+        attributes: {},
+        relationships: {
+          primary: { data: { type: "Person", id: e.id } },
+          joint_giver: { data: data as { type: string; id: string } | null },
+        },
+      });
+    }
+    for (const v of included ?? []) {
+      const person = ministryEntity(v, "Person");
+      if (!allowedIds.has(person.id)) throw new ProviderError(422);
+      entities.push(person);
+    }
+  }
   const nextPages: Page[] = [];
   const current = new URL(ministryPagePath(page, product), PCO_ORIGIN);
   const next = (value.links as { next?: unknown } | undefined)?.next;
@@ -250,11 +328,6 @@ export function parseMinistryPage(
       if (e.attributes.refunded === true)
         nextPages.push({ type: "Refund", path: `/giving/v2/donations/${e.id}/refund` });
     }
-    if (e.type === "DonorSummary")
-      nextPages.push({
-        type: "JointGiver",
-        path: `/giving/v2/donor_summaries/${e.id}/joint_giver`,
-      });
     if (product === "groups" && e.type === "Event")
       nextPages.push({ type: "Attendance", path: `/groups/v2/events/${e.id}/attendances` });
     if (product === "serving" && e.type === "ServiceType")

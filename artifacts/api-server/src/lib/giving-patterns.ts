@@ -130,6 +130,11 @@ export function analyzeGivingPatterns(
     dates.add(date);
     giftDates.set(key, dates);
   }
+  const unavailable = new Set(
+    entities
+      .filter((e) => e.type === "JointGiver" && e.attributes.linkage_unavailable === true)
+      .map((e) => link(e, "primary")),
+  );
   const cadences: GivingCadence[] = DEFAULT_GIVING_POLICY.cadences.filter((c) =>
     policy.cadences.includes(c),
   );
@@ -137,6 +142,11 @@ export function analyzeGivingPatterns(
     u.personIds.sort();
     const dates = [...(giftDates.get(key) ?? [])].sort();
     u.lastGiftDate = dates.at(-1) ?? null;
+    if (policy.grouping === "joint_giving_unit" && u.personIds.some((id) => unavailable.has(id))) {
+      u.firstRecordedAt = null;
+      u.reason = "joint_giver_linkage_unavailable";
+      continue;
+    }
     if (!historyComplete) {
       u.reason = "historical_backfill_required";
       continue;

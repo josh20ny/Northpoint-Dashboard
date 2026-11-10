@@ -98,7 +98,11 @@ export class ProviderError extends Error {
             ? "Planning Center rate limit reached; retry after the displayed time"
             : status === 422
               ? "Planning Center returned an unsupported source shape"
-              : "Planning Center is temporarily unavailable",
+              : status === 404
+                ? "Planning Center could not find the requested source resource (HTTP 404)"
+                : status >= 400 && status < 500
+                  ? `Planning Center rejected the source request (HTTP ${status})`
+                  : "Planning Center is temporarily unavailable",
     );
   }
 }

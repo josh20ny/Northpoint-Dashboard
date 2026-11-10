@@ -11,6 +11,78 @@ import {
   parseMinistryPage,
   ministryEntity,
 } from "../artifacts/api-server/src/lib/ministry-source";
+
+describe("collection-only Giving joint-giver linkage", () => {
+  const summary = {
+    type: "DonorSummary",
+    id: "7",
+    attributes: { first_donated: "2022-01-02T12:00:00Z" },
+    relationships: { joint_giver: { data: { type: "Person", id: "8" } } },
+  };
+  const page = { type: "DonorSummary", path: "/giving/v2/donor_summaries" };
+  it("requests explicit sparse linkage and only safe fields for included people", () => {
+    const path = ministryPagePath(page, "giving");
+    expect(path).toContain("include=joint_giver");
+    expect(
+      new URL(path, "https://api.planningcenteronline.com").searchParams.get(
+        "fields[DonorSummary]",
+      ),
+    ).toContain("joint_giver");
+    const parsed = parseMinistryPage(
+      {
+        data: [summary],
+        included: [
+          {
+            type: "Person",
+            id: "8",
+            attributes: { first_donated_at: "2020-01-05T12:00:00Z", name: "must not persist" },
+          },
+        ],
+      },
+      page,
+      "giving",
+    );
+    expect(parsed.entities.find((e) => e.type === "JointGiver")).toMatchObject({
+      id: "7",
+      relationships: { primary: { data: { id: "7" } }, joint_giver: { data: { id: "8" } } },
+    });
+    expect(JSON.stringify(parsed)).not.toContain("must not persist");
+    expect(parsed.nextPages.some((p) => p.type === "JointGiver")).toBe(false);
+  });
+  it("resolves persisted old association pages through a filtered collection without resetting their run", () => {
+    const old = { type: "JointGiver", path: "/giving/v2/donor_summaries/7/joint_giver" };
+    const url = new URL(ministryPagePath(old, "giving"), "https://api.planningcenteronline.com");
+    expect(url.pathname).toBe("/giving/v2/donor_summaries");
+    expect(url.searchParams.get("where[person_id]")).toBe("7");
+    const parsed = parseMinistryPage({ data: [summary] }, old, "giving");
+    expect(parsed.entities).toHaveLength(1);
+    expect(parsed.entities[0].type).toBe("JointGiver");
+    expect(parsed.nextPages).toEqual([]);
+    expect(() => parseMinistryPage({ data: [{ ...summary, id: "9" }] }, old, "giving")).toThrow();
+    expect(
+      parseMinistryPage({ data: [] }, old, "giving").entities[0].attributes.linkage_unavailable,
+    ).toBe(true);
+  });
+  it("distinguishes explicit null from absent linkage and rejects unrelated included people", () => {
+    expect(
+      parseMinistryPage(
+        { data: [{ ...summary, relationships: { joint_giver: { data: null } } }] },
+        page,
+        "giving",
+      ).entities.find((e) => e.type === "JointGiver")?.relationships.joint_giver.data,
+    ).toBeNull();
+    expect(() =>
+      parseMinistryPage({ data: [{ ...summary, relationships: {} }] }, page, "giving"),
+    ).toThrow();
+    expect(() =>
+      parseMinistryPage(
+        { data: [summary], included: [{ type: "Person", id: "99", attributes: {} }] },
+        page,
+        "giving",
+      ),
+    ).toThrow();
+  });
+});
 const now = new Date("2026-11-10T12:00:00Z"),
   start = "2026-11-01",
   end = "2026-11-15";

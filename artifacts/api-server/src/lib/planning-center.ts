@@ -36,7 +36,7 @@ interface Run {
   account_ref: string;
   product: provider.Product;
   mode: "backfill" | "incremental" | "current";
-  coverage_start?: string | null;
+  coverage_start?: string | Date | null;
   status: PlanningCenterSync["status"];
   queue: Page[];
   visited: string[];
@@ -52,12 +52,18 @@ interface Run {
   last_automatic_at: Date | null;
 }
 const iso = (v: Date | null) => v?.toISOString() ?? null;
-function syncView(r: Run): PlanningCenterSync {
+export function syncView(r: Run): PlanningCenterSync {
+  // pg decodes DATE as local midnight; it is a civil date, not an instant.
+  const start = r.coverage_start;
+  const coverageStart =
+    start instanceof Date
+      ? `${start.getFullYear().toString().padStart(4, "0")}-${(start.getMonth() + 1).toString().padStart(2, "0")}-${start.getDate().toString().padStart(2, "0")}`
+      : (start ?? null);
   return {
     id: r.id,
     product: r.product,
     mode: r.mode,
-    coverageStart: r.coverage_start ?? null,
+    coverageStart,
     status: r.status,
     fetched: r.fetched,
     revised: r.revised,
