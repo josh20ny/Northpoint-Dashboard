@@ -16,6 +16,16 @@ and each ministry detail page. Do not treat adult attendance as the complete
 attendance requirement or invent metrics before their source/definitions are
 validated.
 
+Keep planning-week dates distinct from attendance snapshot dates.
+
+**Why:** The shared planning calendar can name the upcoming Sunday while the
+owner's dashboard snapshot requires the previous completed Sunday. Mixing them
+made otherwise correct attendance figures appear labelled for the wrong week.
+
+**How to apply:** Use the metric's explicit attendance period for snapshot
+headings/context. Do not substitute a planning-week date when attendance data
+is loading or unavailable.
+
 Attendance details and entry belong inside each ministry page, not on a separate
 Attendance tab. Adult attendance belongs in Service Programming alongside the
 other SPD KPIs.

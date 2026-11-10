@@ -112,3 +112,17 @@ mtime_ms = 1794096287490
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/acdd8a43-91a3-43f6-b78b-78ed4ef34a8b/ce1f37ea-d3fb-4fae-a605-f799c72fd898"
 storage_version_token = "1794096295771499"
 content_type = "text/csv"
+
+[[outputs]]
+id = "yI-Drd8jEffTRJPRUpTFH"
+uri = "file://generated-artifacts/phase4-attendance-reconciliation.csv"
+type = "table"
+title = "Phase 4 attendance reconciliation"
+description = "Verified November 9, 2026: 80 imported service counts across 40 Sundays match the accepted workbook. Includes all 52 dated rows, with manual, unrecorded and future weeks distinguished. Detailed method and limits are retained in docs/PHASE_4_RECONCILIATION.md."
+logical_id = "e6fd3779-98cd-4399-b862-763ea9d09853"
+content_hash = "sha256:b4d28af51571e9ccdf6bc5d5debb1465debabe97f6977f45cfbbc2bbde4d1cab"
+size = 3426
+mtime_ms = 1794282036145
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9b3cd820-8d84-4507-bfb7-6770a9917c22/e6fd3779-98cd-4399-b862-763ea9d09853/7b24e12f-7ef7-411a-abcb-644d091c4642"
+storage_version_token = "1794282222882945"
+content_type = "text/csv"

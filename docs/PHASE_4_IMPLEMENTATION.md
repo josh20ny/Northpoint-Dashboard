@@ -1,5 +1,18 @@
 # Phase 4 — adult attendance
 
+## Development closeout: reconciled
+
+Phase 4's adult-attendance development exit gate is met. The final reconciliation
+found no discrepancies across 80 accepted workbook service observations, 40
+historical weekly totals, the four unrecorded Sundays and the November 8 manual
+counts. It checked all 45 completed-week comparison endpoints and all 52
+averaging-window choices without changing real attendance.
+
+See [the reconciliation report](PHASE_4_RECONCILIATION.md) for source fingerprint,
+scope, exact results, reproducible verification and production exclusions.
+The superseded sample-activation instructions later in this document are not
+remaining requirements; no repeated week publication or setup is needed.
+
 ## Current comparisons: rolling window and existing 2025 baseline
 
 The owner confirmed that "adjust up or down" means changing the number of weeks,
@@ -323,7 +336,11 @@ Unsaved inputs are not replaced by polling.
   replay and conflict behavior passed rollback-only database fixtures. Do not
   describe this as a full real-data submit → KPI → correction browser pass.
 
-## Remaining acceptance boundaries
+## Historical activation notes — superseded
+
+These record the earlier sample-stage workflow. The development closeout above
+and full reconciliation report supersede the activation prerequisites below.
+They must not be used to require repeated Admin setup or per-week publication.
 
 ### January sample activation check — 2026-11-09
 
@@ -340,12 +357,9 @@ this does not establish independent corroboration or newly verify formulas.
 No reviews, definitions, ministries, occurrences, attendance revisions or
 publication audit entries were inserted by this diagnostic.
 
-The remaining operational prerequisite is an authenticated Admin saving the
-actual adult-ministry configuration and initial definition effective for the
-selected dates, then explicitly promoting each selected week with its source
-authority acknowledgement and basis note. Historical-only promotion does not
-require fabricated service timestamps. Choosing sample validation in chat is
-not a replacement for these application actions.
+The actual ministry/definition is now configured and the accepted historical
+source has been imported in bulk. The original per-week sample-promotion
+prerequisite is superseded by the owner's source-wide acceptance.
 
 After promotion, apply the Attendance range 2026-01-04 through 2026-01-18 and
 verify six current workbook observations, three full totals, correct
@@ -356,10 +370,10 @@ isolated fixtures instead of changing valid historical counts merely to test.
 The home KPI must continue to describe the latest completed Sunday, not relabel
 January samples as current attendance.
 
-An Admin still needs to configure the real adult ministry/service mapping and
-deliberately promote any historical samples after reviewing source authority.
-That is not supplied by task acceptance, a prior workbook review or synthetic
-fixtures. Historical era mapping and comparison definitions remain open.
+Real adult counts and source mapping are reconciled. Rolling-window comparisons
+and the labelled 2025 weekly-total YoY baseline are implemented. Historical
+start times have not been invented; additional eras/modules remain outside this
+development closeout.
 
 D-025's live lifecycle scans, scheduled cycle, controlled restart/recovery and
 credential-lifecycle demonstration remain required before production. Do not

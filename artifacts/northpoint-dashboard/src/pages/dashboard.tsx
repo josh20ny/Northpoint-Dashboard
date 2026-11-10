@@ -100,7 +100,10 @@ export default function Dashboard() {
                         data-testid="status-dashboard-stale"
                         className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-950"
                       >
-                        <span>Refresh failed. Showing saved data from {formatDate(aw.asOf, true)}; it may be out of date.</span>
+                        <span>
+                          Refresh failed. Showing saved data from {formatDate(aw.asOf, true)}; it
+                          may be out of date.
+                        </span>
                         <button
                           type="button"
                           data-testid="button-dashboard-retry"
@@ -201,8 +204,14 @@ export default function Dashboard() {
             ) : f ? (
               <dl>
                 <KV
-                  label="Week ending"
-                  value={formatDate(f.weekEnding)}
+                  label="Attendance Sunday"
+                  value={
+                    aw
+                      ? formatDate(aw.latestCompletedWeek)
+                      : user
+                        ? "Unavailable"
+                        : "Sign in required"
+                  }
                   testId="text-week-ending"
                 />
                 <KV label="Status checked" value={formatDate(f.asOf, true)} testId="text-as-of" />

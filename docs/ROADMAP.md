@@ -27,7 +27,8 @@ The schedule remains disabled; unattended freshness must not be assumed.
 Unattended hosting is deferred by the owner's development-only choice;
 production retention/privacy deletion and release approval remain separate gates.
 No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
-Phase 4 adult-attendance development now provides manual auditorium headcounts,
+Phase 4 is complete for development after final source-to-API reconciliation.
+It provides manual auditorium headcounts,
 immediate saves, immutable corrections, typed aggregate reads, the home KPI and
 attendance drilldown, plus deliberate evidence-bound historical promotion.
 After the owner accepted the supplied workbook as authoritative, its mapped
@@ -39,7 +40,8 @@ history still needs its documented mappings and module implementations.
 Rolling averages now default to four calendar weeks, with selectable 1–52-week
 windows and explicit completeness denominators. YoY uses the existing accepted
 2025 in-person totals with documented numbered-Sunday alignment. See
-`PHASE_4_IMPLEMENTATION.md`; this is not production or full historical acceptance.
+`PHASE_4_IMPLEMENTATION.md` and `PHASE_4_RECONCILIATION.md`; this is not production
+or full-project historical acceptance.
 
 | Phase | Build | Exit gate |
 |---|---|---|
@@ -47,7 +49,7 @@ windows and explicit completeness denominators. YoY uses the existing accepted
 | 1 | RBAC, PostgreSQL migrations, people/ministry/service occurrences, audit | Cross-role security tests green |
 | 2 | Historical workbook import explorer, explicit mappings, staged rows, source QA | Several approved weeks reconcile |
 | 3 | Planning Center OAuth, People/Services/Check-Ins ingestion | Incremental + backfill, provenance, sync status |
-| 4 | Adult attendance complete vertical slice and basic home | Source→database→API→UI→tests; 2026 samples reconciled |
+| 4 | Adult attendance complete vertical slice and basic home | Met for development: 80 source counts/40 weeks reconciled, plus manual counts and comparisons |
 | 5 | Giving restricted models, groups, serving, child/student modules | Role isolation, complete source flags |
 | 6 | Configurable scorecards, manual forms, service-plan links | Workflow with version/audit + source semantics |
 | 7 | Metric registry, thresholds and health cards, ministry pages | Definition changes replay safely |

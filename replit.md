@@ -77,6 +77,9 @@ Adult comparisons now provide default-four-week rolling averages with selectable
 the accepted workbook's 2025 in-person total baselines with labelled numbered-
 Sunday alignment, without inventing per-service history or exposing raw imports.
 See `docs/PHASE_4_IMPLEMENTATION.md` for verification and acceptance limits.
+Phase 4's development exit gate is met; `docs/PHASE_4_RECONCILIATION.md` records
+the full accepted-source/API reconciliation. This does not authorize production,
+provider scans, scheduling, credential changes or broader historical claims.
 
 ## User preferences
 

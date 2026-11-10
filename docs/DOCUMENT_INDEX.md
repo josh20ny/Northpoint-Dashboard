@@ -1,5 +1,7 @@
 # Documentation Index
 
+- `docs/PHASE_4_RECONCILIATION.md` — completed adult-attendance development reconciliation and limits.
+
 - `AGENTS.md`
 - `README.md`
 - `docs/AGENT_TASK_PROMPTS.md`
