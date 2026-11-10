@@ -250,7 +250,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       expect(old.weeks[0].knownSubtotal).toBe(446);
       await expect(repo.saveManual(staff, input())).rejects.toMatchObject({ status: 409 });
     });
-    async function syntheticHistory() {
+    async function syntheticHistory(reviewed = true) {
       await c.query("SELECT set_config('np.role','admin',true)");
       const batchId = randomUUID();
       await c.query(
@@ -287,7 +287,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         );
       }
       const e = await imports.evidence(c, batchId);
-      for (const g of e.report.weeks)
+      for (const g of reviewed ? e.report.weeks : [])
         await c.query(
           "INSERT INTO import_week_reviews(batch_id,week,evidence_hash,review_method,note,reviewed_by) VALUES($1,$2,$3,'owner_confirmed','Synthetic owner confirmed evidence for rollback test',$4)",
           [batchId, g.week, g.evidenceHash, admin.userId],
@@ -319,6 +319,99 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       expect(JSON.stringify(w)).not.toContain("object_path");
       expect((await c.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
         "staff",
+      );
+    });
+    const acceptWorkbook = async (batchId: string) => {
+      await c.query(
+        `INSERT INTO workbook_source_authorities(batch_id,sha256,basis,origin)
+         SELECT id,sha256,'Synthetic owner instruction accepting all historical workbook values','owner_instruction'
+         FROM import_batches WHERE id=$1`,
+        [batchId],
+      );
+    };
+    it("imports trusted history without per-week reviews, with honest system attribution and safe replay", async () => {
+      const bulk = await import("../artifacts/api-server/src/lib/attendance-workbook");
+      const { batchId } = await syntheticHistory(false);
+      await expect(
+        bulk.importAuthorizedWorkbook(c, batchId, definitionId, true),
+      ).rejects.toMatchObject({ status: 409 });
+      await acceptWorkbook(batchId);
+      const dry = await bulk.importAuthorizedWorkbook(c, batchId, definitionId, false);
+      expect(dry).toMatchObject({ imported: 2, unchanged: 0, excluded: [], conflicts: [] });
+      expect(
+        (
+          await c.query(
+            "SELECT count(*)::int AS n FROM attendance_revisions WHERE definition_id=$1",
+            [definitionId],
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      expect(await bulk.importAuthorizedWorkbook(c, batchId, definitionId, true)).toMatchObject({
+        imported: 2,
+        conflicts: [],
+      });
+      expect(await bulk.importAuthorizedWorkbook(c, batchId, definitionId, true)).toMatchObject({
+        imported: 0,
+        unchanged: 2,
+      });
+      expect(
+        (
+          await c.query("SELECT count(*)::int AS n FROM import_week_reviews WHERE batch_id=$1", [
+            batchId,
+          ])
+        ).rows[0].n,
+      ).toBe(0);
+      expect(
+        (
+          await c.query(
+            "SELECT count(*)::int AS n FROM attendance_revisions WHERE definition_id=$1 AND created_by IS NULL",
+            [definitionId],
+          )
+        ).rows[0].n,
+      ).toBe(2);
+      const w = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(w.weeks[0].value).toBe(910);
+      expect(w.revisions.every((r) => r.valid && r.reviewMethod === "workbook_authoritative")).toBe(
+        true,
+      );
+      expect((await c.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
+        "staff",
+      );
+      const role = `attendance_bulk_test_${randomUUID().replaceAll("-", "")}`;
+      await c.query(`CREATE ROLE ${role} NOLOGIN`);
+      await c.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+      await c.query(
+        `GRANT SELECT ON workbook_source_authorities,attendance_revisions,attendance_lineage,import_batches TO ${role}`,
+      );
+      await c.query(`SET LOCAL ROLE ${role}`);
+      expect((await c.query("SELECT * FROM workbook_source_authorities")).rowCount).toBe(0);
+      const protectedRows = await c.query(
+        "SELECT np_attendance_source_valid(id) AS valid FROM attendance_revisions WHERE definition_id=$1",
+        [definitionId],
+      );
+      expect(protectedRows.rows.every((r) => r.valid)).toBe(true);
+      expect((await c.query("SELECT current_setting('np.role') AS role")).rows[0].role).toBe(
+        "staff",
+      );
+      await c.query("RESET ROLE");
+      await c.query("SELECT set_config('np.role','admin',true)");
+      await deniedSql("UPDATE workbook_source_authorities SET basis='changed' WHERE batch_id=$1", [
+        batchId,
+      ]);
+      await c.query("UPDATE import_batches SET state='withdrawn' WHERE id=$1", [batchId]);
+      const withdrawn = await repo.readAttendance(staff, "2026-01-04", "2026-01-04");
+      expect(withdrawn.weeks[0]).toMatchObject({ quality: "invalidated", value: null });
+    });
+    it("does not replace a manual observation during authoritative bulk import", async () => {
+      const bulk = await import("../artifacts/api-server/src/lib/attendance-workbook");
+      const { batchId } = await syntheticHistory(false);
+      await acceptWorkbook(batchId);
+      const manual = await repo.saveManual(staff, input());
+      await c.query("SELECT set_config('np.role','admin',true)");
+      const preview = await bulk.importAuthorizedWorkbook(c, batchId, definitionId, false);
+      expect(preview.conflicts).toEqual([{ week: "2026-01-04", slot: "adult_service_1" }]);
+      expect((await repo.readAttendance(staff, "2026-01-04", "2026-01-04")).revisions[0].id).toBe(
+        manual.id,
       );
     });
     it("rejects changed historical hashes and rolls back partial promotion", async () => {

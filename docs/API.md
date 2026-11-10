@@ -2,6 +2,12 @@
 
 ## Phase 4 implemented surface
 
+Accepted provided-workbook history now bulk-imports through a trusted
+management job and automatically when its approved adult mappings are staged.
+The source-level owner instruction replaces routine per-week publication.
+Legacy historical preview/promotion endpoints remain compatible for diagnostic
+and unaccepted-source workflows; they are no longer the normal Attendance UI.
+
 Protected `GET /api/v1/attendance` accepts optional Sunday `start`/`end` (up to
 two years) and optional historical `definitionId`. It returns weekly totals,
 separate known subtotals, quality, safe observation revisions and definition/

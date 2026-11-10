@@ -7,6 +7,8 @@ export async function databaseReadiness() {
     const result = await pool.query<{ version: string; schema_ready: boolean }>(
       `SELECT version,
         to_regclass('users') IS NOT NULL AND to_regclass('auth_sessions') IS NOT NULL
+        AND EXISTS (SELECT 1 FROM pg_class WHERE oid=to_regclass('workbook_source_authorities') AND relrowsecurity AND relforcerowsecurity)
+        AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('workbook_source_authorities') AND tgname='workbook_authority_immutable' AND tgenabled<>'D')
         AND to_regclass('people') IS NOT NULL AND to_regclass('service_occurrences') IS NOT NULL
         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='audit_append_only' AND tgenabled<>'D')
         AND EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='raw_append_only' AND tgenabled<>'D')

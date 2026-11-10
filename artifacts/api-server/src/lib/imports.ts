@@ -320,6 +320,24 @@ export async function stageMapping(p: Principal, id: string, mappingId: string) 
       [mappingId, JSON.stringify(rows)],
     );
     await audit(c, p, "mapping_staged", id);
+    // Source-level authority replaces per-week publication. Only approved,
+    // explicitly mapped, usable adult observations are imported by this module.
+    const accepted = await c.query("SELECT 1 FROM workbook_source_authorities WHERE batch_id=$1", [
+      id,
+    ]);
+    const definition = await c.query(
+      "SELECT id FROM attendance_definitions ORDER BY version DESC LIMIT 1",
+    );
+    if (accepted.rowCount && definition.rowCount) {
+      await c.query("SELECT pg_advisory_xact_lock(716104)");
+      const { importAuthorizedWorkbook } = await import("./attendance-workbook");
+      const result = await importAuthorizedWorkbook(c, id, definition.rows[0].id, true);
+      if (result.conflicts.length)
+        throw new AccessError(
+          409,
+          "Workbook attendance conflicts with an existing correction or another source; no staging changes were committed",
+        );
+    }
   });
 }
 export async function stagedRows(p: Principal, id: string, mappingId: string, page: number) {

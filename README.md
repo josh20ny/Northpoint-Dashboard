@@ -8,8 +8,9 @@ processing implemented. Development OAuth consent and organization confirmation
 are complete, as are all three backfills/revision rescans and relationship checks.
 Admin-configurable refresh scheduling is implemented; unattended hosting and final
 operational acceptance are still required.
-No real attendance has been promoted by the agent. An Admin must configure the
-adult ministry before manual entry; historical promotion is a separate explicit action.
+The owner-authorized workbook history now imports in bulk: 80 adult service
+counts across 40 Sundays are loaded, with provenance and no per-week approvals.
+See the superseding source-acceptance policy in `docs/DECISIONS.md`.
 The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
 The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
 

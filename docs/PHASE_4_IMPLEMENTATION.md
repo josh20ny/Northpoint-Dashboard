@@ -1,5 +1,74 @@
 # Phase 4 — adult attendance
 
+## Current policy: accepted workbook history imports in bulk
+
+The owner's later instruction in `DECISIONS.md` supersedes the initial
+per-week publication workflow described in the historical delivery record
+below. Do **not** ask the owner to publish each workbook week or reconfirm
+individual values.
+
+The supplied workbook has source-level authority, tied to its immutable batch
+and SHA. Development migration 0015 adds an immutable Admin-only authority record
+and permits explicitly labelled system-generated workbook observations without
+pretending a user signed in to approve them. Manual observations still require
+an actual actor. The boolean lineage checker accepts either legacy reviewed
+evidence or accepted-workbook authority; Staff still cannot read raw sources or
+the authority table.
+
+The management job at
+`artifacts/api-server/src/scripts/import-authorized-attendance.ts` defaults to a
+rolled-back dry run. `--apply` performs the owner-directed atomic bulk import.
+It needs the actual configured ministry/definition and exactly one active source;
+it does not fabricate setup, create weekly reviews or modify source cells.
+Approved/staged adult mapping changes on that accepted source automatically
+import via the same importer inside the source transaction.
+
+Usable numeric historical values need no second-source comparison. Unknown
+values, future-at-snapshot dates, known online-only Sundays, malformed/conflicting
+mappings and forecasts are not imported as attendance. Existing same-source
+observations are reused; invalidated workbook observations may receive a new
+revision after an explicit mapping replacement. Manual corrections and
+cross-source conflicts are preserved and surfaced rather than overwritten.
+
+The Attendance summary follows the latest completed Sunday **in its selected
+range**. The home dashboard still uses the actual previous completed Sunday;
+it does not relabel older available history as current.
+
+### Bulk import result
+
+The accepted active workbook contains two currently implemented adult mappings,
+104 staged service rows. The bulk import added **74 observations** alongside the
+six already published January observations: **80 service counts across 40
+Sundays**, January 4 through November 1, 2026. The four online-only Sundays stay
+unrecorded; all dates after the November 7 source cutoff stay unrecorded.
+January's previously verified 910/910/831 totals and January 25's explicit zero
+are retained. No conflicting/manual data was overwritten.
+
+The post-import read-only reconciliation found **zero mismatches** against
+mapped staged source counts and **zero invalid lineage links**. A repeat dry
+run reported zero new observations and 80 unchanged. The full default test
+suite passed (230 tests); the attendance database suite passed (15 isolated
+rollback-only tests), including source-level acceptance without weekly reviews,
+system attribution, replay, source withdrawal and actual non-owner RLS checks.
+TypeScript and lint passed.
+
+An authenticated read-only browser pass confirmed January totals 910/910/831,
+the January 18 summary value 831, persistence after reload/reapplying the filter,
+and removal of the per-week publication workflow. It found narrow-phone
+page-level overflow; table inline-size/paint containment and text wrapping were
+adjusted after a focused diagnostic. That CSS correction was not browser-rerun.
+The synthetic auth fixture was suspended/revoked and the normal issuer restored.
+
+Comparison placeholders now describe the missing mapping/calculation instead
+of asking the owner to reapprove workbook values. No custom denominator or YoY
+alignment is silently invented.
+
+This does not mean every other ministry metric in the workbook is implemented.
+The same source acceptance applies without repeated value approvals as each
+documented mapping and ministry module is implemented. Restricted source data
+remains restricted. Earlier sections below are a chronological record of the
+initial delivery, not instructions to restore its superseded workflow.
+
 ## Development delivery
 
 The existing application now has `/attendance` and a home adult-attendance KPI.

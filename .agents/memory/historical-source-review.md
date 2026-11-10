@@ -3,6 +3,22 @@ name: Historical source review
 description: Why matching workbook inventory counts cannot establish source equivalence.
 ---
 
+The owner subsequently confirmed: “everything pulled from the workbook
+spreadsheet provided in the files of this project is accurate and should just be
+imported and displayed where appropriate” and rejected per-week publication
+steps.
+
+**Why:** The owner explicitly changed the historical acceptance policy.
+
+**How to apply:** Treat the provided workbook as the accepted historical source
+at the batch/fingerprint level. Import mapped history in bulk without recurring
+weekly approvals or comparisons. Keep source mappings, permissions, provenance,
+unrecorded Sundays and the snapshot cutoff; flag actual unreadable values or
+mapping conflicts instead of inventing data. Do not attribute automated imports
+to a fabricated signed-in Admin or reinterpret this as independent verification.
+This supersedes earlier per-week publication gates for that accepted source,
+not the requirement to identify which actual file was supplied.
+
 Treat the supplied inventory as discovery evidence, not a fingerprint or source
 approval. Confirm the actual uploaded workbook and its snapshot date before
 approving real historical mappings.

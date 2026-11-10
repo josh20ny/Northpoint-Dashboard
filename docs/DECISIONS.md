@@ -33,6 +33,36 @@ New decisions must be dated with owner, alternatives, migration impact, and test
 
 ## Phase 4 adult attendance rules — 2026-11-09
 
+### Superseding workbook acceptance — 2026-11-09
+
+**APPROVED, owner instruction:** “everything pulled from the workbook spreadsheet
+provided in the files of this project is accurate and should just be imported
+and displayed where appropriate. We don't need a bunch of steps to show the
+historical data.”
+
+The provided workbook is the accepted historical source. Source authority is
+recorded once for its batch and fingerprint, not per week or cell. Mapped,
+usable historical values should bulk-import into the appropriate implemented
+metrics without repeated publication acknowledgements or independent
+comparison demands. Cached numeric workbook values may be used as accepted
+source values; this does not claim formulas were independently recomputed.
+
+Preserve existing zero/unrecorded exceptions, snapshot cutoff, typed/date
+validation, explicit ministry/metric mappings, access restrictions and source
+lineage. Missing/unreadable source values, duplicate/contradictory mappings and
+manual corrections must not be silently overwritten. Do not invent timestamps,
+people or values for unimplemented metrics.
+
+For the one-time owner-directed import, record origin `owner_instruction`,
+immutable basis and matching batch SHA; attribute automation to the system
+(null actor), not to a fabricated authenticated owner/Admin. Keep existing
+weekly reviews intact as historical evidence, not a prerequisite to importing
+the rest. New approved/staged adult mappings on that accepted batch import
+automatically in the same transaction. Do not implicitly trust unrelated uploads.
+
+This supersedes earlier per-week real-data publication requirements for the
+accepted workbook; it does not enable production, provider scans or schedules.
+
 **APPROVED**, owner: product owner. Adult attendance is “Just the headcount of
 people sitting in the auditorium during each service”; volunteers, people on
 stage and people not attending the service are not counted. Summing service

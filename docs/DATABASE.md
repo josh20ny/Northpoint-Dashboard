@@ -2,6 +2,13 @@
 
 ## Phase 4 implementation note
 
+Migration 0015 adds immutable Admin-only `workbook_source_authorities`, tied to
+the source batch and fingerprint. Owner-directed automated workbook revisions
+may have null actors and `workbook_authoritative` provenance; this is a system
+import, not a fabricated authenticated review. Manual revisions still require
+non-null actors. Source validity accepts authorized workbook lineage without
+individual weekly review rows. No raw-source RLS is relaxed.
+
 `attendance_definitions` binds the adult ministry, effective date and immutable
 definition version. `attendance_revisions` stores aggregate manual/historical
 observations with status, count, source, actor, immutable occurrence snapshot,

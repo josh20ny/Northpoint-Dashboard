@@ -177,8 +177,8 @@ export async function readAttendance(
         metricSlug: "adult_in_person_attendance",
         definitionText: DEFINITION_TEXT,
         fourWeek:
-          "Unavailable: averaging and incomplete-week policies need owner approval. Unrecorded Sundays are never zero-filled.",
-        yoy: "Unavailable: year-over-year alignment policy is not approved.",
+          "Not connected yet: the four-week comparison needs its workbook mapping or calculation. Unrecorded Sundays are not zero-filled.",
+        yoy: "Not connected yet: the year-over-year comparison needs its workbook mapping or calculation.",
         latestCompletedWeek: latest,
         start: from,
         end: to,

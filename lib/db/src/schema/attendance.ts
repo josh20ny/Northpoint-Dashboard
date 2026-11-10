@@ -66,16 +66,14 @@ export const attendanceRevisions = pgTable(
     reviewMethod: text("review_method"),
     note: text("note").notNull(),
     previousId: uuid("previous_id").references((): AnyPgColumn => attendanceRevisions.id),
-    createdBy: uuid("created_by")
-      .notNull()
-      .references(() => usersTable.id),
+    createdBy: uuid("created_by").references(() => usersTable.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     readPolicy(),
     pgPolicy("attendance_write", {
       for: "insert",
-      withCheck: sql`current_setting('np.role',true) IN ('staff','leadership','admin') AND ${t.createdBy}::text = current_setting('np.user_id',true)`,
+      withCheck: sql`(current_setting('np.role',true) IN ('staff','leadership','admin') AND ${t.createdBy}::text = current_setting('np.user_id',true)) OR (current_setting('np.role',true)='admin' AND ${t.createdBy} IS NULL AND ${t.source}='workbook' AND ${t.reviewMethod}='workbook_authoritative')`,
     }),
     uniqueIndex("attendance_request").on(t.requestId),
     uniqueIndex("attendance_one_successor").on(t.previousId),
@@ -89,6 +87,7 @@ export const attendanceRevisions = pgTable(
     ),
     check("attendance_slot", sql`${t.slot} IN ('adult_service_1','adult_service_2')`),
     check("attendance_source", sql`${t.source} IN ('manual','workbook')`),
+    check("attendance_manual_actor", sql`${t.source}<>'manual' OR ${t.createdBy} IS NOT NULL`),
     check("attendance_sunday", sql`extract(dow FROM ${t.serviceDate})=0`),
   ],
 ).enableRLS();

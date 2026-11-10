@@ -30,8 +30,12 @@ No metric publication is claimed. See `PHASE_3_IMPLEMENTATION.md`.
 Phase 4 adult-attendance development now provides manual auditorium headcounts,
 immediate saves, immutable corrections, typed aggregate reads, the home KPI and
 attendance drilldown, plus deliberate evidence-bound historical promotion.
-No real attendance was entered/promoted by the agent. Initial adult ministry and
-service setup and owner-operated historical publication remain outstanding.
+After the owner accepted the supplied workbook as authoritative, its mapped
+adult history was bulk-imported: 80 service observations across 40 Sundays.
+Individual week publication is no longer required for this accepted source.
+The actual adult ministry/definition is configured; manual occurrence setup
+remains separate from unresolved historical start times. Other ministry
+history still needs its documented mappings and module implementations.
 Four-week and YoY policies remain unapproved/unavailable. See
 `PHASE_4_IMPLEMENTATION.md`; this is not production or full historical acceptance.
 

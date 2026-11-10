@@ -65,8 +65,12 @@ immediate manual saves and immutable corrections. Count seated auditorium
 attendees only; exclude volunteers and people on stage. Online-only/intentionally
 off Sundays are unrecorded, not zero. Manual entries need no approval.
 Admin setup selects the adult ministry; service slots must be explicitly mapped,
-not inferred from old headers. No real attendance was entered/promoted by the
-agent. Historical evidence promotion requires an explicit Admin action and basis.
+not inferred from old headers. The owner subsequently accepted the provided
+workbook as the historical source and rejected per-week publication steps.
+Accepted mapped history bulk-imports with immutable batch/fingerprint authority
+and honest system attribution; preserve manual corrections and unrecorded dates.
+No fabricated Admin approval is needed. See the superseding decision in
+`docs/DECISIONS.md`.
 Four-week/YoY policies are unapproved, so numeric comparisons stay unavailable.
 See `docs/PHASE_4_IMPLEMENTATION.md` for verification and acceptance limits.
 

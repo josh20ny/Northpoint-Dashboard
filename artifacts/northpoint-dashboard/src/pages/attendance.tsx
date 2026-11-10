@@ -28,7 +28,7 @@ import {
   SelectField,
   TextField,
 } from "@/components/admin-controls";
-import { DefinitionSetup, HistoryPromotion } from "@/components/attendance-admin";
+import { DefinitionSetup } from "@/components/attendance-admin";
 import {
   QUALITY_LABEL,
   QUALITY_TONE,
@@ -226,7 +226,7 @@ export default function Attendance() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
           {!w.isCurrentDefinition && w.definition && (
             <div
               role="status"
@@ -263,7 +263,13 @@ export default function Attendance() {
                 workspace={w}
                 csrfToken={csrfToken}
               />
-              <HistoryPromotion workspace={w} csrfToken={csrfToken} />
+              <Panel className="p-5 sm:p-6">
+                <h2 className="text-[13px] font-semibold">Workbook history</h2>
+                <p className="mt-2 text-[12.5px] text-muted-foreground">
+                  Accepted workbook attendance is imported in bulk. You do not need to publish each
+                  week. Source mappings and any unreadable records are managed in Imports.
+                </p>
+              </Panel>
             </>
           )}
         </div>
@@ -273,13 +279,13 @@ export default function Attendance() {
 }
 
 function Summary({ w }: { w: AttendanceWorkspace }) {
-  const latest = w.weeks.find((x) => x.week === w.latestCompletedWeek);
+  const latest = [...w.weeks].reverse().find((x) => x.week <= w.latestCompletedWeek);
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] [&>section]:min-w-0">
       <Panel className="np-grid-bg relative overflow-hidden">
         <div className="bg-gradient-to-br from-card via-card/95 to-card/70 p-6">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Week of {formatDate(w.latestCompletedWeek)}
+            {latest ? `Week of ${formatDate(latest.week)}` : "No completed Sunday in this range"}
           </p>
           <p
             className="mt-3 font-display text-[44px] font-semibold leading-none tracking-tight"
@@ -360,7 +366,7 @@ function WeeklyTable({
       {rows.length === 0 ? (
         <EmptyRecord>No weeks in this range.</EmptyRecord>
       ) : (
-        <div className="max-w-full overflow-x-auto rounded-md border">
+        <div className="max-w-full overflow-x-auto rounded-md border [contain:inline-size_paint]">
           <table className="w-full text-[13px]">
             <caption className="sr-only">Adult attendance by week</caption>
             <thead className="bg-muted/50 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -762,7 +768,7 @@ function RevisionLog({
       {revisions.length === 0 ? (
         <EmptyRecord>No revisions in this range.</EmptyRecord>
       ) : (
-        <div className="max-h-[420px] overflow-auto rounded-md border">
+        <div className="max-h-[420px] max-w-full overflow-auto rounded-md border [contain:inline-size_paint]">
           <table className="w-full text-[12.5px]">
             <caption className="sr-only">Attendance revisions</caption>
             <thead className="sticky top-0 bg-muted text-left text-[11px] uppercase tracking-wide text-muted-foreground">
