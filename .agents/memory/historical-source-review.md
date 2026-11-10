@@ -3,6 +3,26 @@ name: Historical source review
 description: Why matching workbook inventory counts cannot establish source equivalence.
 ---
 
+Accept accurately pulled PCO data without granular checking of every source
+value; prioritize accurate ingestion, storage and display using the existing
+PCO interaction structure.
+
+**Why:** The owner explicitly said that if data is accurately pulled from PCO,
+it works; storing and displaying it accurately is more important.
+
+**How to apply:** Verify pipeline fidelity, calculations, replay and presentation
+with focused automated and representative checks, not exhaustive manual source
+approvals. Preserve permissions, missingness and real error handling.
+
+Most PCO data goes back to approximately 2022; older historical data lives in
+the uploaded workbook. Historical backfills, particularly Giving, need both.
+
+**Why:** The owner stated the source coverage and dual-source requirement.
+
+**How to apply:** Do not hardcode 2022 as a universal cutoff. Prioritize
+current/future ingestion for Phase 5 and defer historical backfill execution,
+while retaining source lineage and overlap handling for both sources.
+
 The owner subsequently confirmed: “everything pulled from the workbook
 spreadsheet provided in the files of this project is accurate and should just be
 imported and displayed where appropriate” and rejected per-week publication
