@@ -142,3 +142,64 @@ Missing observations are not automatically zero. Calendar bucketing uses Chicago
    synthetic/rollback fixtures.
 5. Keep production, publishing, enabling unattended scheduling, and the earlier
    deferred production lifecycle checks separate from this development gate.
+
+## Deferred follow-ups: Integrations usability and PCO speed
+
+These items are recorded for later work; they do not require changing, pausing,
+restarting or cancelling active imports. Do not alter live sync queues or
+schedule settings as part of this follow-up plan.
+
+### Integrations page: collapse provider sections
+
+The Integrations page currently renders the Planning Center controls and
+connection history as one long section, followed by other providers. Add
+accessible, keyboard-operable provider sections so the page can show a concise
+**Planning Center** heading and reveal its controls, syncs and history when
+expanded. Keep connection status visible in the heading, preserve the existing
+Admin restrictions and all controls, and leave unrelated provider behavior
+unchanged. This is a small admin usability improvement that can be implemented
+independently of sync processing; defer it until the owner wants that UI work
+started.
+
+### PCO processing: measure, then improve safely
+
+The current worker advances one API page per two-second tick and serializes
+workers behind a shared database advisory lock. Each page is committed
+durably, but entities within it are persisted through multiple database
+operations, and some source relationships fan out into additional queued
+requests. A run can therefore take many hours even though progress is saved.
+The current `incremental` run mode also initializes from product root
+collections rather than a persisted per-product last-success checkpoint; a
+completed backfill is required, but by itself does not make the next run
+resume from the prior processing time.
+
+Recommended order:
+
+1. After the current imports settle, capture safe per-product baselines:
+   elapsed time, API pages, records received, database revisions, unchanged
+   records, retries and rate-limit responses. Do not log source payloads,
+   donor details or credentials.
+2. Implement a true incremental checkpoint per product/resource. Store a
+   durable provider-supported `updated_at` watermark (or the narrowest reliable
+   equivalent), use a documented overlap window for late changes, and dedupe
+   by the existing source identity/hash. Verify which PCO endpoints support
+   reliable change filters and relationship updates before relying on them;
+   retain a bounded reconciliation path for endpoints that do not.
+3. Reduce request and database overhead without dropping lineage or recovery:
+   use supported collection includes/relationship lookups instead of
+   per-record requests where possible, batch idempotent writes and observation
+   records per page, and retain atomic page checkpoints and safe replay.
+4. Replace fixed one-page polling with a rate-limit-aware worker that can
+   process pages efficiently and use carefully bounded parallelism only for
+   independent resources. Preserve fairness between runs, pause/cancel
+   behavior, the provider's `Retry-After` guidance, and deduplication. If
+   workers are parallelized, replace the broad lock with durable page claims
+   and fencing/lease checks so a crash or overlapping worker cannot skip or
+   double-apply a page.
+5. Test restart/resume, duplicate replay, late updates, relationship changes,
+   partial page failure, cancellation and rate limiting against isolated
+   fixtures. Compare elapsed time and request counts to the baseline before
+   considering the speed work complete.
+
+Do not deploy these worker changes or enable unattended scheduling as part of
+the development-only Phase 5 work without separate authorization.

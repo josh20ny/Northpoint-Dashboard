@@ -63,12 +63,22 @@ or full-project historical acceptance.
 
 **Ordering note:** phase 4 needs source validation and can initially use native manual counts before all PCO connectors are complete. Phases may overlap only after interfaces are tested; do not build all ministry pages before a complete vertical slice.
 
-## Deferred page cleanup and next phase
+## Deferred Integrations cleanup and PCO processing improvements
 
-The owner wants to return to the **Imports** and **Integrations** pages later
-to simplify and clean them up. This is intentionally deferred, not a blocker
-to closing Phase 4 or preparing Phase 5. No redesign, import-policy change,
-provider change or additional data operation is authorized by this note.
+The owner asked to defer work while current Planning Center imports are running.
+The Integrations page should later group provider details into collapsible
+sections, with a concise Planning Center heading that expands to its controls
+and sync history. Keep this UI-only change separate from live import operations.
+
+PCO throughput work should start only after the active imports settle. First
+measure per-product duration, pages, records, database revisions, retries and
+rate limits; then implement a verified per-product last-success checkpoint with
+overlap for late changes, reduce supported relationship/request and database
+write overhead, and evaluate carefully bounded rate-aware parallelism. Current
+progress is durably saved per page, but the existing incremental mode starts at
+root collections rather than a saved per-product timestamp. Keep atomic
+checkpoints, replay safety, lineage, pause/cancel behavior and provider limits.
+See `PHASE5_STATUS.md` for the staged plan and acceptance checks.
 
 **Next:** prepare Phase 5's restricted giving models, groups, serving and
 child/student modules against their documented sources and role boundaries.
