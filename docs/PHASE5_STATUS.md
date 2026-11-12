@@ -105,6 +105,9 @@ An explicitly selected historical year uses ordinal Sundays **within that
 source date axis**, not the current year's literal date and not the first row
 of a partial-year selection. A year without a matching Sunday is flagged.
 Workbook snapshot dates still limit what may be imported.
+The non-Giving candidate sheet/measure map is documented in
+`PHASE5_WORKBOOK_CROSSWALK.md`; it has not created source mappings or imported
+any workbook history.
 
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add

@@ -20,6 +20,8 @@
 - `docs/INTEGRATIONS.md`
 - `docs/PHASE_3_IMPLEMENTATION.md` — Planning Center setup and delivery limits
 - `docs/PHASE_4_IMPLEMENTATION.md` — adult attendance setup, corrections and historical promotion
+- `docs/PHASE5_STATUS.md` — Phase 5 implementation, source and live-data gates
+- `docs/PHASE5_WORKBOOK_CROSSWALK.md` — non-Giving historical workbook mapping candidates
 - `docs/JOURNEYS.md`
 - `docs/METRICS.md`
 - `docs/OPEN_QUESTIONS.md`
