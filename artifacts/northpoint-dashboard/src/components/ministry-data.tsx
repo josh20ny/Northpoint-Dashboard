@@ -12,6 +12,8 @@ import {
 import { RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Panel, QueryError, StatusPill, formatDate } from "@/components/kit";
+import { CollapsibleSection } from "@/components/collapsible-section";
+import { MinistryHealthSection } from "@/components/ministry-health-section";
 import {
   SERVING_MEASURES,
   buildSeries,
@@ -26,6 +28,12 @@ import {
 } from "@/lib/ministry-data";
 
 const slugId = (s: string) => s.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+const ATTENDANCE_MEASURES = new Set([
+  "attendance",
+  "attendance_headcount",
+  "group_attendance",
+  "member_attendance",
+]);
 
 function RangeControl({
   ministry,
@@ -231,6 +239,9 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
   const all = useMemo(() => buildSeries(ws?.metrics ?? []), [ws]);
   const primary = all.filter((s) => !SERVING_MEASURES.has(s.measure));
   const serving = all.filter((s) => SERVING_MEASURES.has(s.measure));
+  const isGiving = ministry === "giving";
+  const lead = isGiving ? primary : primary.filter((s) => ATTENDANCE_MEASURES.has(s.measure));
+  const other = isGiving ? [] : primary.filter((s) => !ATTENDANCE_MEASURES.has(s.measure));
   const weeks = useMemo(() => (ws ? sundaysDesc(ws.start, ws.end) : []), [ws]);
   const id = slugId(ministry);
 
@@ -254,7 +265,6 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
         </p>
         <p>Updated {formatDate(ws.asOf, true)} · {ws.timezone}{stale ? " · Updating" : ""}</p>
       </div>
-      <RangeControl ministry={ministry} onApply={setParams} active={!!params} busy={q.isFetching} />
     </div>
   );
   const refetchBanner = q.isRefetchError && (
@@ -273,22 +283,33 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
 
   if (mode === "serving")
     return (
-      <Panel title="Serving" meta={<span className="font-mono text-[11px] text-muted-foreground">Planning Center Services</span>}>
-        <div className={`p-5 ${stale ? "opacity-60" : ""}`}>
-          {refetchBanner}
-          {header}
-          {serving.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-6 text-center text-[13px] text-muted-foreground" data-testid={`status-serving-empty-${id}`}>
-              No serving facts are published for this ministry yet. An administrator maps service types or teams, then publishes a completed scan.
-            </p>
-          ) : (
-            <>
+      <div className={`space-y-5 ${stale ? "opacity-60" : ""}`}>
+        {refetchBanner}
+        {header}
+        <Panel title="Serving" meta={<span className="font-mono text-[11px] text-muted-foreground">Planning Center Services</span>}>
+          <div className="p-5">
+            {serving.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-6 text-center text-[13px] text-muted-foreground" data-testid={`status-serving-empty-${id}`}>
+                No serving facts are published for this ministry yet. An administrator maps service types or teams, then publishes a completed scan.
+              </p>
+            ) : (
               <SummaryCards series={serving} week={ws.latestCompletedWeek} />
-              <div className="mt-4 rounded-lg border"><HistoryTable series={serving} weeks={weeks} label="Weekly serving history" /></div>
-            </>
-          )}
-        </div>
-      </Panel>
+            )}
+          </div>
+        </Panel>
+        {serving.length > 0 && (
+          <Panel title="Serving history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+            <HistoryTable series={serving} weeks={weeks} label="Weekly serving history" />
+          </Panel>
+        )}
+        <CollapsibleSection
+          title="Serving reporting controls"
+          description="Change the reporting dates for this ministry."
+          testId={`section-reporting-controls-${id}`}
+        >
+          <RangeControl ministry={ministry} onApply={setParams} active={!!params} busy={q.isFetching} />
+        </CollapsibleSection>
+      </div>
     );
 
   return (
@@ -296,31 +317,65 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       {refetchBanner}
       {header}
       {issues}
-      <Panel title={`Week of ${formatDate(ws.latestCompletedWeek)}`}>
+      <Panel
+        title={isGiving ? "Giving" : "Attendance"}
+        meta={<span className="font-mono text-[11px] text-muted-foreground">Week of {formatDate(ws.latestCompletedWeek)}</span>}
+      >
         <div className="p-5">
-          {primary.length === 0 ? (
+          {lead.length === 0 ? (
             <p className="rounded-lg border border-dashed p-6 text-center text-[13px] text-muted-foreground" data-testid={`status-metrics-empty-${id}`}>
-              No figures are published for this ministry in this range. Missing weeks are shown as missing, not zero.
+              {isGiving
+                ? "No giving figures are published in this range. Missing weeks are shown as missing, not zero."
+                : "No attendance figures are published in this range. Missing weeks are shown as missing, not zero."}
             </p>
           ) : (
-            <SummaryCards series={primary} week={ws.latestCompletedWeek} />
+            <SummaryCards series={lead} week={ws.latestCompletedWeek} />
           )}
         </div>
       </Panel>
-      {primary.length > 0 && (
-        <Panel title="Weekly history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
-          <HistoryTable series={primary} weeks={weeks} label="Weekly history" />
+      <MinistryHealthSection ministry={ministry} />
+      <Panel title="Other KPIs" meta={<span className="text-[11px] text-muted-foreground">Published and planned measures</span>}>
+        <div className="space-y-5 p-5">
+          {other.length > 0 && <SummaryCards series={other} week={ws.latestCompletedWeek} />}
+          {serving.length > 0 && (
+            <div className={other.length > 0 ? "border-t pt-4" : undefined}>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-[12.5px] font-medium">Serving</h3>
+                <span className="font-mono text-[10.5px] text-muted-foreground">Planning Center Services</span>
+              </div>
+              <SummaryCards series={serving} week={ws.latestCompletedWeek} />
+            </div>
+          )}
+          {other.length === 0 && serving.length === 0 && (
+            <p className="text-[13px] text-muted-foreground">No other KPI figures are published yet.</p>
+          )}
+        </div>
+        <div className="border-t">
+          <KpiInventory ws={ws} />
+        </div>
+      </Panel>
+      {lead.length > 0 && (
+        <Panel title={isGiving ? "Giving history" : "Attendance history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          <HistoryTable series={lead} weeks={weeks} label={isGiving ? "Giving history" : "Attendance history"} />
+        </Panel>
+      )}
+      {other.length > 0 && (
+        <Panel title="Other KPI history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          <HistoryTable series={other} weeks={weeks} label="Other KPI history" />
         </Panel>
       )}
       {serving.length > 0 && (
-        <Panel title="Serving" meta={<span className="text-[11px] text-muted-foreground">Secondary data</span>}>
-          <div className="p-5"><SummaryCards series={serving} week={ws.latestCompletedWeek} /></div>
-          <div className="border-t"><HistoryTable series={serving} weeks={weeks} label="Weekly serving history" /></div>
+        <Panel title="Serving history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          <HistoryTable series={serving} weeks={weeks} label="Serving history" />
         </Panel>
       )}
-      <Panel title="KPI inventory" meta={<span className="text-[11px] text-muted-foreground">Including unmapped and later phases</span>}>
-        <KpiInventory ws={ws} />
-      </Panel>
+      <CollapsibleSection
+        title="Reporting controls"
+        description="Change the reporting dates for this ministry."
+        testId={`section-reporting-controls-${id}`}
+      >
+        <RangeControl ministry={ministry} onApply={setParams} active={!!params} busy={q.isFetching} />
+      </CollapsibleSection>
     </div>
   );
 }

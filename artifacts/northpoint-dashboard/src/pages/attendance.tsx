@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   getGetAttendanceQueryKey,
@@ -9,6 +9,7 @@ import {
 import { ListOrdered, RefreshCw, Rows3 } from "lucide-react";
 import { KV, Panel, QueryError, RefreshButton, StatusPill, formatDate } from "@/components/kit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import {
   EmptyRecord,
   RestrictedState,
@@ -51,7 +52,11 @@ function rangeError(start: string, end: string) {
   return null;
 }
 
-export default function AttendanceDetails() {
+export default function AttendanceDetails({
+  supportingSections,
+}: {
+  supportingSections?: ReactNode;
+} = {}) {
   const { user, enabled, isLoading: authLoading, csrfToken } = useAuth();
   const [draftStart, setDraftStart] = useState("");
   const [draftEnd, setDraftEnd] = useState("");
@@ -74,6 +79,8 @@ export default function AttendanceDetails() {
   const w = q.data;
   const stale = q.isPlaceholderData;
   const [editTarget, setEditTarget] = useState<EntryTarget | null>(null);
+  const [entryOpen, setEntryOpen] = useState(false);
+  const entryDetailsRef = useRef<HTMLDetailsElement | null>(null);
   const filterError = rangeError(draftStart, draftEnd);
   // Seed only: the entry form owns its own single-week query.
   const seedRef = useRef<{ userId: string; date: string } | null>(null);
@@ -127,176 +134,222 @@ export default function AttendanceDetails() {
     setRange(draftStart && draftEnd ? { start: draftStart, end: draftEnd } : undefined);
   };
 
+  const openEntry = (date: string, slot: SlotValue) => {
+    setEditTarget({ date, slot, nonce: Date.now() });
+    setEntryOpen(true);
+    window.requestAnimationFrame(() =>
+      entryDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+
+  const rangeControls = (
+    <form
+      onSubmit={applyFilter}
+      className="flex flex-wrap items-end gap-3 rounded-lg border bg-card px-4 py-3"
+      aria-label="Date range"
+    >
+      <div className="w-40">
+        <TextField
+          name="range-start"
+          label="Start (Sunday)"
+          type="date"
+          hint="Use Sunday dates."
+          value={draftStart}
+          onChange={setDraftStart}
+        />
+      </div>
+      <div className="w-40">
+        <TextField
+          name="range-end"
+          label="End (Sunday)"
+          type="date"
+          value={draftEnd}
+          onChange={setDraftEnd}
+        />
+      </div>
+      <button
+        type="submit"
+        data-testid="button-apply-range"
+        disabled={!!filterError}
+        className="h-10 rounded-md bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        Apply
+      </button>
+      {range && (
+        <button
+          type="button"
+          data-testid="button-reset-range"
+          onClick={() => {
+            setDraftStart("");
+            setDraftEnd("");
+            setRange(undefined);
+          }}
+          className="h-10 rounded-md border px-3 text-[13px]"
+        >
+          Default range
+        </button>
+      )}
+      {w && w.definitions.length > 0 && (
+        <label className="block w-56 text-[12px] font-medium">
+          Definition version
+          <select
+            data-testid="select-definition-version"
+            value={definitionId}
+            onChange={(e) => setDefinitionId(e.target.value)}
+            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-[13px] font-normal"
+          >
+            <option value="">Latest</option>
+            {[...w.definitions]
+              .sort((a, b) => b.version - a.version)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  v{d.version} · from {d.effectiveFrom}
+                </option>
+              ))}
+          </select>
+        </label>
+      )}
+      {filterError && (
+        <p role="alert" className="w-full text-[12px] text-destructive">
+          {filterError}
+        </p>
+      )}
+    </form>
+  );
+
   return (
     <>
-      {header}
-      <form
-        onSubmit={applyFilter}
-        className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border bg-card px-4 py-3"
-        aria-label="Date range"
-      >
-        <div className="w-40">
-          <TextField
-            name="range-start"
-            label="Start (Sunday)"
-            type="date"
-            hint="Use Sunday dates."
-            value={draftStart}
-            onChange={setDraftStart}
-          />
-        </div>
-        <div className="w-40">
-          <TextField
-            name="range-end"
-            label="End (Sunday)"
-            type="date"
-            value={draftEnd}
-            onChange={setDraftEnd}
-          />
-        </div>
-        <button
-          type="submit"
-          data-testid="button-apply-range"
-          disabled={!!filterError}
-          className="h-10 rounded-md bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
-        >
-          Apply
-        </button>
-        {range && (
-          <button
-            type="button"
-            data-testid="button-reset-range"
-            onClick={() => {
-              setDraftStart("");
-              setDraftEnd("");
-              setRange(undefined);
-            }}
-            className="h-10 rounded-md border px-3 text-[13px]"
-          >
-            Default range
-          </button>
-        )}
-        {w && w.definitions.length > 0 && (
-          <label className="block w-56 text-[12px] font-medium">
-            Definition version
-            <select
-              data-testid="select-definition-version"
-              value={definitionId}
-              onChange={(e) => setDefinitionId(e.target.value)}
-              className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-[13px] font-normal"
-            >
-              <option value="">Latest</option>
-              {[...w.definitions]
-                .sort((a, b) => b.version - a.version)
-                .map((d) => (
-                  <option key={d.id} value={d.id}>
-                    v{d.version} · from {d.effectiveFrom}
-                  </option>
-                ))}
-            </select>
-          </label>
-        )}
-        {filterError && (
-          <p role="alert" className="w-full text-[12px] text-destructive">
-            {filterError}
-          </p>
-        )}
+      <section aria-label="Adult attendance" data-testid="section-ministry-attendance">
+        {header}
         {w && (
-          <p className="ml-auto text-[11.5px] text-muted-foreground" data-testid="text-range">
-            {w.start} to {w.end} · {w.timezone}
+          <p className="mb-4 text-[12px] text-muted-foreground" data-testid="text-range">
+            Showing {w.start} to {w.end} · {w.timezone}
           </p>
         )}
-      </form>
 
-      {q.isRefetchError && w && (
-        <div
-          role="alert"
-          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-950"
-        >
-          <span>Refresh failed. Showing data from {formatDate(w.asOf, true)}.</span>
-          <button
-            type="button"
-            onClick={() => void q.refetch()}
-            className="inline-flex h-8 items-center gap-2 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
+        {q.isRefetchError && w && (
+          <div
+            role="alert"
+            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-950"
           >
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
-          </button>
-        </div>
-      )}
-
-      {seed && (
-        <div className="mb-5">
-          <WeeklyAttendanceEntry
-            key={`${user.id}:${definitionId || "latest"}`}
-            initialDate={seed}
-            definitionId={definitionId || undefined}
-            csrfToken={csrfToken}
-            target={editTarget}
-          />
-        </div>
-      )}
-
-      {q.isError && !w ? (
-        <QueryError
-          title="Attendance unavailable"
-          error={q.error}
-          onRetry={() => void q.refetch()}
-        />
-      ) : q.isLoading || !w ? (
-        <div className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      ) : (
-        <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
-          {!w.isCurrentDefinition && w.definition && (
-            <div
-              role="status"
-              data-testid="status-prior-definition"
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-950"
+            <span>Refresh failed. Showing data from {formatDate(w.asOf, true)}.</span>
+            <button
+              type="button"
+              onClick={() => void q.refetch()}
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
             >
-              <span>
-                Viewing prior version{w.definition ? ` v${w.definition.version}` : ""}. Read only.
-              </span>
-              <button
-                type="button"
-                data-testid="button-latest-definition"
-                onClick={() => setDefinitionId("")}
-                className="h-8 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+            </button>
+          </div>
+        )}
+
+        {q.isError && !w ? (
+          <QueryError
+            title="Attendance unavailable"
+            error={q.error}
+            onRetry={() => void q.refetch()}
+          />
+        ) : q.isLoading || !w ? (
+          <div className="space-y-4">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : (
+          <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
+            {!w.isCurrentDefinition && w.definition && (
+              <div
+                role="status"
+                data-testid="status-prior-definition"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-950"
               >
-                View latest
-              </button>
-            </div>
-          )}
-          <Summary
-            w={w}
-            averageWeeks={averageWeeks}
-            onAverageWeeks={setAverageWeeks}
-            stale={stale}
-            showCell={user.role !== "staff"}
-          />
-          <WeeklyTable
-            w={w}
-            onEdit={(date, slot) => setEditTarget({ date, slot, nonce: Date.now() })}
-          />
-          <RevisionLog revisions={w.revisions} truncated={w.historyTruncated} />
-          {user.role === "admin" && (
-            <>
-              <DefinitionSetup
-                key={w.definition?.id ?? "none"}
-                workspace={w}
-                csrfToken={csrfToken}
-              />
-              <Panel className="p-5 sm:p-6">
-                <h2 className="text-[13px] font-semibold">Workbook history</h2>
-                <p className="mt-2 text-[12.5px] text-muted-foreground">
-                  Accepted workbook attendance is imported in bulk. You do not need to publish each
-                  week. Source mappings and any unreadable records are managed in Imports.
-                </p>
-              </Panel>
-            </>
-          )}
+                <span>
+                  Viewing prior version{w.definition ? ` v${w.definition.version}` : ""}. Read only.
+                </span>
+                <button
+                  type="button"
+                  data-testid="button-latest-definition"
+                  onClick={() => setDefinitionId("")}
+                  className="h-8 rounded-md border border-amber-400 px-2.5 text-[12px] font-medium hover:bg-amber-100"
+                >
+                  View latest
+                </button>
+              </div>
+            )}
+            <Summary w={w} stale={stale} showCell={user.role !== "staff"} />
+          </div>
+        )}
+      </section>
+      {supportingSections && (
+        <div className="mt-5 space-y-5" data-testid="section-ministry-supporting">
+          {supportingSections}
         </div>
+      )}
+      {w && (
+        <section
+          className="mt-5 space-y-5"
+          aria-label="Attendance history"
+          data-testid="section-attendance-history"
+        >
+          <WeeklyTable w={w} onEdit={openEntry} />
+          <RevisionLog revisions={w.revisions} truncated={w.historyTruncated} />
+        </section>
+      )}
+      <CollapsibleSection
+        title="Attendance reporting controls"
+        description="Change the date range, definition version or rolling-average window."
+        testId="section-attendance-reporting-controls"
+      >
+        {rangeControls}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+          <div>
+            <p className="text-[12.5px] font-medium">Rolling average window</p>
+            <p className="text-[11.5px] text-muted-foreground">
+              Adjust the number of weeks used for the attendance context.
+            </p>
+          </div>
+          <AverageWeeksControl value={averageWeeks} onChange={setAverageWeeks} updating={stale} />
+        </div>
+      </CollapsibleSection>
+      {(seed || (user.role === "admin" && w)) && (
+        <CollapsibleSection
+          title="Manual entry and settings"
+          description="Record or correct attendance; administrators can also manage definitions."
+          testId="section-attendance-entry"
+          open={entryOpen}
+          onOpenChange={(open) => {
+            setEntryOpen(open);
+            if (!open) setEditTarget(null);
+          }}
+          detailsRef={entryDetailsRef}
+        >
+          <div className="space-y-5">
+            {seed && (
+              <WeeklyAttendanceEntry
+                key={`${user.id}:${definitionId || "latest"}`}
+                initialDate={seed}
+                definitionId={definitionId || undefined}
+                csrfToken={csrfToken}
+                target={editTarget}
+              />
+            )}
+            {user.role === "admin" && w && (
+              <>
+                <DefinitionSetup
+                  key={w.definition?.id ?? "none"}
+                  workspace={w}
+                  csrfToken={csrfToken}
+                />
+                <Panel className="p-5 sm:p-6">
+                  <h2 className="text-[13px] font-semibold">Workbook history</h2>
+                  <p className="mt-2 text-[12.5px] text-muted-foreground">
+                    Accepted workbook attendance is imported in bulk. You do not need to publish
+                    each week. Source mappings and unreadable records are managed in Imports.
+                  </p>
+                </Panel>
+              </>
+            )}
+          </div>
+        </CollapsibleSection>
       )}
     </>
   );
@@ -304,14 +357,10 @@ export default function AttendanceDetails() {
 
 function Summary({
   w,
-  averageWeeks,
-  onAverageWeeks,
   stale,
   showCell,
 }: {
   w: AttendanceWorkspace;
-  averageWeeks: number;
-  onAverageWeeks: (n: number) => void;
   stale: boolean;
   showCell: boolean;
 }) {
@@ -356,11 +405,8 @@ function Summary({
       <Panel title="Context" className="[&>dl>div]:flex-wrap [&_dd]:min-w-0 [&_dd]:break-words">
         <dl>
           <div className="space-y-2 px-5 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <dt className="text-[12.5px] text-muted-foreground">Rolling average</dt>
-              <AverageWeeksControl value={averageWeeks} onChange={onAverageWeeks} updating={stale} />
-            </div>
-            <dd>
+            <dt className="text-[12.5px] text-muted-foreground">Rolling average</dt>
+            <dd className="mt-2">
               <RollingAverageView avg={w.rollingAverage} stale={stale} />
             </dd>
           </div>

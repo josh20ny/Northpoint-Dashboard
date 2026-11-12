@@ -4,7 +4,9 @@ import { useGetFoundation } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, Panel, QueryError, StatusPill, usePageTitle } from "@/components/kit";
 import AttendanceDetails from "@/pages/attendance";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { GivingTransactions, MinistryDataView } from "@/components/ministry-data";
+import { MinistryHealthSection } from "@/components/ministry-health-section";
 import { GivingHealth, GivingPolicyForm } from "@/components/giving-admin";
 import { isDataMinistry } from "@/lib/ministry-data";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -91,18 +93,39 @@ export default function Ministry() {
         }
       />
       {slug === "service-programming" && (
-        <section
-          className="mb-8"
-          aria-label="Adult attendance"
-          data-testid="section-ministry-attendance"
-        >
-          <AttendanceDetails />
-        </section>
-      )}
-      {slug === "service-programming" && (
-        <section className="mb-8" aria-label="Serving" data-testid="section-ministry-serving">
-          <MinistryDataView ministry={slug} mode="serving" />
-        </section>
+        <AttendanceDetails
+          supportingSections={
+            <>
+              <section aria-label="Health metrics" data-testid="section-ministry-health">
+                <MinistryHealthSection ministry={slug} />
+              </section>
+              <section aria-label="Serving KPIs" data-testid="section-ministry-serving">
+                <MinistryDataView ministry={slug} mode="serving" />
+              </section>
+              <Panel
+                title="Other KPIs"
+                meta={<span className="font-mono text-[11px] text-muted-foreground">Planned</span>}
+              >
+                <ol className="divide-y">
+                  {SPD_PENDING.map(([title, description], index) => (
+                    <li key={title} className="flex gap-4 px-5 py-4">
+                      <span className="font-mono text-[12px] text-muted-foreground">
+                        0{index + 1}
+                      </span>
+                      <div>
+                        <p className="text-[14px] font-medium">{title}</p>
+                        <p className="mt-0.5 text-[13px] text-muted-foreground">{description}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                <p className="border-t px-5 py-3 text-[12px] text-muted-foreground">
+                  These service-programming KPIs are not connected yet.
+                </p>
+              </Panel>
+            </>
+          }
+        />
       )}
       {isDataMinistry(slug) && (
         <>
@@ -110,45 +133,50 @@ export default function Ministry() {
             <MinistryDataView ministry={slug} />
           </section>
           {slug === "giving" && user?.role === "admin" && (
-            <section className="mb-8" aria-label="Giving transactions" data-testid="section-giving-transactions">
-              <GivingTransactions />
-            </section>
-          )}
-          {slug === "giving" && user?.role === "admin" && (
-            <section className="mb-8 space-y-5" aria-label="Giving formula and units" data-testid="section-giving-policy">
-              <GivingPolicyForm />
-              <GivingHealth />
+            <section aria-label="Giving administration" data-testid="section-giving-policy">
+              <CollapsibleSection
+                title="Admin-only giving details"
+                description="Formula settings and person-linked giving records are restricted to administrators."
+                testId="section-giving-admin-details"
+              >
+                <div className="space-y-5">
+                  <section
+                    aria-label="Giving transactions"
+                    data-testid="section-giving-transactions"
+                  >
+                    <GivingTransactions />
+                  </section>
+                  <GivingPolicyForm />
+                  <GivingHealth />
+                </div>
+              </CollapsibleSection>
             </section>
           )}
         </>
       )}
-      {!isDataMinistry(slug) && (<>
-      <Panel
-        title={
-          slug === "service-programming"
-            ? "Other Service Programming KPIs"
-            : "Planned for this view"
-        }
-        meta={<span className="font-mono text-[11px] text-muted-foreground">Planned</span>}
-      >
-        <ol className="divide-y">
-          {(slug === "service-programming" ? SPD_PENDING : FUTURE).map(([t, d], i) => (
-            <li key={t} className="flex gap-4 px-5 py-4">
-              <span className="font-mono text-[12px] text-muted-foreground">0{i + 1}</span>
-              <div>
-                <p className="text-[14px] font-medium">{t}</p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">{d}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Panel>
-      <p className="mt-4 text-[12.5px] text-muted-foreground">
-        {slug === "service-programming"
-          ? "The other KPIs listed above are not connected yet."
-          : "No ministry reports are available."}
-      </p>
-      </>)}
+      {!isDataMinistry(slug) && slug !== "service-programming" && (
+        <>
+          <Panel
+            title="Planned for this view"
+            meta={<span className="font-mono text-[11px] text-muted-foreground">Planned</span>}
+          >
+            <ol className="divide-y">
+              {FUTURE.map(([t, d], i) => (
+                <li key={t} className="flex gap-4 px-5 py-4">
+                  <span className="font-mono text-[12px] text-muted-foreground">0{i + 1}</span>
+                  <div>
+                    <p className="text-[14px] font-medium">{t}</p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">{d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+          <p className="mt-4 text-[12.5px] text-muted-foreground">
+            No ministry reports are available.
+          </p>
+        </>
+      )}
     </>
   );
 }

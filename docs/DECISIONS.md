@@ -47,6 +47,18 @@ IDs/names, individual giving signals and transactions remain Admin-only.
 No numeric small-cell threshold, arbitrary donor filter or person-level
 financial cross-domain join is approved by this clarification.
 
+### Shared ministry-page hierarchy — 2026-11-12
+
+**APPROVED**, owner: product owner. Keep ministry detail pages consistent:
+attendance first, then formula-based health metrics, then other KPIs such as
+social, YouTube and email measures. Health formulas will be refined in a later
+phase; do not show invented scores before their definitions are set. Put manual
+entry and other user-input controls in collapsed sections at the bottom of the
+page so they do not compete with the reported data.
+
+Apply this order to Connection and Groups, the child/student ministries, Service
+Programming and Giving. Historical tables may follow the key summary sections.
+
 The owner defined first-time giving as the first recorded giving event for the
 person/family at Northpoint, and lapse as three consecutive missed expected
 gifts after a consistent cadence. They accepted four gifts/three matching

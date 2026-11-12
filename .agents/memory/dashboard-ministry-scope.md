@@ -37,3 +37,15 @@ page structure.
 its metrics to the relevant ministry, and keep detailed history/entry with that
 ministry's other metrics. Legacy attendance links may redirect to Service
 Programming; do not reintroduce a standalone Attendance navigation item.
+
+Use a shared ministry-page order: attendance first, formula-based health
+metrics next, then other KPIs. Keep health scores absent until their formulas
+are defined. Put manual entry and other user-input controls in collapsed
+sections at the bottom of ministry pages.
+
+**Why:** The owner explicitly requested this hierarchy to keep primary measures
+visible and prevent entry controls from distracting from reported results.
+
+**How to apply:** Use the order across Connection/Groups, child/student
+ministries, Service Programming and Giving. Show future health formulas as
+unconfigured, never as invented scores.
