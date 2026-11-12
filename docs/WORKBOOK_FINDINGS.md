@@ -2,6 +2,16 @@
 
 The supplied XLSX has **51 worksheets**, **35,123 formulas** and **1,536 externally linked/import-wrapper formulas**. Source metadata in `data/SOURCE_MANIFEST.md`; all worksheet data in `data/workbook_inventory.csv`.
 
+## Owner acceptance and Phase 5 mapping
+
+The owner has accepted this workbook as an accurate historical source and
+approved importing usable values where they map to implemented measures. Do not
+request repeated per-week or per-cell value approval. This acceptance does not
+make a worksheet header a canonical metric definition: Phase 5 still needs
+explicit sheet/column-to-measure, unit, scope and date-era mappings, snapshot
+cutoffs, overlap handling against PCO, and clear flags for genuinely unreadable
+or ambiguous values.
+
 ## Operating tabs
 `Dash`, `SPD`, `Connection`, `$$$`, `WL`, `US`, `Transit`, `IO`, `Communications`. Extracted 2026 row-two labels in `data/legacy_columns.csv`. Header names, formulas and cached values are discovery material, **not confirmed canonical metric contracts**.
 

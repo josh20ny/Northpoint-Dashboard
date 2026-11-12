@@ -22,7 +22,7 @@ These are **not blockers to building auth, schema, the import explorer, or the f
 ## Before specific integration modules
 11. Accounts, scopes and admins for GA4/YouTube/Meta/Mailchimp/Clearstream/podcast sources.
 12. Scorecard template criteria and exact Double/Triple/Homerun numeric mappings; number of survey responses available.
-13. Historical source workbook tabs authoritative vs derived/corrupted, including 9:30→9:00, venue change and COVID periods.
+13. For the accepted workbook, how should each historical sheet/column map to canonical measures, units and eras, including 9:30→9:00, venue changes and COVID periods? Workbook value authority is settled; this is a semantic mapping, date coverage and PCO-overlap question, not a request to revalidate individual values.
 14. Retention window for 2nd/3rd visits, first-time definition across ministry vs church and historical data limits.
 15. Sensitivity threshold for aggregate privacy/small-cell suppression and data retention obligations.
 
