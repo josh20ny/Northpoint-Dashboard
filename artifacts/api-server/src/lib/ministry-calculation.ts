@@ -1,8 +1,12 @@
 import type { SourceEntity } from "./planning-center-source";
 import { chicagoDate, shiftDate, sunday } from "./attendance-calculation";
+import {
+  findCheckInReviewCandidates,
+  type CheckInResolutionAction,
+} from "./ministry-checkin-review";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v1";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v2";
 export const MINISTRY_SLUGS = [
   "giving",
   "connection",
@@ -266,6 +270,7 @@ export function compileMinistryFacts(
   start: string,
   end: string,
   asOf: Date,
+  checkInResolutions: ReadonlyMap<string, CheckInResolutionAction> = new Map(),
 ) {
   if (!sunday(start) || !sunday(end) || end < start) throw new Error("Invalid Sunday range");
   const issues = new Set<string>();
@@ -456,11 +461,28 @@ export function compileMinistryFacts(
     }
   }
   if (product === "check_ins") {
+    const reviewItems = findCheckInReviewCandidates(entities);
+    const reviewById = new Map(reviewItems.map((item) => [item.checkInId, item]));
+    const pendingReviews = reviewItems.filter((item) => !checkInResolutions.has(item.checkInId));
+    if (pendingReviews.length) {
+      issues.add(`unresolved_checkins_pending:${pendingReviews.length}`);
+      for (const item of pendingReviews)
+        for (const reason of item.issueReasons) issues.add(`checkin_${reason}`);
+    }
     const periods = new Map(entities.filter((e) => e.type === "EventPeriod").map((e) => [e.id, e]));
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
     const first = new Map<string, string>();
-    const candidates: { m: SourceMapping; d: Date; person: string; kind: string }[] = [];
+    const candidates: {
+      m: SourceMapping;
+      d: Date;
+      person: string | null;
+      kind: string;
+      identity: string;
+    }[] = [];
     for (const e of entities.filter((e) => e.type === "CheckIn")) {
+      const resolution = checkInResolutions.get(e.id);
+      if (resolution === "exclude") continue;
+      const review = reviewById.get(e.id);
       const person = ref(e, "person"),
         period = periods.get(ref(e, "event_period") ?? "");
       const eventTimes = refs(e, "event_times").map((id) => times.get(id));
@@ -470,7 +492,12 @@ export function compileMinistryFacts(
       const fallback = period && instant(period.attributes.starts_at);
       const d = starts.sort((a, b) => +a - +b)[0] ?? fallback;
       // Attendance uses actual event dates, never check-in creation/import date.
-      if (!d || !person || !period) {
+      if (!d || !period) {
+        issues.add("checkin_date_person_or_period_missing");
+        continue;
+      }
+      if (review && !resolution) continue;
+      if (!person && resolution !== "include") {
         issues.add("checkin_date_person_or_period_missing");
         continue;
       }
@@ -486,28 +513,35 @@ export function compileMinistryFacts(
       const unique = new Map<string, SourceMapping>();
       for (const m of ms) unique.set(`${m.ministry}|${m.measure}|${m.scope}`, m);
       for (const m of unique.values()) {
-        const kind = String(e.attributes.kind).toLowerCase();
+        const sourceKind = String(e.attributes.kind).toLowerCase();
+        const kind =
+          resolution === "include" && !["regular", "guest", "volunteer"].includes(sourceKind)
+            ? "guest"
+            : sourceKind;
         if (!["regular", "volunteer", "guest"].includes(kind)) {
           issues.add("unknown_checkin_kind");
           continue;
         }
-        candidates.push({ m, d, person, kind });
-        if (kind === "regular") {
+        const identity =
+          resolution === "include" && review ? `checkin:${e.id}` : person!;
+        candidates.push({ m, d, person, kind, identity });
+        if (kind === "regular" && person) {
           const k = `${m.ministry}|${m.scope}|${person}`,
             w = reportingWeekEnding(d);
           if (!first.has(k) || first.get(k)! > w) first.set(k, w);
         }
       }
     }
-    for (const { m, d, person, kind } of candidates) {
+    for (const { m, d, person, kind, identity } of candidates) {
       if (
         (m.measure === "attendance" && ["regular", "guest"].includes(kind)) ||
         (m.measure === "volunteers" && kind === "volunteer") ||
         (m.measure === "first_known" &&
+          !!person &&
           kind === "regular" &&
           first.get(`${m.ministry}|${m.scope}|${person}`) === reportingWeekEnding(d))
       )
-        apply([m], d, 1, person);
+        apply([m], d, 1, identity);
     }
     for (const row of output.values())
       if (row.measure === "first_known") row.flags.push("limited_to_imported_history");

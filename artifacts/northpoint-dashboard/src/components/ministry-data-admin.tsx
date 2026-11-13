@@ -23,6 +23,7 @@ import {
   TextField,
 } from "@/components/admin-controls";
 import { csrfRequest } from "@/lib/attendance";
+import { MinistryCheckInReview } from "@/components/ministry-checkin-review";
 import {
   MAPPABLE_MINISTRIES,
   MEASURES,
@@ -200,6 +201,7 @@ export function MinistryDataAdminPanel() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <>
+          <MinistryCheckInReview csrfToken={csrfToken} />
           <Panel className="p-5 sm:p-6">
             <SectionHeading icon={Database} title="Ministry source mappings" detail="Connect a Planning Center source to a ministry measure. Effective dates cannot be edited after saving." />
             <form onSubmit={submitMapping} className="space-y-3" noValidate>

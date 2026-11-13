@@ -204,6 +204,50 @@ export const GetMinistryDataAdminResponse = zod.object({
 })
 
 
+export const getCheckInReviewQueryPageDefault = 1;
+export const getCheckInReviewQueryPageMax = 10000;
+
+
+
+export const GetCheckInReviewQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).max(getCheckInReviewQueryPageMax).default(getCheckInReviewQueryPageDefault)
+})
+
+export const GetCheckInReviewResponse = zod.object({
+  "items": zod.array(zod.object({
+  "checkInId": zod.string(),
+  "serviceDate": zod.string().nullable(),
+  "eventId": zod.string().nullable(),
+  "locationIds": zod.array(zod.string()),
+  "issueReasons": zod.array(zod.string()),
+  "canInclude": zod.boolean(),
+  "resolution": zod.union([zod.literal('include'),zod.literal('exclude'),zod.literal(null)]).nullable()
+})),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "total": zod.number().int(),
+  "unresolved": zod.number().int(),
+  "asOf": zod.string()
+})
+
+
+export const resolveCheckInPathCheckInIdRegExp = new RegExp('^[0-9]{1,30}$');
+
+
+export const ResolveCheckInParams = zod.object({
+  "checkInId": zod.coerce.string().regex(resolveCheckInPathCheckInIdRegExp)
+})
+
+export const ResolveCheckInBody = zod.object({
+  "action": zod.enum(['include', 'exclude'])
+})
+
+export const ResolveCheckInResponse = zod.object({
+  "checkInId": zod.string(),
+  "action": zod.enum(['include', 'exclude'])
+})
+
+
 export const createMinistrySourceMappingBodyExternalIdRegExp = new RegExp('^[0-9]{1,30}$');
 export const createMinistrySourceMappingBodyScopeMax = 80;
 

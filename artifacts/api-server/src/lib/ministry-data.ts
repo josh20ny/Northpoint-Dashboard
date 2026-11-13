@@ -19,7 +19,14 @@ import { attendanceTransaction } from "./attendance";
 import { completedSunday, shiftDate, sunday, chicagoDate } from "./attendance-calculation";
 import { recordAudit } from "./audit";
 import { digest } from "./planning-center-client";
+import {
+  getCheckInReview,
+  readCheckInResolutions,
+  resolveCheckIn,
+} from "./ministry-checkin-review-store";
 import { reportingWeekEnding } from "./reporting-calendar";
+
+export { getCheckInReview, resolveCheckIn };
 import { analyzeGivingPatterns, GIVING_PATTERN_VERSION } from "./giving-patterns";
 import { currentGivingPolicy } from "./giving-policy";
 import { canonical } from "./planning-center-source";
@@ -452,8 +459,15 @@ async function publishMinistryDataInTransaction(
   ).rowCount;
   const sources = await c.query(
     `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
-      AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL)) AND missing_run_id IS NULL LIMIT 500001`,
-    [account, input.product, run.id, input.product === "giving" && hasBackfill],
+      AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL)
+        OR ($5 AND observed_run_id IS NOT NULL)) AND missing_run_id IS NULL LIMIT 500001`,
+    [
+      account,
+      input.product,
+      run.id,
+      input.product === "giving" && hasBackfill,
+      input.product === "check_ins",
+    ],
   );
   if (sources.rows.length > 500000)
     throw new AccessError(
@@ -467,6 +481,10 @@ async function publishMinistryDataInTransaction(
     relationships: n.sourceRelationships,
     sourceCollection: n.sourceCollection,
   }));
+  const checkInResolutions =
+    input.product === "check_ins"
+      ? await readCheckInResolutions(c, account)
+      : new Map<string, "include" | "exclude">();
   const compiled = compileMinistryFacts(
     input.product,
     facts,
@@ -474,6 +492,7 @@ async function publishMinistryDataInTransaction(
     input.start,
     input.end,
     new Date(run.finished_at),
+    checkInResolutions,
   );
   const givingPolicy = input.product === "giving" ? await currentGivingPolicy(c) : null;
   let givingUnits;
@@ -635,6 +654,7 @@ async function publishMinistryDataInTransaction(
         run: run.id,
         mappings,
         input,
+        checkInResolutions: [...checkInResolutions].sort(([a], [b]) => a.localeCompare(b)),
         givingPolicy,
         version: MINISTRY_DEFINITION_VERSION,
       }),
@@ -648,6 +668,16 @@ async function publishMinistryDataInTransaction(
       mappingIds: mappings.map((m) => m.id),
       issues: compiled.issues,
       sourceRows: facts.length,
+      ...(input.product === "check_ins"
+        ? {
+            checkInResolutions: {
+              included: [...checkInResolutions.values()].filter((action) => action === "include")
+                .length,
+              excluded: [...checkInResolutions.values()].filter((action) => action === "exclude")
+                .length,
+            },
+          }
+        : {}),
       ...(givingUnits
         ? {
             givingUnits,

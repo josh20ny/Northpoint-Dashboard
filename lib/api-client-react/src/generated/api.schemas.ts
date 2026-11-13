@@ -218,6 +218,64 @@ export interface MinistryDataAdmin {
   asOf: string;
 }
 
+export type CheckInResolutionInputAction = typeof CheckInResolutionInputAction[keyof typeof CheckInResolutionInputAction];
+
+
+export const CheckInResolutionInputAction = {
+  include: 'include',
+  exclude: 'exclude',
+} as const;
+
+export interface CheckInResolutionInput {
+  action: CheckInResolutionInputAction;
+}
+
+/**
+ * @nullable
+ */
+export type CheckInReviewItemResolution = typeof CheckInReviewItemResolution[keyof typeof CheckInReviewItemResolution] | null;
+
+
+export const CheckInReviewItemResolution = {
+  include: 'include',
+  exclude: 'exclude',
+} as const;
+
+export interface CheckInReviewItem {
+  checkInId: string;
+  /** @nullable */
+  serviceDate: string | null;
+  /** @nullable */
+  eventId: string | null;
+  locationIds: string[];
+  issueReasons: string[];
+  canInclude: boolean;
+  /** @nullable */
+  resolution: CheckInReviewItemResolution;
+}
+
+export interface CheckInReviewPage {
+  items: CheckInReviewItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  unresolved: number;
+  asOf: string;
+}
+
+export type CheckInResolutionResultAction = typeof CheckInResolutionResultAction[keyof typeof CheckInResolutionResultAction];
+
+
+export const CheckInResolutionResultAction = {
+  include: 'include',
+  exclude: 'exclude',
+} as const;
+
+export interface CheckInResolutionResult {
+  checkInId: string;
+  action: CheckInResolutionResultAction;
+}
+
 export type MinistryPublicationInputProduct = typeof MinistryPublicationInputProduct[keyof typeof MinistryPublicationInputProduct];
 
 
@@ -1417,6 +1475,14 @@ page?: number;
 export type GetMinistryDataParams = {
 start?: string;
 end?: string;
+};
+
+export type GetCheckInReviewParams = {
+/**
+ * @minimum 1
+ * @maximum 10000
+ */
+page?: number;
 };
 
 export type GetGivingTransactionsParams = {

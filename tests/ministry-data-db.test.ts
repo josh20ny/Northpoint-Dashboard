@@ -147,6 +147,123 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       });
       await expect(repo.givingTransactions(staff, 1)).rejects.toMatchObject({ status: 403 });
     });
+    it("audits Check-In include decisions and applies them on the next publication without exposing person data", async () => {
+      const checkInRunId = randomUUID();
+      const checkInId = `test-checkin-${randomUUID()}`;
+      const periodId = `test-period-${randomUUID()}`;
+      const timeId = `test-time-${randomUUID()}`;
+      const eventId = `test-event-${randomUUID()}`;
+      const locationId = `test-location-${randomUUID()}`;
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at)
+        VALUES($1,$2,'check_ins','incremental','complete','[]',$3,now()+interval '2 seconds',now())`,
+        [checkInRunId, account, admin.userId],
+      );
+      const rows: SourceEntity[] = [
+        {
+          type: "CheckIn",
+          id: checkInId,
+          attributes: { kind: "Guest" },
+          relationships: {
+            person: { data: null },
+            event_period: { data: { type: "EventPeriod", id: periodId } },
+            event_times: { data: [{ type: "EventTime", id: timeId }] },
+            locations: { data: [{ type: "Location", id: locationId }] },
+          },
+        },
+        {
+          type: "EventPeriod",
+          id: periodId,
+          attributes: { starts_at: "2026-11-08T15:00:00Z" },
+          relationships: { event: { data: { type: "Event", id: eventId } } },
+        },
+        {
+          type: "EventTime",
+          id: timeId,
+          attributes: { starts_at: "2026-11-08T15:00:00Z" },
+          relationships: { event: { data: { type: "Event", id: eventId } } },
+        },
+      ];
+      for (const entity of rows) {
+        const rawId = randomUUID();
+        await c.query(
+          `INSERT INTO raw_source_records(id,provider,account_ref,object_type,external_id,payload_json,payload_hash)
+          VALUES($1,'planning_center',$2,$3,$4,$5,$6)`,
+          [
+            rawId,
+            account,
+            `check_ins:${entity.type}`,
+            entity.id,
+            JSON.stringify(entity),
+            digest(JSON.stringify(entity)),
+          ],
+        );
+        await c.query(
+          `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,observed_run_id,normalized)
+          VALUES($1,'check_ins',$2,$3,$4,$5,$5,$6)`,
+          [
+            account,
+            entity.type,
+            entity.id,
+            rawId,
+            checkInRunId,
+            JSON.stringify(normalized(entity, `/check-ins/v2/${entity.type}`)),
+          ],
+        );
+      }
+      await c.query(
+        `INSERT INTO ministry_source_mappings(product,object_type,external_id,account_ref,ministry,measure,scope,effective_from,note,created_by)
+        VALUES('check_ins','Event',$2,$1,'upstreet','attendance','service-1','2022-01-01','Synthetic Check-In mapping',$3)`,
+        [account, eventId, admin.userId],
+      );
+
+      const review = await repo.getCheckInReview(admin, 1);
+      expect(review).toMatchObject({ unresolved: 1, total: 1 });
+      expect(review.items[0]).toMatchObject({
+        checkInId,
+        serviceDate: "2026-11-08",
+        eventId,
+        locationIds: [locationId],
+        issueReasons: ["missing_person_profile"],
+        canInclude: true,
+      });
+      expect(JSON.stringify(review)).not.toContain("personId");
+      const pending = await repo.publishMinistryData(admin, {
+        product: "check_ins",
+        start: "2026-11-08",
+        end: "2026-11-08",
+      });
+      expect(pending.issues).toContain("unresolved_checkins_pending:1");
+
+      await expect(repo.resolveCheckIn(admin, checkInId, "include")).resolves.toEqual({
+        checkInId,
+        action: "include",
+      });
+      const resolution = (
+        await c.query(
+          "SELECT action,target_type,target_id FROM audit_events WHERE target_id=$1 ORDER BY timestamp DESC LIMIT 1",
+          [`${account}:${checkInId}`],
+        )
+      ).rows[0];
+      expect(resolution).toMatchObject({
+        action: "ministry.checkin_include",
+        target_type: "pco_checkin_resolution",
+        target_id: `${account}:${checkInId}`,
+      });
+      expect((await repo.getCheckInReview(admin, 1)).items[0].resolution).toBe("include");
+
+      const published = await repo.publishMinistryData(admin, {
+        product: "check_ins",
+        start: "2026-11-08",
+        end: "2026-11-08",
+      });
+      expect(published.reused).toBe(false);
+      const workspace = await repo.readMinistryData(staff, "upstreet", "2026-11-08", "2026-11-08");
+      expect(workspace.metrics.find((metric) => metric.measure === "attendance")).toMatchObject({
+        value: 1,
+        quality: "complete",
+      });
+    });
     it("invalidates a prior publication after mapping interpretation changes without rewriting it", async () => {
       const publication = await publish();
       await c.query("SELECT set_config('np.role','admin',true)");

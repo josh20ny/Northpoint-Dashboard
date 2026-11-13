@@ -12,12 +12,19 @@ const repo = vi.hoisted(() => ({
   createMinistryMapping: vi.fn(),
   publishMinistryData: vi.fn(),
   importMinistryHistory: vi.fn(),
+  getCheckInReview: vi.fn(),
+  resolveCheckIn: vi.fn(),
 }));
 vi.mock("../artifacts/api-server/src/lib/ministry-data", () => repo);
 vi.mock("../artifacts/api-server/src/lib/audit", () => ({ recordAudit: vi.fn() }));
-function app(role: Principal["role"] | null) {
+function app(role: Principal["role"] | null, csrfSession = false) {
   const a = express();
   a.use(express.json());
+  if (csrfSession)
+    a.use((_req, res, next) => {
+      res.locals.session = { csrfToken: "synthetic-csrf" };
+      next();
+    });
   a.use(
     createMinistryDataRouter({
       name: "synthetic",
@@ -54,6 +61,24 @@ beforeEach(() => {
     kpis: [],
     issues: [],
   });
+  repo.getCheckInReview.mockResolvedValue({
+    items: [
+      {
+        checkInId: "300",
+        serviceDate: "2026-11-08",
+        eventId: "11",
+        locationIds: ["33"],
+        issueReasons: ["missing_person_profile"],
+        canInclude: true,
+        resolution: null,
+      },
+    ],
+    page: 1,
+    pageSize: 50,
+    total: 1,
+    unresolved: 1,
+    asOf: "2026-11-10T12:00:00Z",
+  });
 });
 describe("aggregate versus person-linked ministry permissions", () => {
   for (const role of ["staff", "leadership", "admin"] as const)
@@ -70,12 +95,29 @@ describe("aggregate versus person-linked ministry permissions", () => {
         "/v1/admin/ministry-data",
         "/v1/admin/ministry-data/giving-policy",
         "/v1/admin/ministry-data/giving-health",
+        "/v1/admin/ministry-data/check-ins",
       ]) {
         expect((await request(app(role)).get(path)).status).toBe(403);
       }
       expect(repo.givingTransactions).not.toHaveBeenCalled();
       expect(repo.ministryDataAdmin).not.toHaveBeenCalled();
+      expect(repo.getCheckInReview).not.toHaveBeenCalled();
     });
+  it("returns only source metadata for Admin Check-In review", async () => {
+    const response = await request(app("admin")).get("/v1/admin/ministry-data/check-ins?page=1");
+    expect(response.status).toBe(200);
+    expect(response.body.items[0]).toEqual(
+      expect.objectContaining({
+        checkInId: "300",
+        serviceDate: "2026-11-08",
+        eventId: "11",
+        locationIds: ["33"],
+        resolution: null,
+      }),
+    );
+    expect(JSON.stringify(response.body)).not.toMatch(/personId|childName|displayName/);
+    expect(repo.getCheckInReview).toHaveBeenCalledOnce();
+  });
   it("rejects unauthenticated aggregates and arbitrary donor filters", async () => {
     expect((await request(app(null)).get("/v1/ministry-data/giving")).status).toBe(401);
     expect((await request(app("staff")).get("/v1/ministry-data/giving?personId=99")).status).toBe(
@@ -88,5 +130,32 @@ describe("aggregate versus person-linked ministry permissions", () => {
       .send({ product: "giving", start: "2026-11-08", end: "2026-11-08" });
     expect(response.status).toBe(403);
     expect(repo.publishMinistryData).not.toHaveBeenCalled();
+    const resolution = await request(app("admin"))
+      .post("/v1/admin/ministry-data/check-ins/300/resolution")
+      .send({ action: "exclude" });
+    expect(resolution.status).toBe(403);
+    expect(repo.resolveCheckIn).not.toHaveBeenCalled();
+  });
+  it("records a valid Admin include resolution through the protected endpoint", async () => {
+    const previousOrigin = process.env.AUTH_ORIGIN;
+    process.env.AUTH_ORIGIN = "https://northpoint.test";
+    repo.resolveCheckIn.mockResolvedValue({ checkInId: "300", action: "include" });
+    try {
+      const response = await request(app("admin", true))
+        .post("/v1/admin/ministry-data/check-ins/300/resolution")
+        .set("Origin", "https://northpoint.test")
+        .set("X-CSRF-Token", "synthetic-csrf")
+        .send({ action: "include" });
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ checkInId: "300", action: "include" });
+      expect(repo.resolveCheckIn).toHaveBeenCalledWith(
+        expect.objectContaining({ role: "admin" }),
+        "300",
+        "include",
+      );
+    } finally {
+      if (previousOrigin === undefined) delete process.env.AUTH_ORIGIN;
+      else process.env.AUTH_ORIGIN = previousOrigin;
+    }
   });
 });

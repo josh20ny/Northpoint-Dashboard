@@ -66,6 +66,33 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MinistryDataAdmin" }
+  /v1/admin/ministry-data/check-ins:
+    get:
+      operationId: getCheckInReview
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 10000, default: 1 } }
+      responses:
+        "200":
+          description: Admin-only Check-In exceptions with no person names or identifiers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckInReviewPage" }
+  /v1/admin/ministry-data/check-ins/{checkInId}/resolution:
+    post:
+      operationId: resolveCheckIn
+      parameters:
+        - { name: checkInId, in: path, required: true, schema: { type: string, pattern: "^[0-9]{1,30}$" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckInResolutionInput" }
+      responses:
+        "201":
+          description: Audited include or exclude decision saved; no PCO record changed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckInResolutionResult" }
   /v1/admin/ministry-data/mappings:
     post:
       operationId: createMinistrySourceMapping
@@ -869,6 +896,38 @@ components:
         sources: { type: array, items: { $ref: "#/components/schemas/MinistrySourceOption" } }
         batches: { type: array, items: { $ref: "#/components/schemas/ImportBatch" } }
         asOf: { type: string }
+    CheckInResolutionInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [include, exclude] }
+    CheckInReviewItem:
+      type: object
+      required: [checkInId, serviceDate, eventId, locationIds, issueReasons, canInclude, resolution]
+      properties:
+        checkInId: { type: string }
+        serviceDate: { type: [string, "null"] }
+        eventId: { type: [string, "null"] }
+        locationIds: { type: array, items: { type: string } }
+        issueReasons: { type: array, items: { type: string } }
+        canInclude: { type: boolean }
+        resolution: { type: [string, "null"], enum: [include, exclude, null] }
+    CheckInReviewPage:
+      type: object
+      required: [items, page, pageSize, total, unresolved, asOf]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/CheckInReviewItem" } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        unresolved: { type: integer }
+        asOf: { type: string }
+    CheckInResolutionResult:
+      type: object
+      required: [checkInId, action]
+      properties:
+        checkInId: { type: string }
+        action: { type: string, enum: [include, exclude] }
     MinistryPublicationInput:
       type: object
       required: [product, start, end]

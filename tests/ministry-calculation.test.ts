@@ -304,6 +304,7 @@ describe("ministry source-to-metric semantics", () => {
       start,
       end,
       now,
+      new Map([["4", "exclude"]]),
     );
     expect(result.values.find((v) => v.measure === "attendance")?.value).toBe(2);
     expect(result.values.find((v) => v.measure === "volunteers")?.value).toBe(1);
