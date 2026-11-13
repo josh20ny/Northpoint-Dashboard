@@ -73,3 +73,15 @@ output.
 
 **How to apply:** Map Groups to a ministry and use membership only to classify
 service Check-Ins. Keep the published result aggregate-only.
+
+The owner identified **Normal Service Times** as the Check-Ins event for weekly
+ministry attendance and supplied its active location hierarchy as mapping
+evidence. Handle the source-ID lookup and mapping entry for the owner rather
+than requiring them to enter the mappings manually in Admin.
+
+**Why:** The owner explicitly provided PCO screenshots to establish these
+connections and said they do not want to do the Admin mapping themselves.
+
+**How to apply:** Use the supplied hierarchy for location interpretation and
+the staged Groups data for student classification. Ask only about genuinely
+ambiguous business meanings; do not infer them from a source name alone.

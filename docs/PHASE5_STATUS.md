@@ -164,6 +164,42 @@ completed Sunday and does not backcast today's memberships into older weeks.
 These mapping options do not create source mappings or publications by
 themselves. No mapping has been saved and no new PCO scan has been started.
 
+### Owner-supplied Check-Ins reference — November 8, 2026
+
+The owner identified **Normal Service Times** and supplied the active PCO
+location hierarchy for the November 6–8 session. The staged Event matches that
+name, and its November 8 time records are 9:00 AM, 11:00 AM and 4:30 PM Chicago
+time. The owner wants the agent to handle mapping entry, not require manual
+configuration in Admin.
+
+Screenshot reference totals (PCO UI headcounts, not yet accepted published
+dashboard attendance):
+
+| Location branch | Displayed total |
+| --- | ---: |
+| UpStreet | 157 |
+| Waumba Land | 74 |
+| Transit | 109 |
+| InsideOut | 89 |
+| Other → Hangout | 14 |
+
+The combined UpStreet/Waumba parent shows 245 and includes the Other/Hangout
+branch. Do not add parent and descendant totals or assume Hangout belongs to
+either ministry. Its business treatment still needs clarification. PCO
+regular/guest/volunteer distinctions and cross-location/service overlaps must
+remain distinct when comparing these UI headcounts to dashboard attendance.
+
+Targeted read-only checks found 193, 170 and 90 stored Check-In records linked
+to the three service times respectively; the screenshot shows 193, 167 and 90.
+Raw row counts are not attendance: reconcile duplicate/missing-profile
+treatment before claiming the November 8 counts match.
+
+The existing Event-level service-session rule also needs service-time routing:
+one Event contains multiple services, and its individual EventTime IDs are
+dated instances. Do not map the whole Event to a single service or create a
+one-Sunday-only routing rule that silently fails for future Sundays. No source
+mappings or publications were saved during this reference review.
+
 The classification fixtures and full workspace test suite pass, and workspace
 typechecking passes. The API health endpoint and public dashboard preview load.
 The preview capture cannot verify the signed-in Admin mapping screen, and the
