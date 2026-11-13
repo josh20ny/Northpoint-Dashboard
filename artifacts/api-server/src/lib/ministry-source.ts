@@ -28,6 +28,7 @@ const attributes: Record<string, string[]> = {
   Person: ["first_donated_at"],
   DonorSummary: ["first_donated"],
   Group: ["name", "memberships_count", "created_at", "archived_at"],
+  GroupType: ["name"],
   Membership: ["joined_at", "role"],
   Event: ["name", "starts_at", "ends_at", "canceled", "canceled_at", "visitors_count"],
   Attendance: ["attended", "role"],
@@ -40,6 +41,7 @@ const relationships: Record<string, Record<string, string>> = {
   Donation: { person: "Person", recurring_donation: "RecurringDonation" },
   Designation: { fund: "Fund" },
   RecurringDonation: { person: "Person" },
+  Group: { group_type: "GroupType" },
   Membership: { group: "Group", person: "Person" },
   Event: { group: "Group", attendance_submitter: "Person" },
   Attendance: { event: "Event", person: "Person" },
@@ -64,6 +66,7 @@ const paths: Record<MinistryProduct, Record<string, RegExp>> = {
     Refund: /^\/giving\/v2\/donations\/[0-9]+\/refund$/,
   },
   groups: {
+    GroupType: /^\/groups\/v2\/group_types$/,
     Group: /^\/groups\/v2\/groups$/,
     Membership: /^\/groups\/v2\/memberships$/,
     Event: /^\/groups\/v2\/events$/,
@@ -90,6 +93,7 @@ export function ministryRoots(product: MinistryProduct): Page[] {
     ];
   if (product === "groups")
     return [
+      { type: "GroupType", path: "/groups/v2/group_types" },
       { type: "Group", path: "/groups/v2/groups" },
       { type: "Membership", path: "/groups/v2/memberships" },
       { type: "Event", path: "/groups/v2/events" },

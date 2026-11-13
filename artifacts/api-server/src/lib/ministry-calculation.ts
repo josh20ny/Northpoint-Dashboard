@@ -518,7 +518,10 @@ export function compileMinistryFacts(
     const groupSnapshots = new Map(
       groupFacts.filter((e) => e.type === "Group").map((e) => [e.id, e]),
     );
-    const membershipsByPerson = new Map<string, { groupId: string; joinedAt: string | null }[]>();
+    const membershipsByPerson = new Map<
+      string,
+      { groupId: string; groupTypeId: string | null; joinedAt: string | null }[]
+    >();
     for (const membership of groupFacts.filter((e) => e.type === "Membership")) {
       const person = ref(membership, "person");
       const groupId = ref(membership, "group");
@@ -528,6 +531,7 @@ export function compileMinistryFacts(
       const rows = membershipsByPerson.get(person) ?? [];
       rows.push({
         groupId,
+        groupTypeId: ref(group, "group_type"),
         joinedAt:
           typeof membership.attributes.joined_at === "string"
             ? membership.attributes.joined_at.slice(0, 10)
@@ -543,9 +547,10 @@ export function compileMinistryFacts(
         for (const mapping of groupMappings) {
           if (
             mapping.product === "groups" &&
-            mapping.objectType === "Group" &&
             mapping.measure === "student_group_classification" &&
-            mapping.externalId === membership.groupId &&
+            ((mapping.objectType === "Group" && mapping.externalId === membership.groupId) ||
+              (mapping.objectType === "GroupType" &&
+                mapping.externalId === membership.groupTypeId)) &&
             activeMapping(mapping, day)
           )
             ministries.add(mapping.ministry);

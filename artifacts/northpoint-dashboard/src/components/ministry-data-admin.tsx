@@ -111,7 +111,7 @@ export function MinistryDataAdminPanel() {
     mapping.measure === "service_session"
       ? ["EventTime"]
       : mapping.measure === "student_group_classification"
-        ? ["Group"]
+        ? ["GroupType", "Group"]
         : (pair?.objectTypes ?? []);
   const mappingMinistries =
     mapping.measure === "service_session"
@@ -337,7 +337,7 @@ export function MinistryDataAdminPanel() {
                             v === "service_session" || v === "student_group_classification"
                               ? v === "service_session"
                                 ? "EventTime"
-                                : "Group"
+                                : "GroupType"
                               : mapping.objectType,
                           ministry:
                             v === "service_session"

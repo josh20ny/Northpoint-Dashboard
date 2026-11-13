@@ -10,7 +10,67 @@ import {
   ministryPagePath,
   parseMinistryPage,
   ministryEntity,
+  ministryRoots,
 } from "../artifacts/api-server/src/lib/ministry-source";
+
+describe("Groups group-type sources", () => {
+  const groupPage = { type: "Group", path: "/groups/v2/groups" };
+  const groupTypePage = { type: "GroupType", path: "/groups/v2/group_types" };
+
+  it("requests the GroupType relationship and stages category records", () => {
+    expect(ministryRoots("groups")).toContainEqual(groupTypePage);
+    const groupUrl = new URL(
+      ministryPagePath(groupPage, "groups"),
+      "https://api.planningcenteronline.com",
+    );
+    expect(groupUrl.searchParams.get("fields[Group]")).toContain("group_type");
+    expect(
+      new URL(
+        ministryPagePath(groupTypePage, "groups"),
+        "https://api.planningcenteronline.com",
+      ).searchParams.get("fields[GroupType]"),
+    ).toBe("name");
+
+    const group = parseMinistryPage(
+      {
+        data: [
+          {
+            type: "Group",
+            id: "21",
+            attributes: { name: "Student group", memberships_count: 5, archived_at: null },
+            relationships: { group_type: { data: { type: "GroupType", id: "17" } } },
+          },
+        ],
+      },
+      groupPage,
+      "groups",
+    ).entities[0]!;
+    expect(group.relationships.group_type.data).toEqual({ type: "GroupType", id: "17" });
+
+    const groupType = parseMinistryPage(
+      { data: [{ type: "GroupType", id: "17", attributes: { name: "Transit" } }] },
+      groupTypePage,
+      "groups",
+    ).entities[0]!;
+    expect(groupType).toMatchObject({ type: "GroupType", id: "17", attributes: { name: "Transit" } });
+    expect(
+      parseMinistryPage(
+        {
+          data: [
+            {
+              type: "Group",
+              id: "22",
+              attributes: { name: "Unique group", archived_at: null },
+              relationships: { group_type: { data: null } },
+            },
+          ],
+        },
+        groupPage,
+        "groups",
+      ).entities[0]?.relationships.group_type.data,
+    ).toBeNull();
+  });
+});
 
 describe("collection-only Giving joint-giver linkage", () => {
   const summary = {
@@ -422,6 +482,54 @@ describe("ministry source-to-metric semantics", () => {
       }),
     );
     expect(result.values.some((row) => row.ministry === "service-programming")).toBe(false);
+  });
+  it("classifies a student through the mapped GroupType of their Group", () => {
+    const checkIns = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("EventTime", "time", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "CheckIn",
+        "student-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "period"),
+          event_times: r("EventTime", "time"),
+          person: r("Person", "student"),
+          locations: { data: [] },
+        },
+      ),
+    ];
+    const groups = [
+      e("Group", "10", { archived_at: null }, { group_type: r("GroupType", "student-type") }),
+      e(
+        "Membership",
+        "membership",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "10"), person: r("Person", "student") },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      checkIns,
+      [serviceRoute("time", "transit", "service-1")],
+      start,
+      end,
+      now,
+      new Map(),
+      groups,
+      [mapping("groups", "GroupType", "student-type", "student_group_classification", "transit")],
+      new Date("2026-11-10T12:00:00Z"),
+    );
+
+    expect(result.values).toContainEqual(
+      expect.objectContaining({
+        ministry: "transit",
+        measure: "attendance",
+        scope: "service-1",
+        week: "2026-11-08",
+        value: 1,
+      }),
+    );
   });
   it("does not backcast the current Groups snapshot to older Check-In weeks", () => {
     const checkIns = [

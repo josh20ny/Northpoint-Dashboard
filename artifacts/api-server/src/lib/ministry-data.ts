@@ -61,6 +61,7 @@ const allowedMapping: Record<string, Record<string, string[]>> = {
       "group_leaders",
       "student_group_classification",
     ],
+    GroupType: ["student_group_classification"],
   },
   giving: { Fund: ["fund_giving"] },
 };
@@ -277,7 +278,7 @@ export async function ministryDataAdmin(p: Principal): Promise<MinistryDataAdmin
         OR (product='check_ins' AND object_type='EventTime'
           AND (normalized->'attributes'->>'starts_at')::timestamptz >= now() - interval '120 days')
         OR (product='serving' AND object_type='ServiceType')
-        OR (product='groups' AND object_type='Group') OR (product='giving' AND object_type='Fund'))
+        OR (product='groups' AND object_type IN ('Group','GroupType')) OR (product='giving' AND object_type='Fund'))
       UNION
       SELECT 'serving','Team',normalized->'sourceRelationships'->'team'->'data'->>'id',
         'Services team ' || (normalized->'sourceRelationships'->'team'->'data'->>'id')
@@ -537,7 +538,8 @@ async function publishMinistryDataInTransaction(
   if (input.product === "check_ins") {
     groupMappings = (
       await c.query<SourceMapping>(
-        `${mappingSelect} WHERE account_ref=$1 AND product='groups' AND measure='student_group_classification'
+        `${mappingSelect} WHERE account_ref=$1 AND product='groups' AND object_type IN ('Group','GroupType')
+        AND measure='student_group_classification'
         AND enabled AND id NOT IN (SELECT supersedes_id FROM ministry_source_mappings WHERE supersedes_id IS NOT NULL)
         ORDER BY id`,
         [account],
