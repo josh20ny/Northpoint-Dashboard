@@ -14,6 +14,8 @@ import {
   startPlanningCenterWorker,
 } from "../artifacts/api-server/src/lib/planning-center-worker";
 import type { Principal } from "../artifacts/api-server/src/lib/auth";
+import { encrypt } from "../artifacts/api-server/src/lib/planning-center-client";
+import { planningCenterRateLimit } from "../artifacts/api-server/src/lib/planning-center-rate-limit";
 
 const admin: Principal = {
   role: "admin",
@@ -47,6 +49,7 @@ const run = () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(planningCenterRateLimit, "wait").mockResolvedValue();
   mocks.connect.mockResolvedValue({ query: mocks.query, release: mocks.release });
   vi.spyOn(pool, "connect").mockImplementation(mocks.connect as never);
   vi.spyOn(logger, "warn").mockImplementation(mocks.warn);
@@ -172,6 +175,126 @@ describe("durable Planning Center automation controls", () => {
   });
 });
 
+describe("resuming Giving with inline designations", () => {
+  it("persists the original designation parent and retains old queued work without starting a new run", async () => {
+    const legacy = { type: "Designation", path: "/giving/v2/donations/80/designations" };
+    const current = {
+      ...run(),
+      product: "giving",
+      queue: [{ type: "Donation", path: "/giving/v2/donations?offset=41000" }, legacy, legacy],
+      visited: ["/giving/v2/donations/79/designations?per_page=100"],
+    };
+    const token = encrypt(
+      {
+        accessToken: "synthetic-access",
+        refreshToken: "synthetic-refresh",
+        expiresAt: Date.now() + 600_000,
+        scopes: ["giving"],
+      },
+      "tokens:1",
+    );
+    let revisions: Record<string, unknown>[] = [];
+    mocks.query.mockImplementation(async (sql: string, args?: unknown[]) => {
+      if (sql.startsWith("SELECT * FROM pco_connections"))
+        return { rows: [{ account_ref: "1", state: "connected", token_ciphertext: token }] };
+      if (sql.startsWith("SELECT * FROM pco_sync_runs")) return { rows: [current] };
+      if (sql.startsWith("INSERT INTO raw_source_records")) {
+        revisions = JSON.parse(args![1] as string).map(
+          (row: Record<string, unknown>, index: number) => ({
+            ...row,
+            id: `synthetic-raw-${index}`,
+          }),
+        );
+        return { rows: revisions, rowCount: revisions.length };
+      }
+      if (sql.startsWith("SELECT r.id,r.object_type")) return { rows: revisions };
+      if (sql.startsWith("UPDATE pco_sync_runs SET queue="))
+        return {
+          rows: [
+            {
+              ...current,
+              queue: JSON.parse(args![1] as string),
+              visited: JSON.parse(args![2] as string),
+              fetched: current.fetched + Number(args![3]),
+              revised: current.revised + Number(args![4]),
+              pages: current.pages + 1,
+              status: args![5],
+            },
+          ],
+        };
+      return { rows: [], rowCount: 1 };
+    });
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              type: "Donation",
+              id: "81",
+              attributes: { refunded: false },
+              relationships: {
+                person: { data: null },
+                recurring_donation: { data: null },
+                designations: { data: [{ type: "Designation", id: "91" }] },
+              },
+            },
+          ],
+          included: [
+            {
+              type: "Designation",
+              id: "91",
+              attributes: { amount_cents: 1000, amount_currency: "USD" },
+              relationships: { fund: { data: { type: "Fund", id: "7" } } },
+            },
+          ],
+          links: { next: "/giving/v2/donations?offset=41100" },
+        }),
+      ),
+    );
+    const result = await pco.advancePage(
+      { query: mocks.query } as never,
+      { role: "admin", userId: admin.userId },
+      id,
+      false,
+    );
+    expect(mocks.connect).not.toHaveBeenCalled();
+    const writes = mocks.query.mock.calls.filter(([sql]) =>
+      String(sql).startsWith("INSERT INTO pco_source_entities"),
+    );
+    expect(writes).toHaveLength(1);
+    const child = JSON.parse(writes[0]![1][3]).find(
+      (entry: { object_type: string }) => entry.object_type === "Designation",
+    );
+    expect(child.normalized).toMatchObject({
+      sourceCollection: "/giving/v2/donations/81/designations",
+      sourceRelationships: { fund: { data: { type: "Fund", id: "7" } } },
+    });
+    const checkpoint = mocks.query.mock.calls.find(([sql]) =>
+      String(sql).startsWith("UPDATE pco_sync_runs SET queue="),
+    )![1];
+    const savedQueue = JSON.parse(checkpoint[1]);
+    expect(savedQueue).toHaveLength(2);
+    expect(savedQueue[0]).toEqual(legacy);
+    expect(savedQueue[1]).toMatchObject({ type: "Donation" });
+    expect(savedQueue[1].path).toContain("include=designations");
+    expect(
+      savedQueue.some(
+        (item: { path: string }) => item.path === "/giving/v2/donations/81/designations",
+      ),
+    ).toBe(false);
+    expect(JSON.parse(checkpoint[2])[0]).toBe(current.visited[0]);
+    expect(result).toMatchObject({
+      id,
+      automatic: false,
+      status: "running",
+      pages: 101,
+      fetched: 10002,
+      revised: 10002,
+      pendingPages: 2,
+    });
+  });
+});
+
 describe("server page executor", () => {
   function setup(
     candidate: { id: string; automatic_requested_by: string } | null = {
@@ -265,6 +388,19 @@ describe("server page executor", () => {
     stop();
     await vi.advanceTimersByTimeAsync(10000);
     expect(advance).toHaveBeenCalledOnce();
+  });
+  it("uses the provider's shorter pacing delay after successful pages", async () => {
+    vi.useFakeTimers();
+    const advance = setup();
+    vi.spyOn(planningCenterRateLimit, "delay").mockReturnValue(250);
+    const stop = startPlanningCenterWorker();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(advance).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(249);
+    expect(advance).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(advance).toHaveBeenCalledTimes(2);
+    stop();
   });
   it("logs only a fixed safe message and retries a failed tick later", async () => {
     vi.useFakeTimers();

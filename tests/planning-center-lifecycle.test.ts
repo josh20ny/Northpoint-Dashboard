@@ -3,6 +3,7 @@ import type { PoolClient } from "pg";
 import { readFileSync } from "node:fs";
 import { advancePage } from "../artifacts/api-server/src/lib/planning-center";
 import { encrypt } from "../artifacts/api-server/src/lib/planning-center-client";
+import { planningCenterRateLimit } from "../artifacts/api-server/src/lib/planning-center-rate-limit";
 import {
   assessCompletedScan,
   observeSource,
@@ -41,6 +42,7 @@ const observations = () => sqlCalls().filter((s) => s.startsWith("WITH observed"
 
 beforeEach(() => {
   query.mockReset();
+  vi.spyOn(planningCenterRateLimit, "wait").mockResolvedValue();
   vi.stubEnv("AUTH_ORIGIN", "https://example.invalid");
   vi.stubEnv("PCO_CLIENT_ID", "synthetic-client");
   vi.stubEnv("PCO_CLIENT_SECRET", "synthetic-secret");
@@ -66,7 +68,13 @@ beforeEach(() => {
       };
     if (sql.startsWith("SELECT * FROM pco_sync_runs")) return { rows: [current] };
     // Existing immutable revision; simulates replay without any new revisions.
-    if (sql.startsWith("SELECT id FROM raw_source_records")) return { rows: [{ id }] };
+    if (sql.startsWith("SELECT r.id,r.object_type"))
+      return {
+        rows: JSON.parse(args![1] as string).map((row: Record<string, unknown>) => ({
+          ...row,
+          id,
+        })),
+      };
     if (sql.startsWith("UPDATE pco_sync_runs SET queue"))
       return {
         rows: [
@@ -88,6 +96,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -103,13 +112,9 @@ describe("Planning Center lifecycle evidence", () => {
     expect(sql[projection + 1]).toContain("missing_run_id=NULL");
     expect(sql[projection + 1]).not.toContain("updated_at");
     expect(sql[projection + 1]).toContain("ON CONFLICT DO NOTHING");
-    expect(query.mock.calls[projection + 1][1]).toEqual([
-      "synthetic",
-      "people",
-      "Person",
-      "42",
-      id,
-    ]);
+    const args = query.mock.calls[projection + 1][1];
+    expect(args.slice(0, 3)).toEqual(["synthetic", "people", id]);
+    expect(JSON.parse(args[3])[0]).toMatchObject({ object_type: "Person", external_id: "42" });
   });
   it("assesses absence only after completion, within the page savepoint", async () => {
     await advancePage(c, actor, id, false);

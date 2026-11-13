@@ -102,6 +102,13 @@ export interface SourceEntity {
   attributes: Record<string, unknown>;
   relationships: Record<string, { data: Relation | Relation[] | null }>;
 }
+export interface ParsedPage {
+  entities: SourceEntity[];
+  nextPages: Page[];
+  // Included child resources still need the same parent collection provenance
+  // as resources fetched from their individual association endpoints.
+  sourceCollections?: Record<string, string>;
+}
 const idValid = (x: unknown): x is string => typeof x === "string" && /^[0-9]{1,30}$/.test(x);
 export function sourceEntity(value: unknown): SourceEntity {
   if (!value || typeof value !== "object") throw new ProviderError(422);
@@ -153,7 +160,11 @@ export function sourceEntity(value: unknown): SourceEntity {
   }
   return { type: v.type, id: v.id, attributes, relationships };
 }
-export function parsePage(value: Record<string, unknown>, page: Page, product: Product) {
+export function parsePage(
+  value: Record<string, unknown>,
+  page: Page,
+  product: Product,
+): ParsedPage {
   if (isMinistryProduct(product)) return parseMinistryPage(value, page, product);
   if (!Array.isArray(value.data) || value.data.length > 100) throw new ProviderError(422);
   const main = value.data.map(sourceEntity);

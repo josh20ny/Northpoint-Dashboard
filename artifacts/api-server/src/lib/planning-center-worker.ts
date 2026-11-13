@@ -3,6 +3,7 @@ import { advancePage } from "./planning-center";
 import { recordAudit } from "./audit";
 import { logger } from "./logger";
 import { advanceSchedule } from "./planning-center-schedule";
+import { planningCenterRateLimit } from "./planning-center-rate-limit";
 
 // A bounded executor for explicit runs and Admin-authorized nightly schedules.
 // Durable flags/cursors survive API restarts; a transaction lock coordinates
@@ -62,13 +63,18 @@ export function startPlanningCenterWorker() {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const tick = async () => {
+    let worked = false;
     try {
-      await processAutomaticPage();
+      worked = await processAutomaticPage();
     } catch {
       // Do not log provider bodies, tokens, SQL parameters or source payloads.
       logger.warn("Planning Center automatic page could not commit; saved progress retained");
     }
-    if (!stopped) timer = setTimeout(() => void tick(), 2000);
+    if (!stopped)
+      timer = setTimeout(
+        () => void tick(),
+        worked ? Math.max(10, planningCenterRateLimit.delay()) : 2000,
+      );
   };
   timer = setTimeout(() => void tick(), 2000);
   return () => {

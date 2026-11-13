@@ -12,17 +12,10 @@ import { recordAudit } from "./audit";
 import { hashToken } from "./security";
 import { scheduleView } from "./planning-center-schedule";
 import { refreshPublishedMinistry } from "./ministry-data";
-import { observeSource, assessCompletedScan, lifecycleSummary } from "./planning-center-lifecycle";
+import { assessCompletedScan, lifecycleSummary } from "./planning-center-lifecycle";
+import { stageSourcePage } from "./planning-center-staging";
 import * as provider from "./planning-center-client";
-import {
-  roots,
-  scanRoots,
-  pagePath,
-  parsePage,
-  sourceHash,
-  normalized,
-  type Page,
-} from "./planning-center-source";
+import { roots, scanRoots, pagePath, parsePage, type Page } from "./planning-center-source";
 
 interface Connection {
   account_ref: string;
@@ -563,55 +556,20 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
     const page = r.queue[0];
     if (!page || r.pages >= 100_000) throw new provider.ProviderError(422);
     const path = pagePath(page, r.product);
-    if (r.visited.includes(path)) throw new provider.ProviderError(422);
+    const visitedPaths = new Set(r.visited);
+    if (visitedPaths.has(path)) throw new provider.ProviderError(422);
     const payload = await provider.apiGet(path, t.accessToken, r.product);
     const parsed = parsePage(payload, page, r.product);
-    let revised = 0;
-    for (const entity of parsed.entities) {
-      const object = `${r.product}:${entity.type}`;
-      const hash = sourceHash(entity);
-      const inserted = await c.query<{ id: string }>(
-        `INSERT INTO raw_source_records(provider,account_ref,object_type,external_id,payload_json,payload_hash,source_updated_at)
-           VALUES ('planning_center',$1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING id`,
-        [
-          v.account_ref,
-          object,
-          entity.id,
-          JSON.stringify(entity),
-          hash,
-          entity.attributes.updated_at ?? null,
-        ],
-      );
-      const rawId =
-        inserted.rows[0]?.id ??
-        (
-          await c.query<{ id: string }>(
-            `SELECT id FROM raw_source_records WHERE provider='planning_center' AND account_ref=$1
-           AND object_type=$2 AND external_id=$3 AND payload_hash=$4`,
-            [v.account_ref, object, entity.id, hash],
-          )
-        ).rows[0]!.id;
-      if (inserted.rowCount) revised++;
-      // Do not overwrite a newer provider version with an older page.
-      await c.query(
-        `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,normalized)
-          VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_ref,product,object_type,external_id)
-          DO UPDATE SET raw_id=excluded.raw_id,sync_run_id=excluded.sync_run_id,normalized=excluded.normalized,seen_at=now()
-          WHERE coalesce((excluded.normalized->'attributes'->>'updated_at')::timestamptz,'-infinity') >=
-                coalesce((pco_source_entities.normalized->'attributes'->>'updated_at')::timestamptz,'-infinity')`,
-        [
-          v.account_ref,
-          r.product,
-          entity.type,
-          entity.id,
-          rawId,
-          r.id,
-          JSON.stringify(normalized(entity, new URL(path, provider.PCO_ORIGIN).pathname)),
-        ],
-      );
-      await observeSource(c, v.account_ref, r.product, entity.type, entity.id, r.id);
-    }
+    const revised = await stageSourcePage(
+      c,
+      v.account_ref,
+      r.product,
+      r.id,
+      parsed,
+      new URL(path, provider.PCO_ORIGIN).pathname,
+    );
     const visited = [...r.visited, path];
+    visitedPaths.add(path);
     const queue = [
       ...r.queue.slice(1),
       ...parsed.nextPages.map((next) => ({
@@ -622,7 +580,7 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
     const unique = new Map<string, Page>();
     for (const q of queue) {
       const k = pagePath(q, r.product);
-      if (!visited.includes(k)) unique.set(k, q);
+      if (!visitedPaths.has(k)) unique.set(k, q);
     }
     if (unique.size > 100_000) throw new provider.ProviderError(422);
     const updated = (

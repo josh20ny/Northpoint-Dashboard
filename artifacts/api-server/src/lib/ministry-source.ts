@@ -1,5 +1,5 @@
 import { PCO_ORIGIN, ProviderError } from "./planning-center-client";
-import type { Page, SourceEntity } from "./planning-center-source";
+import type { Page, ParsedPage, SourceEntity } from "./planning-center-source";
 
 export type MinistryProduct = "giving" | "groups" | "serving";
 // Deliberately exclude names, notes, contacts, payment details and demographics.
@@ -116,6 +116,19 @@ export function ministryPagePath(page: Page, product: MinistryProduct) {
     `fields[${type}]`,
     [...attributes[type], ...Object.keys(relationships[type] ?? {})].join(","),
   );
+  if (product === "giving" && page.type === "Donation") {
+    // Sparse fieldsets filter linkage as well as attributes. Fetch all linked
+    // designations with the donation batch instead of one GET per donation.
+    query.set(
+      "fields[Donation]",
+      [...attributes.Donation, ...Object.keys(relationships.Donation), "designations"].join(","),
+    );
+    query.set(
+      "fields[Designation]",
+      [...attributes.Designation, ...Object.keys(relationships.Designation)].join(","),
+    );
+    query.set("include", "designations");
+  }
   if (product === "giving" && page.type === "Person") query.set("filter", "has_donated");
   if (page.type === "DonorSummary" || page.type === "JointGiver") {
     query.set("fields[DonorSummary]", "first_donated,joint_giver");
@@ -206,7 +219,7 @@ export function parseMinistryPage(
   value: Record<string, unknown>,
   page: Page,
   product: MinistryProduct,
-): { entities: SourceEntity[]; nextPages: Page[] } {
+): ParsedPage {
   if (product === "giving" && page.type === "JointGiver" && Array.isArray(value.data)) {
     const primary = new URL(page.path, PCO_ORIGIN).pathname.split("/")[4];
     if (value.links && (value.links as { next?: unknown }).next) throw new ProviderError(422);
@@ -244,9 +257,10 @@ export function parseMinistryPage(
       : value.data;
   if (!Array.isArray(raw) || raw.length > 100) throw new ProviderError(422);
   const summaries = product === "giving" && page.type === "DonorSummary";
+  const donations = product === "giving" && page.type === "Donation";
   if (
     value.included !== undefined &&
-    (!Array.isArray(value.included) || (!summaries && value.included.length))
+    (!Array.isArray(value.included) || (!summaries && !donations && value.included.length))
   )
     throw new ProviderError(422);
   const entities = raw.map((e) => {
@@ -304,6 +318,52 @@ export function parseMinistryPage(
       entities.push(person);
     }
   }
+  const sourceCollections: Record<string, string> = {};
+  const coveredDonations = new Set<string>();
+  if (donations) {
+    const parents = new Map<string, string>();
+    const expected = new Map<string, string[]>();
+    for (const resource of raw) {
+      const donation = resource as {
+        id: string;
+        relationships?: Record<string, { data?: unknown }>;
+      };
+      const linkage = donation.relationships?.designations;
+      // Legacy or incomplete responses retain the individual association GET.
+      // Missing linkage is unknown, never proof of an empty designation set.
+      if (!linkage || !Object.hasOwn(linkage, "data")) continue;
+      if (!Array.isArray(linkage.data) || linkage.data.length > 1000) throw new ProviderError(422);
+      const ids: string[] = [];
+      for (const ref of linkage.data) {
+        if (
+          !ref ||
+          typeof ref !== "object" ||
+          ref.type !== "Designation" ||
+          typeof ref.id !== "string" ||
+          !/^[0-9]{1,30}$/.test(ref.id) ||
+          parents.has(ref.id)
+        )
+          throw new ProviderError(422);
+        parents.set(ref.id, donation.id);
+        ids.push(ref.id);
+      }
+      expected.set(donation.id, ids);
+    }
+    const included = (value.included ?? []) as unknown[];
+    if (included.length > 5000) throw new ProviderError(422);
+    const received = new Set<string>();
+    for (const resource of included) {
+      const designation = ministryEntity(resource, "Designation");
+      const parent = parents.get(designation.id);
+      if (!parent || received.has(designation.id)) throw new ProviderError(422);
+      received.add(designation.id);
+      entities.push(designation);
+      sourceCollections[`Designation:${designation.id}`] =
+        `/giving/v2/donations/${parent}/designations`;
+    }
+    for (const [donation, ids] of expected)
+      if (ids.every((id) => received.has(id))) coveredDonations.add(donation);
+  }
   const nextPages: Page[] = [];
   const current = new URL(ministryPagePath(page, product), PCO_ORIGIN);
   const next = (value.links as { next?: unknown } | undefined)?.next;
@@ -324,7 +384,8 @@ export function parseMinistryPage(
   }
   for (const e of entities) {
     if (product === "giving" && e.type === "Donation") {
-      nextPages.push({ type: "Designation", path: `/giving/v2/donations/${e.id}/designations` });
+      if (!coveredDonations.has(e.id))
+        nextPages.push({ type: "Designation", path: `/giving/v2/donations/${e.id}/designations` });
       if (e.attributes.refunded === true)
         nextPages.push({ type: "Refund", path: `/giving/v2/donations/${e.id}/refund` });
     }
@@ -340,5 +401,9 @@ export function parseMinistryPage(
         nextPages.push({ type, path: `${current.pathname}/${e.id}/${resource}` });
     }
   }
-  return { entities, nextPages };
+  return {
+    entities,
+    nextPages,
+    ...(donations ? { sourceCollections } : {}),
+  };
 }

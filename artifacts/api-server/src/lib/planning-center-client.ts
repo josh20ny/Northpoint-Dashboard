@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { AccessError } from "./administration";
+import { planningCenterRateLimit } from "./planning-center-rate-limit";
 
 export const PCO_ORIGIN = "https://api.planningcenteronline.com";
 export const PCO_SCOPES = ["people", "services", "check_ins"] as const;
@@ -129,6 +130,18 @@ export async function providerRequest(path: string, init: RequestInit = {}, maxB
   } catch {
     throw new ProviderError(503);
   }
+  if (
+    path.startsWith("/people/") ||
+    path.startsWith("/services/") ||
+    path.startsWith("/check-ins/") ||
+    path.startsWith("/groups/") ||
+    path.startsWith("/giving/")
+  )
+    planningCenterRateLimit.observe(
+      response.headers,
+      response.status,
+      retrySeconds(response.headers.get("retry-after")),
+    );
   if (!response.ok) {
     await response.body?.cancel();
     throw new ProviderError(response.status, retrySeconds(response.headers.get("retry-after")));
@@ -223,7 +236,8 @@ export const versions: Record<Product, string> = {
   groups: "2023-07-10",
   serving: "2018-11-01",
 };
-export function apiGet(path: string, token: string, product: Product) {
+export async function apiGet(path: string, token: string, product: Product) {
+  await planningCenterRateLimit.wait();
   return providerRequest(path, {
     headers: { Authorization: `Bearer ${token}`, "X-PCO-API-Version": versions[product] },
   });
