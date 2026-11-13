@@ -72,3 +72,12 @@ entries have not happened yet and must remain unrecorded.
 not arbitrary numeric measures or formula failures. For historical workbook
 review, use the confirmed snapshot cutoff, so future placeholders do not turn
 into historical zeroes merely because the review runs later.
+
+For the child/student ministry history, the workbook contains total attendance
+and first-time check-ins per ministry and service, but no location-level or
+group-level history.
+
+**Why:** The owner clarified the workbook's available historical detail.
+
+**How to apply:** Import those aggregate ministry/service measures only. Never
+derive location or group history from the aggregate totals.

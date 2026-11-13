@@ -49,3 +49,18 @@ visible and prevent entry controls from distracting from reported results.
 **How to apply:** Use the order across Connection/Groups, child/student
 ministries, Service Programming and Giving. Show future health formulas as
 unconfigured, never as invented scores.
+
+For child/student attendance, use Sunday PCO Check-Ins as the source of truth.
+Waumba Land and UpStreet use mapped Check-Ins locations per service; Transit
+and InsideOut use service check-ins matched to students' Groups records.
+Double check-ins, missing person profiles, duplicate check-ins and duplicate
+profiles are quality-review cases; do not silently treat every source row as a
+distinct attendee.
+
+**Why:** The owner clarified the ministry-specific attendance workflow and
+called out these data-quality exceptions.
+
+**How to apply:** Preserve the PCO service/location and Groups relationships
+when calculating attendance. Deduplicate rechecks only when the same PCO person
+identifier establishes the match; do not guess that different profile IDs are
+the same person.

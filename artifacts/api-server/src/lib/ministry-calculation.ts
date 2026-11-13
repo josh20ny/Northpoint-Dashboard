@@ -501,7 +501,7 @@ export function compileMinistryFacts(
     }
     for (const { m, d, person, kind } of candidates) {
       if (
-        (m.measure === "attendance" && kind === "regular") ||
+        (m.measure === "attendance" && ["regular", "guest"].includes(kind)) ||
         (m.measure === "volunteers" && kind === "volunteer") ||
         (m.measure === "first_known" &&
           kind === "regular" &&

@@ -136,6 +136,22 @@ actual-serving counts. No source mapping or publication was created and no new
 PCO scan was started. Broad all-fund Giving totals do not require fund-specific
 mapping; fund-level figures still require explicit source interpretation.
 
+## Owner-confirmed attendance source semantics — 2026-11-13
+
+Sunday PCO Check-Ins are the current source of truth, with data-quality checks
+for double check-ins, missing person profiles, duplicated check-ins and
+duplicated profiles. Waumba Land and UpStreet attendance is counted by mapped
+Check-Ins location per service. Transit and InsideOut attendance is counted
+from their service check-ins and matched to the students' Groups records.
+
+The accepted historical workbook provides total attendance and first-time
+check-ins by ministry and service only. It has no location-level or group-level
+history; do not fabricate those splits. The Check-Ins calculator now includes
+linked guest check-ins in attendance and continues to deduplicate rechecks by
+person ID within a ministry/scope/week. It cannot automatically identify two
+different PCO profile IDs as the same person. Missing person links remain a
+visible data-quality issue, not an identity to infer.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas

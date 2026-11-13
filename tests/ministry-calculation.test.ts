@@ -249,7 +249,7 @@ describe("ministry source-to-metric semantics", () => {
       week: "2026-11-15",
     });
   });
-  it("deduplicates rechecks and labels first-known as bounded by imported history", () => {
+  it("counts guest attendance, deduplicates rechecks and bounds first-known by imported history", () => {
     const records = [
       e("EventPeriod", "1", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
       e(
@@ -285,6 +285,17 @@ describe("ministry source-to-metric semantics", () => {
           event_times: { data: [] },
         },
       ),
+      e(
+        "CheckIn",
+        "6",
+        { kind: "Guest" },
+        {
+          event_period: r("EventPeriod", "1"),
+          person: r("Person", "10"),
+          locations: { data: [] },
+          event_times: { data: [] },
+        },
+      ),
     ];
     const result = compileMinistryFacts(
       "check_ins",
@@ -294,7 +305,7 @@ describe("ministry source-to-metric semantics", () => {
       end,
       now,
     );
-    expect(result.values.find((v) => v.measure === "attendance")?.value).toBe(1);
+    expect(result.values.find((v) => v.measure === "attendance")?.value).toBe(2);
     expect(result.values.find((v) => v.measure === "volunteers")?.value).toBe(1);
     expect(result.values.find((v) => v.measure === "first_known")).toMatchObject({
       value: 1,
