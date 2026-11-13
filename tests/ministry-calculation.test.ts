@@ -593,19 +593,26 @@ describe("ministry source-to-metric semantics", () => {
     expect(result.values).toEqual([]);
     expect(result.issues).toContain("unmapped_student_group_snapshot");
   });
-  it("does not guess when a student belongs to groups mapped to two ministries", () => {
+  it.each([
+    { label: "routes overlapping memberships to morning Transit", time: "15:00", route: "transit", expected: "transit", kind: "Regular", missing: false },
+    { label: "routes overlapping memberships to evening InsideOut", time: "22:30", route: "insideout", expected: "insideout", kind: "Guest", missing: false },
+    { label: "keeps overlapping service routes ambiguous", time: "15:00", route: "both", expected: null, kind: "Regular", missing: false },
+    { label: "does not replace missing membership with service routing", time: "22:30", route: "insideout", expected: null, kind: "Regular", missing: true },
+    { label: "does not count volunteer Check-Ins as students", time: "22:30", route: "insideout", expected: null, kind: "Volunteer", missing: false },
+  ])("$label", ({ time, route, expected, kind, missing }) => {
+    const startsAt = `2026-11-08T${time}:00Z`;
     const checkIns = [
-      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("EventPeriod", "period", { starts_at: startsAt }, { event: r("Event", "9") }),
       e(
         "EventTime",
         "time",
-        { starts_at: "2026-11-08T15:00:00Z" },
+        { starts_at: startsAt },
         { event: r("Event", "9") },
       ),
       e(
         "CheckIn",
         "student-checkin",
-        { kind: "Regular" },
+        { kind },
         {
           event_period: r("EventPeriod", "period"),
           event_times: r("EventTime", "time"),
@@ -634,14 +641,15 @@ describe("ministry source-to-metric semantics", () => {
       "check_ins",
       checkIns,
       [
-        serviceRoute("time", "transit", "service-1"),
+        ...(route !== "insideout" ? [serviceRoute("time", "transit", "service-1")] : []),
+        ...(route !== "transit" ? [serviceRoute("time", "insideout", "service-3")] : []),
       ],
       start,
       end,
       now,
       new Map(),
       groups,
-      [
+      missing ? [] : [
         mapping("groups", "Group", "10", "student_group_classification", "transit"),
         {
           ...mapping("groups", "Group", "11", "student_group_classification", "insideout"),
@@ -650,8 +658,16 @@ describe("ministry source-to-metric semantics", () => {
       ],
       new Date("2026-11-10T12:00:00Z"),
     );
-    expect(result.values).toEqual([]);
-    expect(result.issues).toContain("unmapped_student_group_ambiguous");
+    if (expected) {
+      expect(result.values).toContainEqual(expect.objectContaining({
+        ministry: expected, measure: "attendance", value: 1,
+        scope: expected === "transit" ? "service-1" : "service-3",
+      }));
+      expect(result.values.filter((row) => row.measure === "attendance")).toHaveLength(1);
+      expect(result.issues).not.toContain("unmapped_student_group_ambiguous");
+    } else expect(result.values).toEqual([]);
+    if (route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
+    if (missing) expect(result.issues).toContain("unmapped_student_group_membership");
   });
   it("routes future dated EventTimes by event and Chicago-local time", () => {
     const entities = [

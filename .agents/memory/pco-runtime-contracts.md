@@ -29,6 +29,18 @@ unclassified; never infer linkage from names or from included resources alone.
 
 ## Backlog performance
 
+Scope date-specific Check-Ins calculations by linked reporting dates in SQL
+before loading source facts, rather than loading the entire accessible history.
+
+**Why:** A live read-only calculation exceeded the whole-history source bound
+and transferring that history also interrupted the workspace. EventTime linkage
+provides the attendance date; creation/import dates are not a safe substitute.
+
+**How to apply:** Keep reporting-window previews bounded and carry the required
+EventTimes, EventPeriods, routing templates and membership snapshot into the
+calculation. Do not treat a narrowed preview as proof that the full publisher
+has been partitioned too.
+
 PCO Groups returns a synthetic GroupType whose ID is the literal `unique`.
 Accept that exact sentinel for GroupType records and GroupType linkage, while
 retaining numeric-ID validation for other resource types.

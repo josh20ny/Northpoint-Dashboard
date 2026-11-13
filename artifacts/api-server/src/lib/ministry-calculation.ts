@@ -644,7 +644,9 @@ export function compileMinistryFacts(
           if (!first.has(k) || first.get(k)! > w) first.set(k, w);
         }
       }
-      for (const session of sessions.filter((m) => ["transit", "insideout"].includes(m.ministry))) {
+      const studentSessions = sessions.filter((m) => ["transit", "insideout"].includes(m.ministry));
+      const routedStudentMinistries = new Set(studentSessions.map((m) => m.ministry));
+      for (const session of studentSessions) {
         if (!groupSnapshotAt || reportingWeekEnding(d) !== completedSunday(groupSnapshotAt)) {
           issues.add("unmapped_student_group_snapshot");
           continue;
@@ -653,7 +655,11 @@ export function compileMinistryFacts(
           issues.add("unmapped_student_group_person");
           continue;
         }
-        const ministries = classifiedMinistries(person, d);
+        const memberships = classifiedMinistries(person, d);
+        // Owner-confirmed service routes narrow overlapping memberships.
+        // A route alone never substitutes for an eligible Groups membership.
+        const ministries = memberships.filter((ministry) => routedStudentMinistries.has(ministry));
+        if (memberships.length && !ministries.length) continue;
         if (ministries.length !== 1) {
           issues.add(
             ministries.length > 1

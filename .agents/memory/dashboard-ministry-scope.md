@@ -83,6 +83,18 @@ students and volunteers, not adult volunteers exclusively.
 “Leaders.” Preserve individual membership roles and Check-In kinds when
 distinguishing student attendance from volunteer activity.
 
+Use the confirmed service-time routes to resolve cross-ministry Groups
+memberships: eligible Transit membership at morning services, and eligible
+InsideOut membership at 4:30 PM. A service route does not replace missing
+membership evidence.
+
+**Why:** The owner approved using confirmed service times after the November 8
+comparison found people belonging to both student ministries.
+
+**How to apply:** Narrow eligible membership classifications to the ministries
+routed for the actual Check-In time. Keep missing memberships and cases with
+multiple eligible routed ministries unresolved.
+
 The owner identified **Normal Service Times** as the Check-Ins event for weekly
 ministry attendance and supplied its active location hierarchy as mapping
 evidence. Handle the source-ID lookup and mapping entry for the owner rather

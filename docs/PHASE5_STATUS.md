@@ -320,6 +320,31 @@ metrics were published. The next reconciliation must explain source locations,
 membership overlaps/gaps and the existing duplicate/profile exceptions before
 changing counting policy or claiming matching totals.
 
+### Confirmed service times now narrow student classifications
+
+The owner approved resolving cross-ministry membership overlaps using the
+confirmed service times. The calculator now intersects eligible Groups
+classifications with student ministries routed for the actual Check-In time.
+Morning routes can classify Transit members; the 4:30 PM route can classify
+InsideOut members even when those people also retain Transit memberships.
+Routing alone does not replace a missing membership, and multiple eligible
+ministries routed to the same Check-In remain ambiguous. Volunteer Check-Ins
+remain excluded from student attendance.
+
+The updated focused suite passes 29 tests, covering morning/evening routing,
+remaining service ambiguity, missing membership and volunteer exclusion. API
+typechecking passes. A read-only November 8 run of the actual calculator reports
+no cross-ministry ambiguity; its remaining issues are missing person profiles,
+possible duplicate Check-Ins, missing student membership, and four unresolved
+Check-In review items. All three student-service attendance results are
+correctly withheld as partial (`value: null`), not published as accurate totals.
+
+The read-only preview filters source facts by linked EventTime dates before
+loading them. Loading the full Check-Ins history exceeded the existing 500,000
+source bound; the regular publisher still needs equivalent reporting-window
+partitioning before live publication can be accepted. This is separate from
+the student routing rule and is not claimed fixed by this change.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas
