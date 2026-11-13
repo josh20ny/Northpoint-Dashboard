@@ -85,3 +85,11 @@ connections and said they do not want to do the Admin mapping themselves.
 **How to apply:** Use the supplied hierarchy for location interpretation and
 the staged Groups data for student classification. Ask only about genuinely
 ambiguous business meanings; do not infer them from a source name alone.
+
+Fold the shared **Other → Hangout** room into **UpStreet attendance**.
+
+**Why:** The owner explicitly answered, “Fold it into UpStreet attendance.”
+
+**How to apply:** Include Hangout with UpStreet's rooms, deduplicating the same
+PCO person across those rooms within the reporting scope. Do not assign it to
+Waumba Land or publish it as a separate ministry.

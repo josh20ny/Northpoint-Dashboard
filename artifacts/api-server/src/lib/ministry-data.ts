@@ -286,7 +286,7 @@ export async function ministryDataAdmin(p: Principal): Promise<MinistryDataAdmin
     );
   });
 }
-export async function createMinistryMapping(p: Principal, input: MinistrySourceMappingInput) {
+export async function createMinistryMapping(p: AdminActor, input: MinistrySourceMappingInput) {
   validateTarget(input.ministry, input.measure, input.scope);
   if (
     !allowedMapping[input.product]?.[input.objectType]?.includes(input.measure) ||

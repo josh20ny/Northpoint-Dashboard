@@ -116,9 +116,11 @@ Current development data check (2026-11-13): the Giving historical backfill is
 complete (41,875 pages; 110,535 fetched; 109,564 revised; no pending pages).
 Check-Ins, People and Services have completed incremental runs; Groups has a
 completed current-window run (1,326 pages; 10,430 fetched), not a historical
-backfill. These source records are staged, but there are currently no active
-Phase 5 source mappings and no ministry metric publications. A completed PCO
-sync is therefore not yet a published ministry dashboard.
+backfill. At the initial review these source records were staged without
+Phase 5 source mappings or ministry metric publications. The owner-approved
+location mappings recorded below have since been saved; no ministry metric
+publications have been created. A completed PCO sync is not itself a published
+ministry dashboard.
 
 ## Staged PCO mapping review — 2026-11-13
 
@@ -162,7 +164,8 @@ membership; that mapping does not publish group totals or person-level data.
 The calculation uses only the latest completed Groups snapshot for its nearest
 completed Sunday and does not backcast today's memberships into older weeks.
 These mapping options do not create source mappings or publications by
-themselves. No mapping has been saved and no new PCO scan has been started.
+themselves. At that implementation checkpoint no mapping had been saved.
+The subsequent approved location configuration is recorded below.
 
 ### Owner-supplied Check-Ins reference — November 8, 2026
 
@@ -184,8 +187,9 @@ dashboard attendance):
 | Other → Hangout | 14 |
 
 The combined UpStreet/Waumba parent shows 245 and includes the Other/Hangout
-branch. Do not add parent and descendant totals or assume Hangout belongs to
-either ministry. Its business treatment still needs clarification. PCO
+branch. The owner explicitly confirmed **Hangout counts toward UpStreet**.
+Do not add parent and descendant totals or assume adding displayed room
+headcounts yields unique ministry attendance. PCO
 regular/guest/volunteer distinctions and cross-location/service overlaps must
 remain distinct when comparing these UI headcounts to dashboard attendance.
 
@@ -199,6 +203,33 @@ one Event contains multiple services, and its individual EventTime IDs are
 dated instances. Do not map the whole Event to a single service or create a
 one-Sunday-only routing rule that silently fails for future Sundays. No source
 mappings or publications were saved during this reference review.
+
+### Approved location mappings saved
+
+Following the owner's Hangout clarification, 27 attendance mappings were saved
+through the existing audited Admin mapping repository: 20 UpStreet rooms
+(including Hangout) and 7 Waumba Land animal rooms. Only exact source IDs and
+labels verified against the supplied hierarchy and November 8 staged data were
+used; no unreviewed ministry-name inference was applied.
+
+These mappings use combined-service (`all`) scope, effective November 8, 2026
+onward, with no historical backcasting. The existing calculator deduplicates
+the same PCO person within a ministry/scope/week, including across Hangout and
+UpStreet classrooms. Different profile IDs are not automatically merged.
+
+The operations entry point
+`artifacts/api-server/src/ops/apply-approved-kids-locations.ts` previews by
+default and requires `--apply` to save. It validates the recorded integration
+authorizer is still an active Admin, checks exact source labels, refuses
+conflicting interpretations, and preserves immutable mapping/audit history.
+Apply reported 27 created; a subsequent preview reported zero pending.
+Workspace typechecking passed.
+
+No sync, scheduling setting, source record or metric publication was changed.
+Service-time routing, student Groups classification mappings, unresolved
+Check-In treatment and the representative source-to-screen comparison remain
+open before publication. The room mappings are not a claim that Phase 5
+attendance acceptance is complete.
 
 The classification fixtures and full workspace test suite pass, and workspace
 typechecking passes. The API health endpoint and public dashboard preview load.
