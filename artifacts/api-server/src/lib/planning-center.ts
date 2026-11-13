@@ -435,7 +435,7 @@ export async function disconnect(p: Principal) {
   if (outcome) throw outcome;
 }
 export async function startSync(
-  p: Principal,
+  p: AdminActor,
   product: provider.Product,
   mode: "backfill" | "incremental" | "current",
   since?: string | null,
@@ -528,7 +528,7 @@ export async function startSync(
     return syncView(run.rows[0]!);
   });
 }
-export async function setAutomation(p: Principal, id: string, enabled: boolean) {
+export async function setAutomation(p: AdminActor, id: string, enabled: boolean) {
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
     if (enabled) connected(v);

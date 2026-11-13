@@ -6,6 +6,8 @@
 import { pool } from "@workspace/db";
 import type { AdminActor } from "../lib/administration";
 import { setAutomation, startSync } from "../lib/planning-center";
+import * as provider from "../lib/planning-center-client";
+import { ministryEntity, ministryPagePath, parseMinistryPage } from "../lib/ministry-source";
 
 const start = process.argv.includes("--start");
 const effectiveFrom = "2026-11-08";
@@ -28,6 +30,41 @@ async function main() {
       throw new GroupsRefreshError("An active Admin Planning Center connection is required");
     actor = { userId: owner.rows[0]!.id, role: "admin" };
     accountRef = owner.rows[0]!.account_ref;
+    if (process.argv.includes("--inspect-contract")) {
+      const credentials = await c.query(
+        "SELECT token_ciphertext FROM pco_connections WHERE id='planning_center'",
+      );
+      const token = provider.decrypt<provider.Tokens>(
+        credentials.rows[0].token_ciphertext,
+        `tokens:${accountRef}`,
+      );
+      if (token.expiresAt <= Date.now()) throw new GroupsRefreshError("Wait for token renewal");
+      const page = { type: "GroupType", path: "/groups/v2/group_types" };
+      const payload = await provider.apiGet(ministryPagePath(page, "groups"), token.accessToken, "groups");
+      const rows = Array.isArray(payload.data) ? payload.data : [];
+      let valid = true;
+      try { parseMinistryPage(payload, page, "groups"); } catch { valid = false; }
+      console.log(JSON.stringify({
+        mode: "contract",
+        valid,
+        count: rows.length,
+        included: Array.isArray(payload.included) ? payload.included.length : null,
+        resources: rows.map((row) => {
+          let accepted = true;
+          try { ministryEntity(row, "GroupType"); } catch { accepted = false; }
+          return {
+            type: row.type,
+            numericId: typeof row.id === "string" && /^\d+$/.test(row.id),
+            nonNumericCategoryId: /^\d+$/.test(String(row.id)) ? null : row.id,
+            attributes: Object.keys(row.attributes ?? {}),
+            relationships: Object.keys(row.relationships ?? {}),
+            accepted,
+          };
+        }),
+      }));
+      await c.query("COMMIT");
+      return;
+    }
     const activeRun = await c.query(
       `SELECT id FROM pco_sync_runs
        WHERE account_ref=$1 AND product='groups' AND status IN ('running','retry')

@@ -175,7 +175,7 @@ export function ministryEntity(value: unknown, expectedType: string): SourceEnti
   if (
     v.type !== expectedType ||
     typeof v.id !== "string" ||
-    !/^[0-9]{1,30}$/.test(v.id) ||
+    !validResourceId(v.id, expectedType) ||
     !v.attributes ||
     typeof v.attributes !== "object" ||
     Array.isArray(v.attributes)
@@ -217,11 +217,15 @@ export function ministryEntity(value: unknown, expectedType: string): SourceEnti
         throw new ProviderError(422);
       rel[key] = { data: data.map((d) => ({ type, id: d.id })) };
     } else if (data === null) rel[key] = { data: null };
-    else if (data?.type === type && typeof data.id === "string" && /^[0-9]{1,30}$/.test(data.id))
+    else if (data?.type === type && typeof data.id === "string" && validResourceId(data.id, type))
       rel[key] = { data: { type, id: data.id } };
     else throw new ProviderError(422);
   }
   return { type: expectedType, id: v.id, attributes: attrs, relationships: rel };
+}
+function validResourceId(id: string, type: string) {
+  // PCO returns a synthetic category for groups without a custom GroupType.
+  return /^[0-9]{1,30}$/.test(id) || (type === "GroupType" && id === "unique");
 }
 export function parseMinistryPage(
   value: Record<string, unknown>,

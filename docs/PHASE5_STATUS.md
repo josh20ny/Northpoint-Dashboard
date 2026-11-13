@@ -258,6 +258,32 @@ The preview capture cannot verify the signed-in Admin mapping screen, and the
 rollback-only database integration test timed out before reporting a result;
 database-backed publication is not yet claimed as verified.
 
+### Student category linkage added; category interpretation still open
+
+The Groups adapter now requests `Group.group_type` and stages the GroupType
+collection. Student classification supports effective-dated GroupType mappings
+as well as individual Group mappings; other Groups measures remain restricted
+to Group sources. No student classification mappings have been saved yet.
+
+The live collection includes a synthetic GroupType ID `unique`. The parser now
+accepts that exact sentinel for category records and category linkage, without
+relaxing ID validation for other resources. The initial refresh rejected that
+shape before committing any page; the corrected authenticated current-window
+refresh is running with saved page progress and automatic processing enabled.
+It reads PCO and stages data only, with no metric publication.
+
+PCO has `Transit General`, `Transit Leaders`, `InsideOut General`, and
+`InsideOut Leaders` categories. Their business meaning must be confirmed before
+assuming a “Leaders” category contains only adult leaders or only students.
+Explicit group-name matching alone leaves substantial gaps and cross-ministry
+overlaps, so it is not used to create ministry classifications.
+
+Workspace typechecking and the existing full non-database suite passed before
+the sentinel adjustment; the focused ministry suite (25 tests) and API
+typechecking passed afterward. The live category response now passes the parser.
+Both services run, and the signed-out dashboard loads without console errors.
+November 8 attendance reconciliation and signed-in display acceptance remain open.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas

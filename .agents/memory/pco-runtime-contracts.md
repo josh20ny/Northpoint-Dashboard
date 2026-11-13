@@ -29,6 +29,18 @@ unclassified; never infer linkage from names or from included resources alone.
 
 ## Backlog performance
 
+PCO Groups returns a synthetic GroupType whose ID is the literal `unique`.
+Accept that exact sentinel for GroupType records and GroupType linkage, while
+retaining numeric-ID validation for other resource types.
+
+**Why:** The live category collection includes this built-in category alongside
+numeric custom categories; treating every category ID as numeric rejects the
+entire first page.
+
+**How to apply:** Include the sentinel in provider-contract fixtures. Do not
+generalize it into arbitrary string IDs or infer ministry membership from the
+synthetic category.
+
 All PCO backlog processes should process in minutes, not hours.
 
 **Why:** The user explicitly set this performance expectation for all PCO backlogs, not only Giving.

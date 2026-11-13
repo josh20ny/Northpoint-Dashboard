@@ -16,6 +16,21 @@ import {
 describe("Groups group-type sources", () => {
   const groupPage = { type: "Group", path: "/groups/v2/groups" };
   const groupTypePage = { type: "GroupType", path: "/groups/v2/group_types" };
+  it("accepts PCO's synthetic unique category without relaxing other resource IDs", () => {
+    expect(parseMinistryPage({
+      data: [{ type: "GroupType", id: "unique", attributes: { name: "Unique Groups" } }],
+    }, groupTypePage, "groups").entities[0]?.id).toBe("unique");
+    expect(ministryEntity({
+      type: "Group", id: "22", attributes: {},
+      relationships: { group_type: { data: { type: "GroupType", id: "unique" } } },
+    }, "Group").relationships.group_type.data).toEqual({ type: "GroupType", id: "unique" });
+    expect(() => ministryEntity({
+      type: "GroupType", id: "other", attributes: {},
+    }, "GroupType")).toThrow();
+    expect(() => ministryEntity({
+      type: "Membership", id: "unique", attributes: {},
+    }, "Membership")).toThrow();
+  });
 
   it("requests the GroupType relationship and stages category records", () => {
     expect(ministryRoots("groups")).toContainEqual(groupTypePage);
