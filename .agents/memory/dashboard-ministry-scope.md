@@ -74,6 +74,15 @@ output.
 **How to apply:** Map Groups to a ministry and use membership only to classify
 service Check-Ins. Keep the published result aggregate-only.
 
+The PCO **Transit Leaders** and **InsideOut Leaders** categories contain both
+students and volunteers, not adult volunteers exclusively.
+
+**Why:** The owner explicitly confirmed “Both students and volunteers.”
+
+**How to apply:** Do not discard a whole category because its name says
+“Leaders.” Preserve individual membership roles and Check-In kinds when
+distinguishing student attendance from volunteer activity.
+
 The owner identified **Normal Service Times** as the Check-Ins event for weekly
 ministry attendance and supplied its active location hierarchy as mapping
 evidence. Handle the source-ID lookup and mapping entry for the owner rather

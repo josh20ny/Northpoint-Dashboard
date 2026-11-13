@@ -284,6 +284,42 @@ typechecking passed afterward. The live category response now passes the parser.
 Both services run, and the signed-out dashboard loads without console errors.
 November 8 attendance reconciliation and signed-in display acceptance remain open.
 
+### Student categories saved; refreshed November 8 comparison
+
+The owner confirmed that the “Leaders” categories contain **both students and
+volunteers**. Four GroupType classification mappings now cover Transit General,
+Transit Leaders, InsideOut General and InsideOut Leaders, effective November 8.
+They were saved through the audited repository; a repeat preview found zero
+pending mappings. Categories classify ministry only, with the existing
+membership-leader and volunteer Check-In exclusions retained.
+
+The corrected current Groups refresh completed: **1,411 pages and 11,170 fetched
+resources**, with no pending pages. This is fetched resources across Groups,
+memberships, events, categories and attendance—not a count of students.
+
+A read-only comparison of non-volunteer November 8 Check-Ins against active
+Groups memberships (non-leader, joined on/before the service date) found:
+
+| Service | Unique linked people | Transit only | InsideOut only | Both student ministries | Neither student ministry |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 9:00 AM | 193 | 44 | 0 | 1 | 148 |
+| 11:00 AM | 166 | 44 | 0 | 0 | 122 |
+| 4:30 PM | 89 | 0 | 47 | 22 | 20 |
+
+The morning denominator includes children's ministries and is **not** a Transit
+attendance total. At 4:30 PM, 22 people have eligible memberships in both student
+ministries and 20 have neither. The existing calculator correctly treats
+cross-ministry classification as ambiguous, rather than silently assigning it.
+At 11:00 AM there are 170 non-volunteer Check-In rows, 166 distinct linked people,
+and one row without a person link; raw rows must not be compared as if they were
+the screenshot's 167 headcount.
+
+These results do not yet reconcile to Transit 109 and InsideOut 89. The mappings
+are configured, but student attendance acceptance is still open. No attendance
+metrics were published. The next reconciliation must explain source locations,
+membership overlaps/gaps and the existing duplicate/profile exceptions before
+changing counting policy or claiming matching totals.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas
