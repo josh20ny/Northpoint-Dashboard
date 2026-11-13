@@ -150,7 +150,10 @@ history; do not fabricate those splits. The Check-Ins calculator now includes
 linked guest check-ins in attendance and continues to deduplicate rechecks by
 person ID within a ministry/scope/week. It cannot automatically identify two
 different PCO profile IDs as the same person. Missing person links remain a
-visible data-quality issue, not an identity to infer.
+visible data-quality issue, not an identity to infer. The Admin exception
+queue now allows an Admin to include or exclude an unresolved Check-In. Each
+decision is audit-logged, affects publication only after republishing, and
+never changes Planning Center or merges profile identities.
 
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
