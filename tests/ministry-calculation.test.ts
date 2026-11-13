@@ -111,6 +111,10 @@ const mapping = (
   effectiveFrom: "2020-01-01",
   effectiveTo: null,
 });
+const serviceRoute = (sourceTimeId: string, ministry: string, scope: string): SourceMapping => ({
+  ...mapping("check_ins", "EventTime", sourceTimeId, "service_session", ministry),
+  scope,
+});
 const giving = (id: string, attrs: Record<string, unknown> = {}) =>
   e(
     "Donation",
@@ -368,11 +372,18 @@ describe("ministry source-to-metric semantics", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
       e(
+        "EventTime",
+        "time",
+        { starts_at: "2026-11-08T15:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
         "CheckIn",
         "student-checkin",
         { kind: "Guest" },
         {
           event_period: r("EventPeriod", "period"),
+          event_times: r("EventTime", "time"),
           person: r("Person", "student"),
           locations: { data: [] },
         },
@@ -391,10 +402,7 @@ describe("ministry source-to-metric semantics", () => {
       "check_ins",
       checkIns,
       [
-        {
-          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
-          scope: "service-1",
-        },
+        serviceRoute("time", "transit", "service-1"),
       ],
       start,
       end,
@@ -419,11 +427,18 @@ describe("ministry source-to-metric semantics", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-01T15:00:00Z" }, { event: r("Event", "9") }),
       e(
+        "EventTime",
+        "time",
+        { starts_at: "2026-11-01T15:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
         "CheckIn",
         "student-checkin",
         { kind: "Regular" },
         {
           event_period: r("EventPeriod", "period"),
+          event_times: r("EventTime", "time"),
           person: r("Person", "student"),
           locations: { data: [] },
         },
@@ -442,10 +457,7 @@ describe("ministry source-to-metric semantics", () => {
       "check_ins",
       checkIns,
       [
-        {
-          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
-          scope: "service-1",
-        },
+        serviceRoute("time", "transit", "service-1"),
       ],
       start,
       end,
@@ -462,11 +474,18 @@ describe("ministry source-to-metric semantics", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
       e(
+        "EventTime",
+        "time",
+        { starts_at: "2026-11-08T15:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
         "CheckIn",
         "student-checkin",
         { kind: "Regular" },
         {
           event_period: r("EventPeriod", "period"),
+          event_times: r("EventTime", "time"),
           person: r("Person", "student"),
           locations: { data: [] },
         },
@@ -492,10 +511,7 @@ describe("ministry source-to-metric semantics", () => {
       "check_ins",
       checkIns,
       [
-        {
-          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
-          scope: "service-1",
-        },
+        serviceRoute("time", "transit", "service-1"),
       ],
       start,
       end,
@@ -513,6 +529,95 @@ describe("ministry source-to-metric semantics", () => {
     );
     expect(result.values).toEqual([]);
     expect(result.issues).toContain("unmapped_student_group_ambiguous");
+  });
+  it("routes future dated EventTimes by event and Chicago-local time", () => {
+    const entities = [
+      e("EventTime", "template", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "EventPeriod",
+        "future-period",
+        { starts_at: "2026-11-15T15:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
+        "EventTime",
+        "future-time",
+        { starts_at: "2026-11-15T15:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
+        "CheckIn",
+        "future-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "future-period"),
+          event_times: r("EventTime", "future-time"),
+          person: r("Person", "student"),
+          locations: r("Location", "upstreet-room"),
+        },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      entities,
+      [
+        serviceRoute("template", "upstreet", "service-1"),
+        mapping("check_ins", "Location", "upstreet-room", "attendance", "upstreet"),
+      ],
+      "2026-11-01",
+      "2026-11-15",
+      now,
+    );
+    expect(result.values).toContainEqual(
+      expect.objectContaining({
+        ministry: "upstreet",
+        measure: "attendance",
+        scope: "service-1",
+        week: "2026-11-15",
+        value: 1,
+      }),
+    );
+  });
+  it("does not include an unmapped time from a configured event", () => {
+    const entities = [
+      e("EventTime", "template-9", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "EventPeriod",
+        "noon-period",
+        { starts_at: "2026-11-15T18:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
+        "EventTime",
+        "noon-time",
+        { starts_at: "2026-11-15T18:00:00Z" },
+        { event: r("Event", "9") },
+      ),
+      e(
+        "CheckIn",
+        "noon-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "noon-period"),
+          event_times: r("EventTime", "noon-time"),
+          person: r("Person", "student"),
+          locations: r("Location", "upstreet-room"),
+        },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      entities,
+      [
+        serviceRoute("template-9", "upstreet", "service-1"),
+        mapping("check_ins", "Location", "upstreet-room", "attendance", "upstreet"),
+      ],
+      "2026-11-01",
+      "2026-11-15",
+      now,
+    );
+    expect(result.values).toEqual([]);
+    expect(result.issues).toContain("unmapped_checkin_service_time");
   });
   it("uses dated linked service times and never claims schedules prove actual serving", () => {
     const records = [

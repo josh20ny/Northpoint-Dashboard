@@ -226,10 +226,31 @@ Apply reported 27 created; a subsequent preview reported zero pending.
 Workspace typechecking passed.
 
 No sync, scheduling setting, source record or metric publication was changed.
-Service-time routing, student Groups classification mappings, unresolved
-Check-In treatment and the representative source-to-screen comparison remain
-open before publication. The room mappings are not a claim that Phase 5
-attendance acceptance is complete.
+### Owner-confirmed service-time routing saved
+
+The owner confirmed the ministry/time matrix: UpStreet, Waumba Land and Transit
+at 9:00 AM (`service-1`) and 11:00 AM (`service-2`); InsideOut at 4:30 PM
+(`service-3`); noon remains excluded. Seven routing-only mappings now use the
+November 8 EventTime records as templates, matching future records by the
+linked event and Chicago-local start time. The Admin source picker includes
+recent EventTimes labeled with their event, date and local time, and service
+scope labels show the corresponding clock times.
+
+The route operation previewed all seven routes, saved seven, then previewed
+again with zero remaining. It creates immutable, audited Admin mappings and
+does not fetch PCO data or publish metrics. Workspace typechecking and all
+non-database tests pass (313 passed; 70 skipped). Both app workflows restarted,
+the API health endpoint returned `ok`, and the public preview loaded. The
+preview browser is not signed in, so the Admin-only mapping form was not
+visually verified.
+
+Student Groups classifications still need mapping; unmapped/ambiguous
+Check-Ins still need their Admin review resolutions; and the November 8
+source-to-storage-to-display comparison remains open. The screenshot's 11:00
+headcount and raw stored record count differ, so do not publish an accuracy
+claim until duplicate and profile exceptions have been reconciled. The
+location and time mappings are not a claim that Phase 5 attendance acceptance
+is complete.
 
 The classification fixtures and full workspace test suite pass, and workspace
 typechecking passes. The API health endpoint and public dashboard preview load.

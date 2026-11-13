@@ -93,3 +93,13 @@ Fold the shared **Other → Hangout** room into **UpStreet attendance**.
 **How to apply:** Include Hangout with UpStreet's rooms, deduplicating the same
 PCO person across those rooms within the reporting scope. Do not assign it to
 Waumba Land or publish it as a separate ministry.
+
+Route the confirmed service slots as follows: UpStreet, Waumba Land and Transit
+at 9:00 AM and 11:00 AM; InsideOut at 4:30 PM. The noon slot is excluded.
+
+**Why:** The owner confirmed this interpretation against the Normal Service
+Times event and November 8, 2026 source screenshot.
+
+**How to apply:** Use the date's EventTime as a template, matching future
+records by the same Event and Chicago-local start time. Do not map the Event
+itself to one scope or reuse a dated EventTime ID literally.

@@ -36,6 +36,7 @@ import {
   measureLabel,
   ministryName,
   ministryPolling,
+  scopeLabel,
   validateRange,
   type Product,
 } from "@/lib/ministry-data";
@@ -108,19 +109,21 @@ export function MinistryDataAdminPanel() {
   const pair = mapping.product ? PRODUCT_PAIRS[mapping.product] : null;
   const mappingObjectTypes =
     mapping.measure === "service_session"
-      ? ["Event"]
+      ? ["EventTime"]
       : mapping.measure === "student_group_classification"
         ? ["Group"]
         : (pair?.objectTypes ?? []);
   const mappingMinistries =
     mapping.measure === "service_session"
-      ? MAPPABLE_MINISTRIES.filter((m) => m.slug === "service-programming")
+      ? MAPPABLE_MINISTRIES.filter((m) =>
+          ["upstreet", "waumba-land", "transit", "insideout"].includes(m.slug),
+        )
       : mapping.measure === "student_group_classification"
         ? MAPPABLE_MINISTRIES.filter((m) => ["transit", "insideout"].includes(m.slug))
         : MAPPABLE_MINISTRIES;
   const mappingScopes =
     mapping.measure === "service_session"
-      ? SCOPES.filter((scope) => ["service-1", "service-2"].includes(scope))
+      ? SCOPES.filter((scope) => ["service-1", "service-2", "service-3"].includes(scope))
       : mapping.measure === "student_group_classification"
         ? SCOPES.filter((scope) => scope === "all")
         : SCOPES;
@@ -333,19 +336,23 @@ export function MinistryDataAdminPanel() {
                           objectType:
                             v === "service_session" || v === "student_group_classification"
                               ? v === "service_session"
-                                ? "Event"
+                                ? "EventTime"
                                 : "Group"
                               : mapping.objectType,
                           ministry:
                             v === "service_session"
-                              ? "service-programming"
+                              ? ["upstreet", "waumba-land", "transit", "insideout"].includes(
+                                  mapping.ministry,
+                                )
+                                ? mapping.ministry
+                                : "upstreet"
                               : v === "student_group_classification" &&
                                   !["transit", "insideout"].includes(mapping.ministry)
                                 ? "transit"
                                 : mapping.ministry,
                           scope:
                             v === "service_session"
-                              ? ["service-1", "service-2"].includes(mapping.scope)
+                              ? ["service-1", "service-2", "service-3"].includes(mapping.scope)
                                 ? mapping.scope
                                 : "service-1"
                               : v === "student_group_classification"
@@ -413,7 +420,7 @@ export function MinistryDataAdminPanel() {
                 >
                   {mappingScopes.map((sc) => (
                     <option key={sc} value={sc}>
-                      {sc}
+                      {scopeLabel(sc)}
                     </option>
                   ))}
                 </SelectField>
@@ -435,8 +442,9 @@ export function MinistryDataAdminPanel() {
               </div>
               {mapping.measure === "service_session" && (
                 <p className="rounded-lg border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
-                  Routing only: identifies whether this Event is service-1 or service-2. It does not
-                  publish a Service Programming attendance total.
+                  Routing only: this Event Time is a recurring template matched by its event and
+                  Chicago-local start time. It routes attendance for the selected ministry and
+                  does not publish a Service Programming total.
                 </p>
               )}
               {mapping.measure === "student_group_classification" && (
@@ -511,7 +519,9 @@ export function MinistryDataAdminPanel() {
                       >
                         <td className="px-3 py-2">{ministryName(m.ministry)}</td>
                         <td className="px-3 py-2">{measureLabel(m.measure)}</td>
-                        <td className="px-3 py-2 font-mono text-[11.5px]">{m.scope}</td>
+                        <td className="px-3 py-2 font-mono text-[11.5px]">
+                          {scopeLabel(m.scope)}
+                        </td>
                         <td className="px-3 py-2">
                           {PRODUCT_LABEL[m.product] ?? m.product} {m.objectType}{" "}
                           <span className="font-mono text-[11.5px]">{m.externalId}</span>

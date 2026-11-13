@@ -72,7 +72,7 @@ export const PRODUCT_LABEL: Record<Product, string> = {
 };
 export const PRODUCT_PAIRS: Record<Product, { objectTypes: string[]; measures: string[] }> = {
   check_ins: {
-    objectTypes: ["Event", "Location"],
+    objectTypes: ["Event", "EventTime", "Location"],
     measures: ["attendance", "volunteers", "first_known", "service_session"],
   },
   serving: { objectTypes: ["ServiceType", "Team"], measures: ["scheduled", "accepted"] },
@@ -138,6 +138,7 @@ export const SCOPES = [
   "all",
   "service-1",
   "service-2",
+  "service-3",
   "rally",
   "large-group",
   "small-group",
@@ -148,6 +149,14 @@ export const SCOPES = [
   "mosaic",
   "for",
 ] as const;
+
+export const scopeLabel = (scope: string) =>
+  ({
+    all: "All services",
+    "service-1": "9:00 AM",
+    "service-2": "11:00 AM",
+    "service-3": "4:30 PM",
+  })[scope as "all" | "service-1" | "service-2" | "service-3"] ?? scope;
 
 export type Series = {
   key: string;

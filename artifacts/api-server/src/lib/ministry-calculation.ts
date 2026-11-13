@@ -21,6 +21,7 @@ export const SAFE_SCOPES = [
   "all",
   "service-1",
   "service-2",
+  "service-3",
   "rally",
   "large-group",
   "small-group",
@@ -244,6 +245,13 @@ const instant = (v: unknown): Date | null =>
   typeof v === "string" && /^\d{4}-\d\d-\d\dT/.test(v) && Number.isFinite(Date.parse(v))
     ? new Date(v)
     : null;
+const chicagoTime = (date: Date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Chicago",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
 const integer = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) ? v : null);
 const currency = (v: unknown) => (typeof v === "string" && /^[A-Z]{3}$/.test(v) ? v : null);
 const activeMapping = (m: SourceMapping, date: string) =>
@@ -321,15 +329,34 @@ export function compileMinistryFacts(
         activeMapping(m, chicagoDate(date)) &&
         (!measure || m.measure === measure),
     );
-  const serviceSessions = (id: string | null, date: Date) =>
-    mappings.filter(
-      (m) =>
-        m.product === "check_ins" &&
-        m.objectType === "Event" &&
-        m.measure === "service_session" &&
-        m.externalId === id &&
-        activeMapping(m, chicagoDate(date)),
-    );
+  const eventTimeTemplates = new Map(
+    entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]),
+  );
+  const serviceMappings = mappings.filter(
+    (m) =>
+      m.product === "check_ins" &&
+      m.objectType === "EventTime" &&
+      m.measure === "service_session",
+  );
+  const serviceSessions = (time: SourceFact, date: Date) => {
+    const eventId = ref(time, "event");
+    if (!eventId) return [];
+    const timeOfDay = chicagoTime(date);
+    return serviceMappings.filter((m) => {
+      if (!activeMapping(m, chicagoDate(date))) return false;
+      const template = eventTimeTemplates.get(m.externalId);
+      if (!template) {
+        issues.add("service_time_template_missing");
+        return false;
+      }
+      const templateDate = instant(template.attributes.starts_at);
+      return (
+        !!templateDate &&
+        ref(template, "event") === eventId &&
+        chicagoTime(templateDate) === timeOfDay
+      );
+    });
+  };
   const apply = (matches: SourceMapping[], date: Date, count: number, id: string) => {
     const unique = new Map<string, SourceMapping>();
     for (const m of matches) unique.set([m.ministry, m.measure, m.scope].join("|"), m);
@@ -539,12 +566,14 @@ export function compileMinistryFacts(
       const review = reviewById.get(e.id);
       const person = ref(e, "person"),
         period = periods.get(ref(e, "event_period") ?? "");
-      const eventTimes = refs(e, "event_times").map((id) => times.get(id));
+      const eventTimes = refs(e, "event_times")
+        .map((id) => times.get(id))
+        .filter((v): v is SourceFact => !!v);
       const starts = eventTimes
-        .map((v) => v && instant(v.attributes.starts_at))
-        .filter((d): d is Date => !!d);
+        .map((time) => ({ time, date: instant(time.attributes.starts_at) }))
+        .filter((v): v is { time: SourceFact; date: Date } => !!v.date);
       const fallback = period && instant(period.attributes.starts_at);
-      const d = starts.sort((a, b) => +a - +b)[0] ?? fallback;
+      const d = starts.sort((a, b) => +a.date - +b.date)[0]?.date ?? fallback;
       // Attendance uses actual event dates, never check-in creation/import date.
       if (!d || !period) {
         issues.add("checkin_date_person_or_period_missing");
@@ -560,11 +589,32 @@ export function compileMinistryFacts(
         continue;
       }
       const eventId = ref(period, "event");
-      const ms = [
+      const routed = new Map<string, SourceMapping>();
+      for (const { time, date } of starts)
+        for (const session of serviceSessions(time, date))
+          routed.set(`${session.ministry}|${session.scope}`, session);
+      const sessions = [...routed.values()];
+      const routeConfigured = serviceMappings.some((mapping) => {
+        if (!activeMapping(mapping, chicagoDate(d))) return false;
+        const template = eventTimeTemplates.get(mapping.externalId);
+        return !!template && ref(template, "event") === eventId;
+      });
+      if (routeConfigured && sessions.length === 0) {
+        issues.add("unmapped_checkin_service_time");
+        continue;
+      }
+      const rawMatches = [
         ...match("Event", eventId, d),
         ...refs(e, "locations").flatMap((id) => match("Location", id, d)),
       ];
-      const sessions = serviceSessions(eventId, d);
+      const routedScopes = new Map(sessions.map((session) => [session.ministry, session.scope]));
+      const ms = routeConfigured
+        ? rawMatches.flatMap((m) => {
+            const scope = routedScopes.get(m.ministry);
+            if (!scope || (m.scope !== "all" && m.scope !== scope)) return [];
+            return [{ ...m, scope }];
+          })
+        : rawMatches;
       if (!ms.length && !sessions.length) {
         issues.add("unmapped_checkins");
         continue;
@@ -589,7 +639,7 @@ export function compileMinistryFacts(
           if (!first.has(k) || first.get(k)! > w) first.set(k, w);
         }
       }
-      for (const session of sessions) {
+      for (const session of sessions.filter((m) => ["transit", "insideout"].includes(m.ministry))) {
         if (!groupSnapshotAt || reportingWeekEnding(d) !== completedSunday(groupSnapshotAt)) {
           issues.add("unmapped_student_group_snapshot");
           continue;
@@ -607,6 +657,7 @@ export function compileMinistryFacts(
           );
           continue;
         }
+        if (ministries[0] !== session.ministry) continue;
         const kind = String(e.attributes.kind).toLowerCase();
         if (!["regular", "guest"].includes(kind)) continue;
         candidates.push({

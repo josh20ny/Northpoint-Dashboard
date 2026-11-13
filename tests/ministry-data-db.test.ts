@@ -271,6 +271,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       const membershipId = `test-membership-${randomUUID()}`;
       const personId = `test-person-${randomUUID()}`;
       const eventId = `test-event-${randomUUID()}`;
+      const eventTimeId = `test-event-time-${randomUUID()}`;
       const periodId = `test-period-${randomUUID()}`;
       const checkInId = `test-checkin-${randomUUID()}`;
       await c.query(
@@ -330,13 +331,24 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
           product: "check_ins",
           runId: checkInRunId,
           entity: {
+            type: "EventTime",
+            id: eventTimeId,
+            attributes: { starts_at: "2026-11-08T15:00:00Z" },
+            relationships: { event: { data: { type: "Event", id: eventId } } },
+          },
+          path: "/check-ins/v2/event_times",
+        },
+        {
+          product: "check_ins",
+          runId: checkInRunId,
+          entity: {
             type: "CheckIn",
             id: checkInId,
             attributes: { kind: "Guest" },
             relationships: {
               person: { data: { type: "Person", id: personId } },
               event_period: { data: { type: "EventPeriod", id: periodId } },
-              event_times: { data: [] },
+              event_times: { data: [{ type: "EventTime", id: eventTimeId }] },
               locations: { data: [] },
             },
           },
@@ -374,9 +386,9 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       await c.query(
         `INSERT INTO ministry_source_mappings(product,object_type,external_id,account_ref,ministry,measure,scope,effective_from,note,created_by)
         VALUES
-          ('check_ins','Event',$2,$1,'service-programming','service_session','service-1','2026-01-01','Synthetic service session',$3),
+          ('check_ins','EventTime',$2,$1,'transit','service_session','service-1','2026-01-01','Synthetic service-time route',$3),
           ('groups','Group',$4,$1,'transit','student_group_classification','all','2026-01-01','Synthetic student ministry',$3)`,
-        [account, eventId, admin.userId, groupId],
+        [account, eventTimeId, admin.userId, groupId],
       );
 
       await repo.publishMinistryData(admin, {

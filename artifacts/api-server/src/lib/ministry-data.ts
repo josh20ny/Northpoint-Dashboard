@@ -49,7 +49,8 @@ const mappingSelect = `SELECT id,product,object_type AS "objectType",external_id
  FROM ministry_source_mappings`;
 const allowedMapping: Record<string, Record<string, string[]>> = {
   check_ins: {
-    Event: ["attendance", "volunteers", "first_known", "service_session"],
+    Event: ["attendance", "volunteers", "first_known"],
+    EventTime: ["service_session"],
     Location: ["attendance", "volunteers", "first_known"],
   },
   serving: { ServiceType: ["scheduled", "accepted"], Team: ["scheduled", "accepted"] },
@@ -72,11 +73,12 @@ function validateTarget(ministry: string, measure: string, scope: string) {
     throw new AccessError(400, "Choose a supported ministry, measure and fixed aggregate scope");
   if (
     measure === "service_session" &&
-    (ministry !== "service-programming" || !["service-1", "service-2"].includes(scope))
+    (!["upstreet", "waumba-land", "transit", "insideout"].includes(ministry) ||
+      !["service-1", "service-2", "service-3"].includes(scope))
   )
     throw new AccessError(
       400,
-      "Service session mappings must be Service Programming service-1 or service-2",
+      "Service-time routing must target a child ministry and service-1, service-2 or service-3",
     );
   if (
     measure === "student_group_classification" &&
@@ -258,9 +260,22 @@ export async function ministryDataAdmin(p: Principal): Promise<MinistryDataAdmin
     );
     const sources = await c.query(
       `SELECT product,object_type AS "objectType",external_id AS "externalId",
-      coalesce(normalized->'attributes'->>'name',object_type || ' ' || external_id) AS label
-      FROM pco_source_entities WHERE account_ref=$1 AND missing_run_id IS NULL
+      CASE WHEN product='check_ins' AND object_type='EventTime' THEN
+        coalesce((
+          SELECT nullif(event.normalized->'attributes'->>'name','')
+          FROM pco_source_entities event
+          WHERE event.account_ref=source.account_ref AND event.product='check_ins'
+            AND event.object_type='Event'
+            AND event.external_id=source.normalized->'sourceRelationships'->'event'->'data'->>'id'
+        ),'Check-Ins event')
+        || ' · ' ||
+        to_char((source.normalized->'attributes'->>'starts_at')::timestamptz
+          AT TIME ZONE 'America/Chicago','Mon DD, YYYY HH12:MI AM')
+      ELSE coalesce(normalized->'attributes'->>'name',object_type || ' ' || external_id) END AS label
+      FROM pco_source_entities source WHERE account_ref=$1 AND missing_run_id IS NULL
       AND ((product='check_ins' AND object_type IN ('Event','Location'))
+        OR (product='check_ins' AND object_type='EventTime'
+          AND (normalized->'attributes'->>'starts_at')::timestamptz >= now() - interval '120 days')
         OR (product='serving' AND object_type='ServiceType')
         OR (product='groups' AND object_type='Group') OR (product='giving' AND object_type='Fund'))
       UNION
@@ -268,7 +283,7 @@ export async function ministryDataAdmin(p: Principal): Promise<MinistryDataAdmin
         'Services team ' || (normalized->'sourceRelationships'->'team'->'data'->>'id')
       FROM pco_source_entities WHERE account_ref=$1 AND product='serving' AND object_type='PlanPerson'
         AND normalized->'sourceRelationships'->'team'->'data'->>'id' IS NOT NULL
-      ORDER BY product,"objectType","externalId" LIMIT 2000`,
+      ORDER BY product,"objectType","externalId" LIMIT 2500`,
       [account],
     );
     const batches =
@@ -314,15 +329,18 @@ export async function createMinistryMapping(p: AdminActor, input: MinistrySource
     if (!options.rowCount) throw new AccessError(409, "Import this resource before mapping it");
     const overlap = await c.query(
       `SELECT id FROM ministry_source_mappings WHERE account_ref=$1 AND product=$2 AND object_type=$3
-      AND external_id=$4 AND measure=$5 AND id IS DISTINCT FROM $8::uuid
+      AND external_id=$4 AND measure=$5
+      AND ($5<>'service_session' OR ministry=$6)
+      AND id IS DISTINCT FROM $9::uuid
       AND id NOT IN (SELECT supersedes_id FROM ministry_source_mappings WHERE supersedes_id IS NOT NULL)
-      AND enabled AND daterange(effective_from,effective_to,'[]') && daterange($6::date,$7::date,'[]')`,
+      AND enabled AND daterange(effective_from,effective_to,'[]') && daterange($7::date,$8::date,'[]')`,
       [
         account,
         input.product,
         input.objectType,
         input.externalId,
         input.measure,
+        input.ministry,
         input.effectiveFrom,
         input.effectiveTo,
         input.supersedesId ?? null,
@@ -336,7 +354,9 @@ export async function createMinistryMapping(p: AdminActor, input: MinistrySource
     if (input.supersedesId) {
       const prior = await c.query(
         `SELECT 1 FROM ministry_source_mappings m WHERE id=$1 AND account_ref=$2 AND product=$3
-        AND object_type=$4 AND external_id=$5 AND measure=$6 AND NOT EXISTS(SELECT 1 FROM ministry_source_mappings n WHERE n.supersedes_id=m.id)`,
+        AND object_type=$4 AND external_id=$5 AND measure=$6
+        AND ($6<>'service_session' OR ministry=$7)
+        AND NOT EXISTS(SELECT 1 FROM ministry_source_mappings n WHERE n.supersedes_id=m.id)`,
         [
           input.supersedesId,
           account,
@@ -344,6 +364,7 @@ export async function createMinistryMapping(p: AdminActor, input: MinistrySource
           input.objectType,
           input.externalId,
           input.measure,
+          input.ministry,
         ],
       );
       if (!prior.rowCount)
@@ -697,19 +718,29 @@ async function publishMinistryDataInTransaction(
           }))
         : [];
   expected.push(
-    ...mappings
-      .filter((m) => !MAPPING_ONLY_MEASURES.has(m.measure))
-      .map((m) => ({
+    ...mappings.filter((m) => !MAPPING_ONLY_MEASURES.has(m.measure)).flatMap((m) => {
+      const routedScopes =
+        input.product === "check_ins" && m.scope === "all"
+          ? mappings
+              .filter(
+                (session) =>
+                  session.measure === "service_session" && session.ministry === m.ministry,
+              )
+              .map((session) => session.scope)
+          : [];
+      const scopes = routedScopes.length ? [...new Set(routedScopes)] : [m.scope];
+      return scopes.map((scope) => ({
         ministry: m.ministry,
         measure: m.measure,
-        scope: m.scope,
+        scope,
         unit: MEASURES[m.measure].unit,
-      })),
+      }));
+    }),
   );
   if (input.product === "check_ins") {
     const serviceSessions = mappings.filter((m) => m.measure === "service_session");
-    for (const session of serviceSessions)
-      for (const groupMapping of groupMappings)
+    for (const groupMapping of groupMappings)
+      for (const session of serviceSessions.filter((m) => m.ministry === groupMapping.ministry))
         expected.push({
           ministry: groupMapping.ministry,
           measure: "attendance",
