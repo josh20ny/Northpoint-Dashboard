@@ -66,7 +66,11 @@ export function createMinistryDataRouter(auth: AuthProvider = sessionAuthProvide
     }
     res.json(
       GetCheckInReviewResponse.parse(
-        await data.getCheckInReview(res.locals.principal, input.data.page),
+        await data.getCheckInReview(
+          res.locals.principal,
+          input.data.page,
+          input.data.date,
+        ),
       ),
     );
   });

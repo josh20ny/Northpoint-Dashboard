@@ -149,8 +149,13 @@ describe("durable schedule coordinator", () => {
       "2026-11-05",
       1,
     ]);
-    expect(JSON.parse(inserts()[0]![1]![2] as string)).toMatchObject([
-      { since: "2026-11-05", windowField: "updated_at" },
+    expect(JSON.parse(inserts()[0]![1]![2] as string)).toEqual([
+      expect.objectContaining({
+        path: "/people/v2/people",
+        since: "2026-11-05",
+        windowField: "updated_at",
+      }),
+      expect.objectContaining({ path: "/people/v2", type: "Grade" }),
     ]);
     expect(writes()[0]![1]).toEqual([
       id,

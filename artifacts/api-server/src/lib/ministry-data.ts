@@ -24,6 +24,11 @@ import {
   readCheckInResolutions,
   resolveCheckIn,
 } from "./ministry-checkin-review-store";
+import {
+  checkInTemplateIds,
+  loadCheckInFactsForWindow,
+  loadCheckInGradeFacts,
+} from "./ministry-checkin-source";
 import { reportingWeekEnding } from "./reporting-calendar";
 
 export { getCheckInReview, resolveCheckIn };
@@ -503,30 +508,45 @@ async function publishMinistryDataInTransaction(
       [account, input.product],
     )
   ).rowCount;
-  const sources = await c.query(
-    `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
-      AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL)
-        OR ($5 AND observed_run_id IS NOT NULL)) AND missing_run_id IS NULL LIMIT 500001`,
-    [
-      account,
-      input.product,
-      run.id,
-      input.product === "giving" && hasBackfill,
-      input.product === "check_ins",
-    ],
-  );
-  if (sources.rows.length > 500000)
-    throw new AccessError(
-      409,
-      "Dataset exceeds bounded publisher; partition coverage before continuing",
+  let facts: SourceFact[];
+  let gradeFacts: SourceFact[] = [];
+  if (input.product === "check_ins") {
+    try {
+      facts = await loadCheckInFactsForWindow(
+        c,
+        account,
+        input.start,
+        input.end,
+        checkInTemplateIds(mappings),
+      );
+      gradeFacts = await loadCheckInGradeFacts(c, account);
+    } catch (error) {
+      if (error instanceof AccessError) throw error;
+      throw new AccessError(
+        409,
+        error instanceof Error ? error.message : "Check-In source window could not be loaded",
+      );
+    }
+  } else {
+    const sources = await c.query(
+      `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
+        AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL))
+        AND missing_run_id IS NULL LIMIT 500001`,
+      [account, input.product, run.id, input.product === "giving" && hasBackfill],
     );
-  const facts: SourceFact[] = sources.rows.map(({ normalized: n }) => ({
-    type: n.sourceType,
-    id: n.sourceId,
-    attributes: n.attributes,
-    relationships: n.sourceRelationships,
-    sourceCollection: n.sourceCollection,
-  }));
+    if (sources.rows.length > 500000)
+      throw new AccessError(
+        409,
+        "Dataset exceeds bounded publisher; partition coverage before continuing",
+      );
+    facts = sources.rows.map(({ normalized: n }) => ({
+      type: n.sourceType,
+      id: n.sourceId,
+      attributes: n.attributes,
+      relationships: n.sourceRelationships,
+      sourceCollection: n.sourceCollection,
+    }));
+  }
   const checkInResolutions =
     input.product === "check_ins"
       ? await readCheckInResolutions(c, account)
@@ -600,6 +620,9 @@ async function publishMinistryDataInTransaction(
     groupFacts,
     groupMappings,
     groupSnapshotAt,
+    gradeFacts,
+    input.product !== "check_ins" ||
+      (!!run.coverage_start && input.start <= String(run.coverage_start)),
   );
   const givingPolicy = input.product === "giving" ? await currentGivingPolicy(c) : null;
   let givingUnits;

@@ -124,3 +124,19 @@ Times event and November 8, 2026 source screenshot.
 **How to apply:** Use the date's EventTime as a template, matching future
 records by the same Event and Chicago-local start time. Do not map the Event
 itself to one scope or reuse a dated EventTime ID literally.
+
+Use the PCO grade label as a fallback only to resolve an existing cross-ministry
+overlap on the latest completed Sunday: preschool → Waumba Land, Kindergarten–5th
+→ UpStreet, 6th–8th → Transit, and 9th–12th → InsideOut. The Admin Check-In
+resolver may show the child's Check-In display name, current grade and
+mapped/assumed ministry and location; do not fetch or expose birthdates or other
+child profile fields, or backcast today's grade into older attendance.
+
+**Why:** The owner requested grade-based ambiguity resolution and child names
+in the Admin-only exception workflow, while keeping aggregate reporting safe.
+
+**How to apply:** A grade suggestion may choose only among eligible mapped
+memberships when resolving an overlap on the latest completed Sunday. Keep
+missing membership, older weeks or unsupported grade labels unresolved; never
+infer an age from a birthdate or use a grade suggestion to replace missing
+membership evidence.

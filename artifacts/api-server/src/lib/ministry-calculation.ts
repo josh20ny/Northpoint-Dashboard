@@ -4,6 +4,7 @@ import {
   findCheckInReviewCandidates,
   type CheckInResolutionAction,
 } from "./ministry-checkin-review";
+import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
 export const MINISTRY_DEFINITION_VERSION = "source-native-v3";
@@ -283,6 +284,8 @@ export function compileMinistryFacts(
   groupFacts: SourceFact[] = [],
   groupMappings: SourceMapping[] = [],
   groupSnapshotAt: Date | null = null,
+  gradeFacts: SourceFact[] = [],
+  historyComplete = true,
 ) {
   if (!sunday(start) || !sunday(end) || end < start) throw new Error("Invalid Sunday range");
   const issues = new Set<string>();
@@ -514,6 +517,8 @@ export function compileMinistryFacts(
     }
     const periods = new Map(entities.filter((e) => e.type === "EventPeriod").map((e) => [e.id, e]));
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
+    const people = new Map(entities.filter((e) => e.type === "Person").map((e) => [e.id, e]));
+    const gradeFallbackWeeks = new Set<string>();
     const first = new Map<string, string>();
     const groupSnapshots = new Map(
       groupFacts.filter((e) => e.type === "Group").map((e) => [e.id, e]),
@@ -626,7 +631,21 @@ export function compileMinistryFacts(
       }
       const unique = new Map<string, SourceMapping>();
       for (const m of ms) unique.set(`${m.ministry}|${m.measure}|${m.scope}`, m);
-      for (const m of unique.values()) {
+      let directMatches = [...unique.values()];
+      if (
+        person &&
+        reportingWeekEnding(d) === completedSunday(asOf) &&
+        new Set(directMatches.map((m) => m.ministry)).size > 1
+      ) {
+        const gradeMinistry = ministryForGradeLabel(
+          gradeLabelFor(people.get(person), gradeFacts),
+        );
+        if (gradeMinistry && directMatches.some((m) => m.ministry === gradeMinistry)) {
+          directMatches = directMatches.filter((m) => m.ministry === gradeMinistry);
+          gradeFallbackWeeks.add(reportingWeekEnding(d));
+        }
+      }
+      for (const m of directMatches) {
         const sourceKind = String(e.attributes.kind).toLowerCase();
         const kind =
           resolution === "include" && !["regular", "guest", "volunteer"].includes(sourceKind)
@@ -658,7 +677,16 @@ export function compileMinistryFacts(
         const memberships = classifiedMinistries(person, d);
         // Owner-confirmed service routes narrow overlapping memberships.
         // A route alone never substitutes for an eligible Groups membership.
-        const ministries = memberships.filter((ministry) => routedStudentMinistries.has(ministry));
+        let ministries = memberships.filter((ministry) => routedStudentMinistries.has(ministry));
+        if (ministries.length > 1) {
+          const gradeMinistry = ministryForGradeLabel(
+            gradeLabelFor(people.get(person), gradeFacts),
+          );
+          if (gradeMinistry && ministries.includes(gradeMinistry)) {
+            ministries = [gradeMinistry];
+            gradeFallbackWeeks.add(reportingWeekEnding(d));
+          }
+        }
         if (memberships.length && !ministries.length) continue;
         if (ministries.length !== 1) {
           issues.add(
@@ -700,8 +728,18 @@ export function compileMinistryFacts(
       )
         apply([m], d, 1, identity);
     }
-    for (const row of output.values())
-      if (row.measure === "first_known") row.flags.push("limited_to_imported_history");
+    for (const row of output.values()) {
+      if (row.measure === "first_known") {
+        row.flags.push("limited_to_imported_history");
+        if (!historyComplete) {
+          row.value = null;
+          row.quality = "missing";
+          row.flags.push("prior_history_not_loaded_for_windowed_publication");
+        }
+      }
+      if (gradeFallbackWeeks.has(row.week) && row.measure === "attendance")
+        row.flags.push("ministry_classified_from_pco_grade");
+    }
   }
   // Any bad/incomplete source linkage must not silently produce a complete
   // partial number. Source absence is not an automatic zero.
@@ -715,7 +753,7 @@ export function compileMinistryFacts(
     for (const r of output.values()) {
       r.quality = "partial";
       r.flags.push("incomplete_source_linkage");
-      r.value = null;
+      if (product !== "check_ins") r.value = null;
     }
   return { values: [...output.values()], issues: [...issues].sort() };
 }

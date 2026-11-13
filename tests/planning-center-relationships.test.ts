@@ -70,7 +70,7 @@ describe("Planning Center relationship request and ingestion regression", () => 
         ),
         "https://api.planningcenteronline.com",
       );
-      expect(url.searchParams.get("include")).toBe("event_period,event_times,locations");
+      expect(url.searchParams.get("include")).toBe("event_period,event_times,locations,person");
       expect(url.searchParams.get("fields[CheckIn]")!.split(",")).toEqual([
         ...fields.CheckIn!,
         "person",
@@ -80,9 +80,10 @@ describe("Planning Center relationship request and ingestion regression", () => 
       ]);
       expect(url.searchParams.get("fields[EventPeriod]")).toContain(",event");
       expect(url.searchParams.get("fields[EventTime]")).toContain(",event,event_period");
-      expect(url.searchParams.get("fields[Plan]")).toContain(",service_type");
+      expect(url.searchParams.has("fields[Plan]")).toBe(false);
       expect(url.searchParams.get("fields[CheckIn]")).not.toContain("medical_notes");
       expect(url.searchParams.get("fields[Person]")).not.toContain("first_name");
+      expect(url.searchParams.get("fields[Person]")).toBe("grade");
       expect(url.searchParams.get("offset")).toBe(String(offset));
     }
   });

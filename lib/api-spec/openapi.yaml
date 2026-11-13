@@ -71,9 +71,13 @@ paths:
       operationId: getCheckInReview
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 10000, default: 1 } }
+        - name: date
+          in: query
+          schema: { type: string, pattern: "^(\\d{4}-\\d{2}-\\d{2}|unknown)$" }
+          description: "Sunday date, or unknown for records without a service date"
       responses:
         "200":
-          description: Admin-only Check-In exceptions with no person names or identifiers
+          description: Admin-only Check-In exceptions with names and grade-based suggestions
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CheckInReviewPage" }
@@ -903,24 +907,43 @@ components:
         action: { type: string, enum: [include, exclude] }
     CheckInReviewItem:
       type: object
-      required: [checkInId, serviceDate, eventId, locationIds, issueReasons, canInclude, resolution]
+      required: [checkInId, serviceDate, eventId, eventName, locationIds, locationNames, childName, gradeLabel, assumedMinistry, ministry, ministryBasis, issueReasons, canInclude, resolution]
       properties:
         checkInId: { type: string }
         serviceDate: { type: [string, "null"] }
         eventId: { type: [string, "null"] }
+        eventName: { type: [string, "null"] }
         locationIds: { type: array, items: { type: string } }
+        locationNames: { type: array, items: { type: string } }
+        childName: { type: [string, "null"] }
+        gradeLabel: { type: [string, "null"] }
+        assumedMinistry: { type: [string, "null"] }
+        ministry: { type: [string, "null"] }
+        ministryBasis: { type: string, enum: [mapped, grade, ambiguous, unresolved] }
         issueReasons: { type: array, items: { type: string } }
         canInclude: { type: boolean }
         resolution: { type: [string, "null"], enum: [include, exclude, null] }
+    CheckInAttendancePreview:
+      type: object
+      required: [ministry, scope, value, quality, flags]
+      properties:
+        ministry: { type: string }
+        scope: { type: string }
+        value: { type: ["integer", "null"] }
+        quality: { type: string }
+        flags: { type: array, items: { type: string } }
     CheckInReviewPage:
       type: object
-      required: [items, page, pageSize, total, unresolved, asOf]
+      required: [items, page, pageSize, total, unresolved, selectedDate, availableSundays, attendancePreview, asOf]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/CheckInReviewItem" } }
         page: { type: integer }
         pageSize: { type: integer }
         total: { type: integer }
         unresolved: { type: integer }
+        selectedDate: { type: string }
+        availableSundays: { type: array, items: { type: string } }
+        attendancePreview: { type: array, items: { $ref: "#/components/schemas/CheckInAttendancePreview" } }
         asOf: { type: string }
     CheckInResolutionResult:
       type: object

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CheckInAttendancePreview } from './checkInAttendancePreview';
 import type { CheckInReviewItem } from './checkInReviewItem';
 
 export interface CheckInReviewPage {
@@ -13,5 +14,8 @@ export interface CheckInReviewPage {
   pageSize: number;
   total: number;
   unresolved: number;
+  selectedDate: string;
+  availableSundays: string[];
+  attendancePreview: CheckInAttendancePreview[];
   asOf: string;
 }

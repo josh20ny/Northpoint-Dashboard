@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CheckInReviewItemMinistryBasis } from './checkInReviewItemMinistryBasis';
 import type { CheckInReviewItemResolution } from './checkInReviewItemResolution';
 
 export interface CheckInReviewItem {
@@ -13,7 +14,19 @@ export interface CheckInReviewItem {
   serviceDate: string | null;
   /** @nullable */
   eventId: string | null;
+  /** @nullable */
+  eventName: string | null;
   locationIds: string[];
+  locationNames: string[];
+  /** @nullable */
+  childName: string | null;
+  /** @nullable */
+  gradeLabel: string | null;
+  /** @nullable */
+  assumedMinistry: string | null;
+  /** @nullable */
+  ministry: string | null;
+  ministryBasis: CheckInReviewItemMinistryBasis;
   issueReasons: string[];
   canInclude: boolean;
   /** @nullable */

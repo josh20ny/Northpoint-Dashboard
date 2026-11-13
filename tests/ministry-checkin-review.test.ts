@@ -53,13 +53,13 @@ const sourceMapping: SourceMapping = {
 };
 
 describe("Admin Check-In review safety", () => {
-  it("returns source IDs and issue details without profile identifiers or names", () => {
+  it("shows the Check-In name without exposing the linked profile identifier", () => {
     const facts = [
       ...context,
       entity(
         "CheckIn",
         "300",
-        { kind: "Regular", display_name: "Child Name" },
+        { kind: "Regular", first_name: "Casey", last_name: "Jones" },
         {
           person: rel("Person", "private-person-id"),
           event_period: rel("EventPeriod", "22"),
@@ -67,7 +67,17 @@ describe("Admin Check-In review safety", () => {
           locations: { data: [{ type: "Location", id: "33" }] },
         },
       ),
-      checkIn("301", "Regular", null),
+      entity(
+        "CheckIn",
+        "301",
+        { kind: "Regular", first_name: "Casey", last_name: "Jones" },
+        {
+          person: rel("Person", null),
+          event_period: rel("EventPeriod", "22"),
+          event_times: { data: [{ type: "EventTime", id: "44" }] },
+          locations: { data: [{ type: "Location", id: "33" }] },
+        },
+      ),
     ];
     const items = findCheckInReviewCandidates(facts);
     expect(items).toEqual([
@@ -78,10 +88,10 @@ describe("Admin Check-In review safety", () => {
         locationIds: ["33"],
         issueReasons: ["missing_person_profile"],
         canInclude: true,
+        childName: "Casey Jones",
       }),
     ]);
     expect(JSON.stringify(items)).not.toContain("private-person-id");
-    expect(JSON.stringify(items)).not.toContain("Child Name");
   });
 
   it("shows a possible same-person recheck only on the later record", () => {
@@ -98,7 +108,11 @@ describe("Admin Check-In review safety", () => {
   });
 
   it("keeps unresolved records from publication until an Admin resolves them", () => {
-    const facts = [...context, checkIn("301", "Guest", null)];
+    const facts = [
+      ...context,
+      checkIn("300", "Regular", "person-1"),
+      checkIn("301", "Guest", null),
+    ];
     const unresolved = compileMinistryFacts(
       "check_ins",
       facts,
@@ -109,6 +123,13 @@ describe("Admin Check-In review safety", () => {
     );
     expect(unresolved.issues).toContain("unresolved_checkins_pending:1");
     expect(unresolved.issues).toContain("checkin_missing_person_profile");
+    expect(unresolved.values).toContainEqual(
+      expect.objectContaining({
+        measure: "attendance",
+        value: 1,
+        quality: "partial",
+      }),
+    );
 
     const included = compileMinistryFacts(
       "check_ins",
@@ -120,7 +141,7 @@ describe("Admin Check-In review safety", () => {
       new Map([["301", "include"]]),
     );
     expect(included.issues).toEqual([]);
-    expect(included.values.find((value) => value.measure === "attendance")?.value).toBe(1);
+    expect(included.values.find((value) => value.measure === "attendance")?.value).toBe(2);
 
     const excluded = compileMinistryFacts(
       "check_ins",
@@ -132,6 +153,6 @@ describe("Admin Check-In review safety", () => {
       new Map([["301", "exclude"]]),
     );
     expect(excluded.issues).toEqual([]);
-    expect(excluded.values).toEqual([]);
+    expect(excluded.values.find((value) => value.measure === "attendance")?.value).toBe(1);
   });
 });

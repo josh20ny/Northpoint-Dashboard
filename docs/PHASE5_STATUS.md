@@ -341,9 +341,25 @@ correctly withheld as partial (`value: null`), not published as accurate totals.
 
 The read-only preview filters source facts by linked EventTime dates before
 loading them. Loading the full Check-Ins history exceeded the existing 500,000
-source bound; the regular publisher still needs equivalent reporting-window
-partitioning before live publication can be accepted. This is separate from
-the student routing rule and is not claimed fixed by this change.
+source bound. The publisher now loads only Check-Ins whose linked EventTime or
+EventPeriod falls in the requested reporting window, along with their source
+context, routing templates and Groups snapshot. First-known values stay missing
+when the requested window omits earlier imported history. No attendance was
+published by this change.
+
+The Admin Check-In review now defaults to the latest completed Sunday, offers
+other Sundays with unresolved records, shows source names/locations and grade
+suggestions, and displays live partial attendance subtotals that change after
+include/exclude decisions. PCO grade labels classify preschool as Waumba Land,
+K–5 as UpStreet, 6–8 as Transit and 9–12 as InsideOut. Grade resolves a
+cross-ministry overlap only on the latest completed Sunday and only when that
+ministry is already among the eligible mapped memberships; missing or
+conflicting evidence remains unresolved. Current grade is not backcast to older
+attendance.
+Check-In collection requests now include only child display name and grade
+needed for this Admin workflow; birthdates and other personal fields remain
+excluded. A new Check-Ins/People refresh is required before these fields are
+available on existing stored records. No refresh was started.
 
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
@@ -372,8 +388,9 @@ Missing observations are not automatically zero. Calendar bucketing uses Chicago
 
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
-   history. This gates additional sensitive scans, not work on existing,
-   already-staged sources.
+   history beyond the owner-requested Admin-only Check-In name/grade fields.
+   This gates additional sensitive scans, not work on existing, already-staged
+   sources.
 2. Map the existing PCO events, rooms, groups and funds to approved ministry
    measures; publish completed scans and accept representative
    source-to-storage-to-screen results. Do not infer a ministry from an

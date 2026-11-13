@@ -1,5 +1,9 @@
 import { chicagoDate } from "./attendance-calculation";
 import type { SourceFact } from "./ministry-calculation";
+import {
+  gradeLabelFor,
+  ministryForGradeLabel,
+} from "./ministry-grade-classification";
 
 export type CheckInResolutionAction = "include" | "exclude";
 
@@ -14,7 +18,12 @@ export interface CheckInReviewCandidate {
   checkInId: string;
   serviceDate: string | null;
   eventId: string | null;
+  eventName: string | null;
   locationIds: string[];
+  locationNames: string[];
+  childName: string | null;
+  gradeLabel: string | null;
+  assumedMinistry: string | null;
   issueReasons: CheckInIssueReason[];
   canInclude: boolean;
 }
@@ -75,8 +84,14 @@ export function checkInSourceDetails(fact: SourceFact, facts: SourceFact[]): Che
   );
 }
 
-export function findCheckInReviewCandidates(facts: SourceFact[]): CheckInReviewCandidate[] {
+export function findCheckInReviewCandidates(
+  facts: SourceFact[],
+  gradeFacts: SourceFact[] = [],
+): CheckInReviewCandidate[] {
   const checkIns = facts.filter((fact) => fact.type === "CheckIn");
+  const people = new Map(facts.filter((fact) => fact.type === "Person").map((fact) => [fact.id, fact]));
+  const locations = new Map(facts.filter((fact) => fact.type === "Location").map((fact) => [fact.id, fact]));
+  const events = new Map(facts.filter((fact) => fact.type === "Event").map((fact) => [fact.id, fact]));
   const periods = new Map(
     facts.filter((fact) => fact.type === "EventPeriod").map((fact) => [fact.id, fact]),
   );
@@ -113,6 +128,7 @@ export function findCheckInReviewCandidates(facts: SourceFact[]): CheckInReviewC
     const personId = relationId(fact, "person");
     const periodId = relationId(fact, "event_period");
     const period = periodId ? periods.get(periodId) : undefined;
+    const person = personId ? people.get(personId) : undefined;
     const details = sourceDetailsFromMaps(fact, periods, times);
     const kind = String(fact.attributes.kind ?? "").toLowerCase();
     const reasons: CheckInIssueReason[] = [];
@@ -123,12 +139,30 @@ export function findCheckInReviewCandidates(facts: SourceFact[]): CheckInReviewC
       reasons.push("unknown_checkin_kind");
     if (duplicateIds.has(fact.id)) reasons.push("possible_duplicate_checkin");
     if (!reasons.length) continue;
+    const eventName =
+      (details.eventId && events.get(details.eventId)?.attributes.name) || null;
+    const locationNames = details.locationIds
+      .map((id) => locations.get(id)?.attributes.name)
+      .filter((name): name is string => typeof name === "string" && name.trim().length > 0);
+    const directName = [fact.attributes.first_name, fact.attributes.last_name]
+      .filter((name): name is string => typeof name === "string" && name.trim().length > 0)
+      .join(" ");
+    const personName = [person?.attributes.first_name, person?.attributes.last_name]
+      .filter((name): name is string => typeof name === "string" && name.trim().length > 0)
+      .join(" ");
+    const childName = directName || personName || null;
+    const gradeLabel = gradeLabelFor(person, gradeFacts);
 
     candidates.push({
       checkInId: fact.id,
       serviceDate: details.serviceDate,
       eventId: details.eventId,
+      eventName: typeof eventName === "string" ? eventName : null,
       locationIds: details.locationIds,
+      locationNames,
+      childName,
+      gradeLabel,
+      assumedMinistry: ministryForGradeLabel(gradeLabel),
       issueReasons: reasons,
       canInclude: details.canInclude,
     });

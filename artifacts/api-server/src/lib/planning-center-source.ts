@@ -7,13 +7,23 @@ import {
 } from "./ministry-source";
 
 // Read-only, deliberately minimal fields. No health, contact, financial, security,
-// background-check or person-name fields are fetched or retained.
+// birthdate or background-check fields are fetched or retained.
 export const fields: Record<string, string[]> = {
-  Person: ["created_at", "updated_at", "status", "inactivated_at"],
+  Person: ["created_at", "updated_at", "status", "inactivated_at", "grade"],
+  Grade: ["key", "value"],
   ServiceType: ["name", "created_at", "updated_at", "archived_at", "deleted_at"],
   Plan: ["title", "created_at", "updated_at", "sort_date"],
   PlanTime: ["starts_at", "ends_at", "time_type", "created_at", "updated_at"],
-  CheckIn: ["kind", "one_time_guest", "created_at", "updated_at", "checked_out_at", "confirmed_at"],
+  CheckIn: [
+    "kind",
+    "one_time_guest",
+    "first_name",
+    "last_name",
+    "created_at",
+    "updated_at",
+    "checked_out_at",
+    "confirmed_at",
+  ],
   Event: ["name", "created_at", "updated_at", "archived_at"],
   EventPeriod: ["starts_at", "ends_at", "created_at", "updated_at"],
   EventTime: ["starts_at", "ends_at", "updated_at"],
@@ -54,19 +64,24 @@ export function incrementalSinceDate(
   return date.toISOString().slice(0, 10);
 }
 const allowedPaths: Record<string, RegExp> = {
-  people: /^\/people\/v2\/people$/,
+  people: /^\/people\/v2(?:\/people)?$/,
   services: /^\/services\/v2\/service_types(?:\/[0-9]+\/plans(?:\/[0-9]+\/plan_times)?)?$/,
   check_ins: /^\/check-ins\/v2\/(?:events|check_ins)$/,
 };
 export function pagePath(page: Page, product: Product) {
   if (isMinistryProduct(product)) return ministryPagePath(page, product);
   const u = new URL(page.path, PCO_ORIGIN);
+  const pathAllowed =
+    product === "people"
+      ? (page.type === "Person" && u.pathname === "/people/v2/people") ||
+        (page.type === "Grade" && u.pathname === "/people/v2")
+      : allowedPaths[product].test(u.pathname);
   if (
     u.origin !== PCO_ORIGIN ||
     u.username ||
     u.password ||
     u.hash ||
-    !allowedPaths[product].test(u.pathname) ||
+    !pathAllowed ||
     !fields[page.type]
   )
     throw new ProviderError(422);
@@ -77,12 +92,24 @@ export function pagePath(page: Page, product: Product) {
   // sparse-field contract and fixed includes. The browser never supplies URLs.
   const query = new URLSearchParams({ per_page: "100" });
   if (offset !== null) query.set("offset", offset);
-  for (const [type, attrs] of Object.entries(fields))
+  const includedTypes = new Set(
+    Object.values(relationshipFields[page.type] ?? {}).map((relationship) => relationship.type),
+  );
+  for (const [type, attrs] of Object.entries(fields)) {
+    if (type !== page.type && !includedTypes.has(type)) continue;
+    const requested =
+      page.type === "CheckIn" && type === "Person"
+        ? ["grade"]
+        : page.type === "Person" && product === "people"
+          ? attrs.filter((attribute) => attribute !== "grade")
+          : attrs;
     query.set(
       `fields[${type}]`,
-      [...attrs, ...Object.keys(relationshipFields[type] ?? {})].join(","),
+      [...requested, ...Object.keys(relationshipFields[type] ?? {})].join(","),
     );
-  if (page.type === "CheckIn") query.set("include", "event_period,event_times,locations");
+  }
+  if (page.type === "CheckIn")
+    query.set("include", "event_period,event_times,locations,person");
   if (page.since) {
     if (page.type === "CheckIn")
       query.set(
@@ -98,7 +125,11 @@ export function pagePath(page: Page, product: Product) {
 }
 export function roots(product: Product): Page[] {
   if (isMinistryProduct(product)) return ministryRoots(product);
-  if (product === "people") return [{ path: "/people/v2/people", type: "Person" }];
+  if (product === "people")
+    return [
+      { path: "/people/v2/people", type: "Person" },
+      { path: "/people/v2", type: "Grade" },
+    ];
   if (product === "services") return [{ path: "/services/v2/service_types", type: "ServiceType" }];
   return [
     { path: "/check-ins/v2/events", type: "Event" },
@@ -118,7 +149,9 @@ export function scanRoots(
       ? "updated_at"
       : undefined;
   const pages = roots(product).map((p) =>
-    since ? { ...p, since, ...(incrementalField ? { windowField: incrementalField } : {}) } : p,
+    since && (product !== "people" || p.type === "Person")
+      ? { ...p, since, ...(incrementalField ? { windowField: incrementalField } : {}) }
+      : p,
   );
   if (since && (product === "giving" || product === "check_ins")) {
     const original = pages.find((p) => p.type === (product === "giving" ? "Donation" : "CheckIn"))!;
@@ -158,7 +191,13 @@ export function sourceEntity(value: unknown): SourceEntity {
   for (const key of fields[v.type]) {
     const x = attrs[key];
     if (x === undefined) continue;
-    if (x !== null && typeof x !== "string" && typeof x !== "boolean") throw new ProviderError(422);
+    if (
+      x !== null &&
+      typeof x !== "string" &&
+      typeof x !== "boolean" &&
+      !(["grade", "key"].includes(key) && typeof x === "number" && Number.isSafeInteger(x))
+    )
+      throw new ProviderError(422);
     if (typeof x === "string" && x.length > 1000) throw new ProviderError(422);
     if (
       key.endsWith("_at") &&

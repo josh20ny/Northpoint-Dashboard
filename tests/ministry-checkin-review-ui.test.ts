@@ -9,7 +9,7 @@ const React = appRequire("react");
 const { renderToStaticMarkup } = appRequire("react-dom/server");
 
 describe("Admin Check-In review table", () => {
-  it("shows only safe source fields with clear include and exclude actions", () => {
+  it("shows the Admin-only child name and location with clear actions", () => {
     const html = renderToStaticMarkup(
       React.createElement(CheckInReviewTable, {
         items: [
@@ -17,7 +17,14 @@ describe("Admin Check-In review table", () => {
             checkInId: "300",
             serviceDate: "2026-11-08",
             eventId: "11",
+            eventName: "Normal Service Times",
             locationIds: ["33"],
+            locationNames: ["UpStreet"],
+            childName: "Casey Jones",
+            gradeLabel: "5th Grade",
+            assumedMinistry: null,
+            ministry: "upstreet",
+            ministryBasis: "mapped",
             issueReasons: ["missing_person_profile"],
             canInclude: true,
             resolution: null,
@@ -27,14 +34,15 @@ describe("Admin Check-In review table", () => {
         onResolve: vi.fn(),
       }),
     );
-    expect(html).toContain("Check-In ID");
+    expect(html).toContain("Child");
+    expect(html).toContain("Casey Jones");
+    expect(html).toContain("UpStreet");
     expect(html).toContain("2026-11-08");
-    expect(html).toContain("33");
     expect(html).toContain("No linked person profile");
     expect(html).toContain(">Include</button>");
     expect(html).toContain(">Exclude</button>");
-    expect(html).not.toContain("childName");
-    expect(html).not.toContain("personId");
+    expect(html).not.toContain("Check-In ID");
+    expect(html).not.toContain(">300<");
   });
 
   it("disables inclusion when a usable service date and source are unavailable", () => {
@@ -45,7 +53,14 @@ describe("Admin Check-In review table", () => {
             checkInId: "301",
             serviceDate: null,
             eventId: null,
+            eventName: null,
             locationIds: [],
+            locationNames: [],
+            childName: null,
+            gradeLabel: null,
+            assumedMinistry: null,
+            ministry: null,
+            ministryBasis: "unresolved",
             issueReasons: ["missing_service_date"],
             canInclude: false,
             resolution: null,

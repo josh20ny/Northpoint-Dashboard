@@ -136,6 +136,28 @@ describe("Planning Center secure transport and source contract", () => {
     ])
       expect(() => pagePath({ path, type: "Person" }, "people")).toThrow();
   });
+  it("loads the small PCO grade catalogue without widening the People profile scan", () => {
+    const grade = roots("people").find((page) => page.type === "Grade")!;
+    const gradeQuery = new URL(pagePath(grade, "people"), "https://api.planningcenteronline.com");
+    expect(gradeQuery.pathname).toBe("/people/v2");
+    expect(gradeQuery.searchParams.get("fields[Grade]")).toBe("key,value");
+    expect(gradeQuery.searchParams.has("fields[Person]")).toBe(false);
+
+    const personQuery = new URL(
+      pagePath(roots("people")[0]!, "people"),
+      "https://api.planningcenteronline.com",
+    );
+    expect(personQuery.searchParams.get("fields[Person]")).toBe(
+      "created_at,updated_at,status,inactivated_at",
+    );
+    expect(
+      sourceEntity({
+        type: "Grade",
+        id: "7",
+        attributes: { key: 7, value: "7th Grade" },
+      }).attributes,
+    ).toEqual({ key: 7, value: "7th Grade" });
+  });
   it("builds overlapping, provider-filtered incremental roots without risking Groups coverage", () => {
     expect(incrementalSinceDate("2026-11-13T13:25:24.025Z")).toBe("2026-11-10");
     expect(incrementalSinceDate("not-a-date")).toBeNull();

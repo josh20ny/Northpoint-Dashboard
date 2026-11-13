@@ -12,4 +12,9 @@ export type GetCheckInReviewParams = {
  * @maximum 10000
  */
 page?: number;
+/**
+ * Sunday date, or unknown for records without a service date
+ * @pattern ^(\d{4}-\d{2}-\d{2}|unknown)$
+ */
+date?: string;
 };

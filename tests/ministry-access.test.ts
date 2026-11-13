@@ -67,7 +67,14 @@ beforeEach(() => {
         checkInId: "300",
         serviceDate: "2026-11-08",
         eventId: "11",
+        eventName: "Normal Service Times",
         locationIds: ["33"],
+        locationNames: ["UpStreet"],
+        childName: "Casey Jones",
+        gradeLabel: "5th Grade",
+        assumedMinistry: "upstreet",
+        ministry: "upstreet",
+        ministryBasis: "mapped",
         issueReasons: ["missing_person_profile"],
         canInclude: true,
         resolution: null,
@@ -77,6 +84,17 @@ beforeEach(() => {
     pageSize: 50,
     total: 1,
     unresolved: 1,
+    selectedDate: "2026-11-08",
+    availableSundays: ["2026-11-08"],
+    attendancePreview: [
+      {
+        ministry: "upstreet",
+        scope: "service-1",
+        value: 42,
+        quality: "partial",
+        flags: ["unresolved_checkins_pending"],
+      },
+    ],
     asOf: "2026-11-10T12:00:00Z",
   });
 });
@@ -103,19 +121,20 @@ describe("aggregate versus person-linked ministry permissions", () => {
       expect(repo.ministryDataAdmin).not.toHaveBeenCalled();
       expect(repo.getCheckInReview).not.toHaveBeenCalled();
     });
-  it("returns only source metadata for Admin Check-In review", async () => {
+  it("returns child names and mapping context only on Admin Check-In review", async () => {
     const response = await request(app("admin")).get("/v1/admin/ministry-data/check-ins?page=1");
     expect(response.status).toBe(200);
     expect(response.body.items[0]).toEqual(
       expect.objectContaining({
         checkInId: "300",
         serviceDate: "2026-11-08",
-        eventId: "11",
-        locationIds: ["33"],
+        childName: "Casey Jones",
+        ministry: "upstreet",
+        locationNames: ["UpStreet"],
         resolution: null,
       }),
     );
-    expect(JSON.stringify(response.body)).not.toMatch(/personId|childName|displayName/);
+    expect(JSON.stringify(response.body)).not.toMatch(/private-person-id|personId|displayName/);
     expect(repo.getCheckInReview).toHaveBeenCalledOnce();
   });
   it("rejects unauthenticated aggregates and arbitrary donor filters", async () => {

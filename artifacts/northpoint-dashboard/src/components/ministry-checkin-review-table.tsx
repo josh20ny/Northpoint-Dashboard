@@ -1,13 +1,12 @@
 import * as React from "react";
+import type { CheckInReviewItem } from "@workspace/api-client-react";
 
-type ReviewItem = {
-  checkInId: string;
-  serviceDate: string | null;
-  eventId: string | null;
-  locationIds: string[];
-  issueReasons: string[];
-  canInclude: boolean;
-  resolution: "include" | "exclude" | null;
+type ReviewItem = CheckInReviewItem;
+const MINISTRY_LABELS: Record<string, string> = {
+  "waumba-land": "Waumba Land",
+  upstreet: "UpStreet",
+  transit: "Transit",
+  insideout: "InsideOut",
 };
 
 const ISSUE_LABEL: Record<string, string> = {
@@ -29,10 +28,10 @@ export function CheckInReviewTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[840px] text-left text-[12px]" aria-label="Unresolved Check-Ins">
+      <table className="w-full min-w-[920px] text-left text-[12px]" aria-label="Unresolved Check-Ins">
         <thead className="bg-muted/40">
           <tr>
-            {["Check-In ID", "Service date", "Service / event ID", "Location IDs", "Issue", "Decision", "Resolution"].map((title) => (
+            {["Child", "Service date", "Ministry", "Location", "Issue", "Decision", "Resolution"].map((title) => (
               <th key={title} scope="col" className="px-3 py-2 font-medium">{title}</th>
             ))}
           </tr>
@@ -40,10 +39,23 @@ export function CheckInReviewTable({
         <tbody>
           {items.map((item) => (
             <tr key={item.checkInId} className="border-t align-top" data-testid={`row-checkin-review-${item.checkInId}`}>
-              <td className="px-3 py-2 font-mono">{item.checkInId}</td>
+              <td className="px-3 py-2 font-medium">{item.childName ?? "Name unavailable"}</td>
               <td className="px-3 py-2">{item.serviceDate ?? "Unknown"}</td>
-              <td className="px-3 py-2 font-mono">{item.eventId ?? "—"}</td>
-              <td className="px-3 py-2 font-mono">{item.locationIds.length ? item.locationIds.join(", ") : "—"}</td>
+              <td className="px-3 py-2">
+                {item.ministry ? (MINISTRY_LABELS[item.ministry] ?? item.ministry) : "Not classified"}
+                {item.ministryBasis === "grade" && (
+                  <span className="mt-1 block text-[10px] text-muted-foreground">
+                    Assumed from grade{item.gradeLabel ? `: ${item.gradeLabel}` : ""}
+                  </span>
+                )}
+                {item.ministryBasis === "ambiguous" && (
+                  <span className="mt-1 block text-[10px] text-muted-foreground">Needs review</span>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {item.locationNames.length ? item.locationNames.join(", ") : "No linked location"}
+                {item.eventName && <span className="mt-1 block text-[10px] text-muted-foreground">{item.eventName}</span>}
+              </td>
               <td className="px-3 py-2">
                 <ul className="space-y-1">
                   {item.issueReasons.map((reason) => (

@@ -103,7 +103,8 @@ export const pcoSyncRuns = pgTable(
   ],
 ).enableRLS();
 // An explicit, minimized normalized projection with immutable source lineage.
-// No display names, contact details, health notes, security codes or metric publication.
+// Check-Ins retain only requested display names and grade for Admin resolution;
+// no birthdates, contacts, health notes, security codes or metric publication.
 export const pcoSourceEntities = pgTable(
   "pco_source_entities",
   {

@@ -669,6 +669,73 @@ describe("ministry source-to-metric semantics", () => {
     if (route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
     if (missing) expect(result.issues).toContain("unmapped_student_group_membership");
   });
+  it("uses the linked PCO grade label to resolve overlapping student memberships", () => {
+    const startsAt = "2026-11-08T15:00:00Z";
+    const entities = [
+      e("Person", "student", { grade: 7 }),
+      e("EventPeriod", "period", { starts_at: startsAt }, { event: r("Event", "9") }),
+      e("EventTime", "time", { starts_at: startsAt }, { event: r("Event", "9") }),
+      e(
+        "CheckIn",
+        "student-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "period"),
+          event_times: r("EventTime", "time"),
+          person: r("Person", "student"),
+          locations: { data: [] },
+        },
+      ),
+    ];
+    const groups = [
+      e("Group", "10", { archived_at: null }),
+      e("Group", "11", { archived_at: null }),
+      e(
+        "Membership",
+        "membership-1",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "10"), person: r("Person", "student") },
+      ),
+      e(
+        "Membership",
+        "membership-2",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "11"), person: r("Person", "student") },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      entities,
+      [
+        serviceRoute("time", "transit", "service-1"),
+        { ...serviceRoute("time", "insideout", "service-3"), id: "insideout-route" },
+      ],
+      start,
+      end,
+      now,
+      new Map(),
+      groups,
+      [
+        mapping("groups", "Group", "10", "student_group_classification", "transit"),
+        {
+          ...mapping("groups", "Group", "11", "student_group_classification", "insideout"),
+          id: "insideout-map",
+        },
+      ],
+      new Date("2026-11-10T12:00:00Z"),
+      [e("Grade", "grade-7", { key: 7, value: "7th Grade" })],
+    );
+    expect(result.values.filter((row) => row.measure === "attendance")).toEqual([
+      expect.objectContaining({
+        ministry: "transit",
+        measure: "attendance",
+        scope: "service-1",
+        value: 1,
+        flags: ["ministry_classified_from_pco_grade"],
+      }),
+    ]);
+    expect(result.issues).not.toContain("unmapped_student_group_ambiguous");
+  });
   it("routes future dated EventTimes by event and Chicago-local time", () => {
     const entities = [
       e("EventTime", "template", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),

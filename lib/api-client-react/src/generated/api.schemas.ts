@@ -230,6 +230,16 @@ export interface CheckInResolutionInput {
   action: CheckInResolutionInputAction;
 }
 
+export type CheckInReviewItemMinistryBasis = typeof CheckInReviewItemMinistryBasis[keyof typeof CheckInReviewItemMinistryBasis];
+
+
+export const CheckInReviewItemMinistryBasis = {
+  mapped: 'mapped',
+  grade: 'grade',
+  ambiguous: 'ambiguous',
+  unresolved: 'unresolved',
+} as const;
+
 /**
  * @nullable
  */
@@ -247,11 +257,32 @@ export interface CheckInReviewItem {
   serviceDate: string | null;
   /** @nullable */
   eventId: string | null;
+  /** @nullable */
+  eventName: string | null;
   locationIds: string[];
+  locationNames: string[];
+  /** @nullable */
+  childName: string | null;
+  /** @nullable */
+  gradeLabel: string | null;
+  /** @nullable */
+  assumedMinistry: string | null;
+  /** @nullable */
+  ministry: string | null;
+  ministryBasis: CheckInReviewItemMinistryBasis;
   issueReasons: string[];
   canInclude: boolean;
   /** @nullable */
   resolution: CheckInReviewItemResolution;
+}
+
+export interface CheckInAttendancePreview {
+  ministry: string;
+  scope: string;
+  /** @nullable */
+  value: number | null;
+  quality: string;
+  flags: string[];
 }
 
 export interface CheckInReviewPage {
@@ -260,6 +291,9 @@ export interface CheckInReviewPage {
   pageSize: number;
   total: number;
   unresolved: number;
+  selectedDate: string;
+  availableSundays: string[];
+  attendancePreview: CheckInAttendancePreview[];
   asOf: string;
 }
 
@@ -1483,6 +1517,11 @@ export type GetCheckInReviewParams = {
  * @maximum 10000
  */
 page?: number;
+/**
+ * Sunday date, or unknown for records without a service date
+ * @pattern ^(\d{4}-\d{2}-\d{2}|unknown)$
+ */
+date?: string;
 };
 
 export type GetGivingTransactionsParams = {

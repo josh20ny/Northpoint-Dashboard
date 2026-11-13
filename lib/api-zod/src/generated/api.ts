@@ -207,10 +207,12 @@ export const GetMinistryDataAdminResponse = zod.object({
 export const getCheckInReviewQueryPageDefault = 1;
 export const getCheckInReviewQueryPageMax = 10000;
 
+export const getCheckInReviewQueryDateRegExp = new RegExp('^(\\d{4}-\\d{2}-\\d{2}|unknown)$');
 
 
 export const GetCheckInReviewQueryParams = zod.object({
-  "page": zod.coerce.number().int().min(1).max(getCheckInReviewQueryPageMax).default(getCheckInReviewQueryPageDefault)
+  "page": zod.coerce.number().int().min(1).max(getCheckInReviewQueryPageMax).default(getCheckInReviewQueryPageDefault),
+  "date": zod.coerce.string().regex(getCheckInReviewQueryDateRegExp).optional().describe('Sunday date, or unknown for records without a service date')
 })
 
 export const GetCheckInReviewResponse = zod.object({
@@ -218,7 +220,14 @@ export const GetCheckInReviewResponse = zod.object({
   "checkInId": zod.string(),
   "serviceDate": zod.string().nullable(),
   "eventId": zod.string().nullable(),
+  "eventName": zod.string().nullable(),
   "locationIds": zod.array(zod.string()),
+  "locationNames": zod.array(zod.string()),
+  "childName": zod.string().nullable(),
+  "gradeLabel": zod.string().nullable(),
+  "assumedMinistry": zod.string().nullable(),
+  "ministry": zod.string().nullable(),
+  "ministryBasis": zod.enum(['mapped', 'grade', 'ambiguous', 'unresolved']),
   "issueReasons": zod.array(zod.string()),
   "canInclude": zod.boolean(),
   "resolution": zod.union([zod.literal('include'),zod.literal('exclude'),zod.literal(null)]).nullable()
@@ -227,6 +236,15 @@ export const GetCheckInReviewResponse = zod.object({
   "pageSize": zod.number().int(),
   "total": zod.number().int(),
   "unresolved": zod.number().int(),
+  "selectedDate": zod.string(),
+  "availableSundays": zod.array(zod.string()),
+  "attendancePreview": zod.array(zod.object({
+  "ministry": zod.string(),
+  "scope": zod.string(),
+  "value": zod.number().int().nullable(),
+  "quality": zod.string(),
+  "flags": zod.array(zod.string())
+})),
   "asOf": zod.string()
 })
 
