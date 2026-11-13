@@ -120,6 +120,22 @@ backfill. These source records are staged, but there are currently no active
 Phase 5 source mappings and no ministry metric publications. A completed PCO
 sync is therefore not yet a published ministry dashboard.
 
+## Staged PCO mapping review — 2026-11-13
+
+The Admin-only source directory contains 34 Check-Ins events and 332 locations,
+534 Groups, and 36 Giving funds. The Check-Ins labels reviewed include adult
+Sunday service events plus special-event, camp and assignment/roster entries;
+none was assigned to a child/student weekly attendance measure based on its
+name alone. Forty-seven Group labels contain ministry-name keywords, but group
+names are not exposed in this review and are not treated as authoritative
+ministry classifications.
+
+Services has 22 service types, 3,232 plans and 12,321 plan times, but no staged
+PlanPerson/team assignment records. Service-type names alone do not establish
+actual-serving counts. No source mapping or publication was created and no new
+PCO scan was started. Broad all-fund Giving totals do not require fund-specific
+mapping; fund-level figures still require explicit source interpretation.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas
