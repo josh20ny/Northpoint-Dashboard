@@ -12,11 +12,14 @@ import {
 } from "../artifacts/api-server/src/lib/planning-center-client";
 import {
   roots,
+  scanRoots,
   pagePath,
   parsePage,
   sourceEntity,
   sourceHash,
+  incrementalSinceDate,
 } from "../artifacts/api-server/src/lib/planning-center-source";
+import { ministryPagePath, parseMinistryPage } from "../artifacts/api-server/src/lib/ministry-source";
 import { createPlanningCenterRouter } from "../artifacts/api-server/src/routes/planning-center";
 import type { AuthProvider, Principal } from "../artifacts/api-server/src/lib/auth";
 import { syncView } from "../artifacts/api-server/src/lib/planning-center";
@@ -132,6 +135,125 @@ describe("Planning Center secure transport and source contract", () => {
       "/people/v2/people?offset=-1",
     ])
       expect(() => pagePath({ path, type: "Person" }, "people")).toThrow();
+  });
+  it("builds overlapping, provider-filtered incremental roots without risking Groups coverage", () => {
+    expect(incrementalSinceDate("2026-11-13T13:25:24.025Z")).toBe("2026-11-10");
+    expect(incrementalSinceDate("not-a-date")).toBeNull();
+
+    const people = scanRoots("people", "2026-11-10", "incremental")[0]!;
+    expect(people).toMatchObject({ since: "2026-11-10", windowField: "updated_at" });
+    expect(
+      new URL(pagePath(people, "people"), "https://api.planningcenteronline.com").searchParams.get(
+        "where[updated_at][gte]",
+      ),
+    ).toBe("2026-11-10T00:00:00Z");
+
+    const checkIns = scanRoots("check_ins", "2026-11-10", "incremental");
+    const newCheckIns = checkIns.find((page) => page.type === "CheckIn" && !page.windowField)!;
+    const changedCheckIns = checkIns.find(
+      (page) => page.type === "CheckIn" && page.windowField === "updated_at",
+    )!;
+    expect(
+      new URL(pagePath(newCheckIns, "check_ins"), "https://api.planningcenteronline.com")
+        .searchParams.get("where[created_at][gte]"),
+    ).toBe("2026-11-10T00:00:00Z");
+    expect(
+      new URL(pagePath(changedCheckIns, "check_ins"), "https://api.planningcenteronline.com")
+        .searchParams.get("where[updated_at][gte]"),
+    ).toBe("2026-11-10T00:00:00Z");
+
+    const servingType = scanRoots("serving", "2026-11-10", "incremental")[0]!;
+    const servingPlan = parseMinistryPage(
+      {
+        data: [{ type: "ServiceType", id: "3", attributes: { name: "Sunday" } }],
+      },
+      servingType,
+      "serving",
+    ).nextPages[0]!;
+    expect(servingPlan).toMatchObject({ since: "2026-11-10", windowField: "updated_at" });
+    expect(
+      new URL(
+        ministryPagePath(servingPlan, "serving"),
+        "https://api.planningcenteronline.com",
+      ).searchParams.get("where[updated_at][gte]"),
+    ).toBe("2026-11-10T00:00:00Z");
+
+    const updatedDonation = scanRoots("giving", "2026-11-10", "incremental").find(
+      (page) => page.type === "Donation" && page.windowField === "updated_at",
+    );
+    expect(updatedDonation).toBeDefined();
+    expect(
+      new URL(
+        ministryPagePath(updatedDonation!, "giving"),
+        "https://api.planningcenteronline.com",
+      ).searchParams.get("where[updated_at][gte]"),
+    ).toBe("2026-11-10T00:00:00Z");
+
+    const groups = scanRoots("groups", "2026-11-10", "incremental");
+    expect(groups).toEqual(roots("groups"));
+    expect(
+      new URL(
+        ministryPagePath(
+          scanRoots("groups", "2026-11-10", "current").find((page) => page.type === "Event")!,
+          "groups",
+        ),
+        "https://api.planningcenteronline.com",
+      ).searchParams.get("where[starts_at][gte]"),
+    ).toBe("2026-11-10T00:00:00Z");
+  });
+  it("preserves incremental filters through pagination and into service plan children", () => {
+    const since = "2026-11-10";
+    const personPage = scanRoots("people", since, "incremental")[0]!;
+    const nextPeoplePage = parsePage(
+      {
+        data: [person],
+        links: { next: "https://api.planningcenteronline.com/people/v2/people?offset=100" },
+      },
+      personPage,
+      "people",
+    ).nextPages[0]!;
+    expect(nextPeoplePage).toMatchObject({ since, windowField: "updated_at" });
+    expect(
+      new URL(pagePath(nextPeoplePage, "people"), "https://api.planningcenteronline.com").searchParams.get(
+        "where[updated_at][gte]",
+      ),
+    ).toBe(`${since}T00:00:00Z`);
+
+    const serviceTypePage = scanRoots("services", since, "incremental")[0]!;
+    const plans = parsePage(
+      {
+        data: [{ type: "ServiceType", id: "3", attributes: { name: "Sunday" } }],
+      },
+      serviceTypePage,
+      "services",
+    ).nextPages[0]!;
+    expect(plans).toMatchObject({ type: "Plan", since, windowField: "updated_at" });
+    expect(
+      new URL(pagePath(plans, "services"), "https://api.planningcenteronline.com").searchParams.get(
+        "where[updated_at][gte]",
+      ),
+    ).toBe(`${since}T00:00:00Z`);
+
+    const updatedDonation = scanRoots("giving", since, "incremental").find(
+      (page) => page.type === "Donation" && page.windowField === "updated_at",
+    )!;
+    const nextDonationPage = parseMinistryPage(
+      {
+        data: [],
+        links: {
+          next: "https://api.planningcenteronline.com/giving/v2/donations?offset=100",
+        },
+      },
+      updatedDonation,
+      "giving",
+    ).nextPages[0]!;
+    expect(nextDonationPage).toMatchObject({ since, windowField: "updated_at" });
+    expect(
+      new URL(
+        ministryPagePath(nextDonationPage, "giving"),
+        "https://api.planningcenteronline.com",
+      ).searchParams.get("where[updated_at][gte]"),
+    ).toBe(`${since}T00:00:00Z`);
   });
   it("minimizes raw fields and makes revision hashes independent of key order", () => {
     const a = sourceEntity(person);

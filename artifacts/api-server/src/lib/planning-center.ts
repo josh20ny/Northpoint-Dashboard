@@ -15,7 +15,14 @@ import { refreshPublishedMinistry } from "./ministry-data";
 import { assessCompletedScan, lifecycleSummary } from "./planning-center-lifecycle";
 import { stageSourcePage } from "./planning-center-staging";
 import * as provider from "./planning-center-client";
-import { roots, scanRoots, pagePath, parsePage, type Page } from "./planning-center-source";
+import {
+  roots,
+  scanRoots,
+  pagePath,
+  parsePage,
+  incrementalSinceDate,
+  type Page,
+} from "./planning-center-source";
 
 interface Connection {
   account_ref: string;
@@ -476,7 +483,27 @@ export async function startSync(
         409,
         "Complete an accessible-history backfill before incremental revision sync",
       );
-    const queue = scanRoots(product, mode === "current" ? since : null);
+    const latestSuccessful = mode === "incremental"
+      ? await c.query<{ finished_at: Date | string | null }>(
+          `SELECT finished_at FROM pco_sync_runs
+           WHERE account_ref=$1 AND product=$2 AND status='complete'
+             AND mode IN ('backfill','incremental') AND finished_at IS NOT NULL
+           ORDER BY finished_at DESC,started_at DESC LIMIT 1`,
+          [v.account_ref, product],
+        )
+      : null;
+    const incrementalSince = incrementalSinceDate(latestSuccessful?.rows[0]?.finished_at);
+    const coverageStart =
+      mode === "current"
+        ? since
+        : mode === "incremental" && product !== "groups"
+          ? incrementalSince
+          : null;
+    const queue = scanRoots(
+      product,
+      mode === "current" ? since : incrementalSince,
+      mode === "incremental" ? "incremental" : "current",
+    );
     const run = await c.query<Run>(
       `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,lifecycle_version,coverage_start)
       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
@@ -487,7 +514,7 @@ export async function startSync(
         JSON.stringify(queue),
         p.userId,
         mode === "current" ? 2 : 1,
-        mode === "current" ? since : null,
+        coverageStart,
       ],
     );
     await recordAudit(

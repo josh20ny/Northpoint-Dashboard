@@ -85,6 +85,10 @@ beforeEach(() => {
         rows: baseline ? [{ id, mode: "backfill", coverage_start: null }] : [],
         rowCount: Number(baseline),
       };
+    if (sql.startsWith("SELECT finished_at FROM pco_sync_runs"))
+      return {
+        rows: baseline ? [{ finished_at: new Date("2026-11-08T20:00:00Z") }] : [],
+      };
     if (sql.startsWith("SELECT DISTINCT product"))
       return {
         rows: baseline ? ["people", "services", "check_ins"].map((product) => ({ product })) : [],
@@ -142,8 +146,11 @@ describe("durable schedule coordinator", () => {
       expect.any(String),
       actor,
       "incremental",
-      null,
+      "2026-11-05",
       1,
+    ]);
+    expect(JSON.parse(inserts()[0]![1]![2] as string)).toMatchObject([
+      { since: "2026-11-05", windowField: "updated_at" },
     ]);
     expect(writes()[0]![1]).toEqual([
       id,

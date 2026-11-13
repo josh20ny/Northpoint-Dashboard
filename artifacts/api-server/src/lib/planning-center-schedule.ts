@@ -3,7 +3,7 @@ import { SetPlanningCenterScheduleBody, type PlanningCenterSchedule } from "@wor
 import type { Principal } from "./auth";
 import { AccessError, adminTransaction } from "./administration";
 import { recordAudit } from "./audit";
-import { scanRoots } from "./planning-center-source";
+import { incrementalSinceDate, scanRoots } from "./planning-center-source";
 import { requireConfiguration, productScope, type Product } from "./planning-center-client";
 import { defaultSchedule, nextScheduledAt, validTimeZone } from "./planning-center-calendar";
 
@@ -304,6 +304,24 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
     );
     return;
   }
+  const mode = baseline.rows[0].mode === "current" ? "current" : "incremental";
+  const latestSuccessful =
+    mode === "incremental"
+      ? await c.query<{ finished_at: Date | string | null }>(
+          `SELECT finished_at FROM pco_sync_runs
+           WHERE account_ref=$1 AND product=$2 AND status='complete'
+             AND mode IN ('backfill','incremental') AND finished_at IS NOT NULL
+           ORDER BY finished_at DESC,started_at DESC LIMIT 1`,
+          [s.account_ref, product],
+        )
+      : null;
+  const incrementalSince = incrementalSinceDate(latestSuccessful?.rows[0]?.finished_at);
+  const coverageStart =
+    mode === "current"
+      ? String(baseline.rows[0].coverage_start)
+      : product === "groups"
+        ? null
+        : incrementalSince;
   const run = (
     await c.query<{ id: string }>(
       `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,automatic,automatic_requested_by,coverage_start,lifecycle_version)
@@ -312,15 +330,12 @@ export async function advanceSchedule(c: PoolClient, now = new Date()) {
         s.account_ref,
         product,
         JSON.stringify(
-          scanRoots(
-            product,
-            baseline.rows[0].mode === "current" ? String(baseline.rows[0].coverage_start) : null,
-          ),
+          scanRoots(product, mode === "current" ? coverageStart : incrementalSince, mode),
         ),
         s.authorized_by,
-        baseline.rows[0].mode === "current" ? "current" : "incremental",
-        baseline.rows[0].mode === "current" ? baseline.rows[0].coverage_start : null,
-        baseline.rows[0].mode === "current" ? 2 : 1,
+        mode,
+        coverageStart,
+        mode === "current" ? 2 : 1,
       ],
     )
   ).rows[0]!;

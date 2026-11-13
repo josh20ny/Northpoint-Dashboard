@@ -41,6 +41,18 @@ export interface Page {
   since?: string;
   windowField?: "received_at" | "updated_at";
 }
+export const PCO_INCREMENTAL_OVERLAP_DAYS = 3;
+export function incrementalSinceDate(
+  completedAt: Date | string | null | undefined,
+  overlapDays = PCO_INCREMENTAL_OVERLAP_DAYS,
+): string | null {
+  const timestamp = completedAt instanceof Date ? completedAt.getTime() : Date.parse(completedAt ?? "");
+  if (!Number.isFinite(timestamp) || !Number.isInteger(overlapDays) || overlapDays < 0)
+    return null;
+  const date = new Date(timestamp);
+  date.setUTCDate(date.getUTCDate() - overlapDays);
+  return date.toISOString().slice(0, 10);
+}
 const allowedPaths: Record<string, RegExp> = {
   people: /^\/people\/v2\/people$/,
   services: /^\/services\/v2\/service_types(?:\/[0-9]+\/plans(?:\/[0-9]+\/plan_times)?)?$/,
@@ -71,11 +83,17 @@ export function pagePath(page: Page, product: Product) {
       [...attrs, ...Object.keys(relationshipFields[type] ?? {})].join(","),
     );
   if (page.type === "CheckIn") query.set("include", "event_period,event_times,locations");
-  if (page.since && page.type === "CheckIn")
-    query.set(
-      `where[${page.windowField === "updated_at" ? "updated_at" : "created_at"}][gte]`,
-      `${page.since}T00:00:00Z`,
-    );
+  if (page.since) {
+    if (page.type === "CheckIn")
+      query.set(
+        `where[${page.windowField === "updated_at" ? "updated_at" : "created_at"}][gte]`,
+        `${page.since}T00:00:00Z`,
+      );
+    if (product === "people" && page.type === "Person" && page.windowField === "updated_at")
+      query.set("where[updated_at][gte]", `${page.since}T00:00:00Z`);
+    if (product === "services" && page.type === "Plan" && page.windowField === "updated_at")
+      query.set("where[updated_at][gte]", `${page.since}T00:00:00Z`);
+  }
   return `${u.pathname}?${query}`;
 }
 export function roots(product: Product): Page[] {
@@ -87,8 +105,21 @@ export function roots(product: Product): Page[] {
     { path: "/check-ins/v2/check_ins", type: "CheckIn" },
   ];
 }
-export function scanRoots(product: Product, since?: string | null): Page[] {
-  const pages = roots(product).map((p) => (since ? { ...p, since } : p));
+export function scanRoots(
+  product: Product,
+  since?: string | null,
+  mode: "current" | "incremental" = "current",
+): Page[] {
+  // The Groups API has no reliable updated_at filters for membership changes or
+  // attendance revisions. Keep its complete, idempotent reconciliation path.
+  if (mode === "incremental" && product === "groups") return roots(product);
+  const incrementalField: Page["windowField"] =
+    mode === "incremental" && ["people", "services", "serving"].includes(product)
+      ? "updated_at"
+      : undefined;
+  const pages = roots(product).map((p) =>
+    since ? { ...p, since, ...(incrementalField ? { windowField: incrementalField } : {}) } : p,
+  );
   if (since && (product === "giving" || product === "check_ins")) {
     const original = pages.find((p) => p.type === (product === "giving" ? "Donation" : "CheckIn"))!;
     pages.push({ ...original, windowField: "updated_at" });
@@ -181,6 +212,9 @@ export function parsePage(
         : ["CheckIn", "Event", "EventPeriod", "EventTime", "Location"];
   if ([...main, ...extra].some((e) => !allowedTypes.includes(e.type))) throw new ProviderError(422);
   const nextPages: Page[] = [];
+  const scanWindow = page.since
+    ? { since: page.since, ...(page.windowField ? { windowField: page.windowField } : {}) }
+    : {};
   const next = (value.links as { next?: unknown } | undefined)?.next;
   if (next !== undefined && next !== null) {
     if (typeof next !== "string") throw new ProviderError(422);
@@ -196,11 +230,15 @@ export function parsePage(
       Number(u.searchParams.get("offset")) <= Number(current.searchParams.get("offset") ?? 0)
     )
       throw new ProviderError(422);
-    nextPages.push({ type: page.type, path: pagePath({ type: page.type, path: next }, product) });
+    nextPages.push({ type: page.type, path: pagePath({ ...page, path: next }, product), ...scanWindow });
   }
   for (const e of main) {
     if (e.type === "ServiceType")
-      nextPages.push({ path: `/services/v2/service_types/${e.id}/plans`, type: "Plan" });
+      nextPages.push({
+        path: `/services/v2/service_types/${e.id}/plans`,
+        type: "Plan",
+        ...scanWindow,
+      });
     if (e.type === "Plan") {
       const parent = new URL(page.path, PCO_ORIGIN).pathname;
       nextPages.push({ path: `${parent}/${e.id}/plan_times`, type: "PlanTime" });

@@ -155,8 +155,12 @@ export function ministryPagePath(page: Page, product: MinistryProduct) {
     if (product === "groups" && page.type === "Event")
       query.set("where[starts_at][gte]", `${page.since}T00:00:00Z`);
     if (product === "serving" && page.type === "Plan") {
-      query.set("filter", "after");
-      query.set("after", `${page.since}T00:00:00Z`);
+      if (page.windowField === "updated_at")
+        query.set("where[updated_at][gte]", `${page.since}T00:00:00Z`);
+      else {
+        query.set("filter", "after");
+        query.set("after", `${page.since}T00:00:00Z`);
+      }
     }
   }
   return `${u.pathname}?${query}`;
@@ -365,6 +369,9 @@ export function parseMinistryPage(
       if (ids.every((id) => received.has(id))) coveredDonations.add(donation);
   }
   const nextPages: Page[] = [];
+  const scanWindow = page.since
+    ? { since: page.since, ...(page.windowField ? { windowField: page.windowField } : {}) }
+    : {};
   const current = new URL(ministryPagePath(page, product), PCO_ORIGIN);
   const next = (value.links as { next?: unknown } | undefined)?.next;
   if (next != null) {
@@ -379,7 +386,8 @@ export function parseMinistryPage(
       throw new ProviderError(422);
     nextPages.push({
       type: page.type,
-      path: ministryPagePath({ type: page.type, path: next }, product),
+      path: ministryPagePath({ ...page, path: next }, product),
+      ...scanWindow,
     });
   }
   for (const e of entities) {
@@ -392,7 +400,11 @@ export function parseMinistryPage(
     if (product === "groups" && e.type === "Event")
       nextPages.push({ type: "Attendance", path: `/groups/v2/events/${e.id}/attendances` });
     if (product === "serving" && e.type === "ServiceType")
-      nextPages.push({ type: "Plan", path: `/services/v2/service_types/${e.id}/plans` });
+      nextPages.push({
+        type: "Plan",
+        path: `/services/v2/service_types/${e.id}/plans`,
+        ...scanWindow,
+      });
     if (product === "serving" && e.type === "Plan") {
       for (const [type, resource] of [
         ["PlanTime", "plan_times"],

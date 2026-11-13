@@ -25,10 +25,11 @@ proof that new provider permissions or live datasets have been accepted.
 
 The existing Dashboard layout and adult attendance workflow are retained.
 Giving, Connection, Waumba Land, UpStreet, Transit and InsideOut now have
-published weekly values, date ranges, comparison/history tables, source dates,
-quality flags and a KPI inventory. The overview uses the previous completed
-Sunday, not the latest available historical value. Service Programming retains
-its adult editor and adds a separate serving section.
+weekly views that render eligible published values, date ranges,
+comparison/history tables, source dates, quality flags and a KPI inventory.
+The overview uses the previous completed Sunday, not the latest available
+historical value. Service Programming retains its adult editor and adds a
+separate serving section.
 
 Administration includes effective-dated ministry source interpretation,
 immutable correction/retirement versions, explicit publication, and accepted
@@ -106,8 +107,18 @@ source date axis**, not the current year's literal date and not the first row
 of a partial-year selection. A year without a matching Sunday is flagged.
 Workbook snapshot dates still limit what may be imported.
 The non-Giving candidate sheet/measure map is documented in
-`PHASE5_WORKBOOK_CROSSWALK.md`; it has not created source mappings or imported
-any workbook history.
+`PHASE5_WORKBOOK_CROSSWALK.md`; it has not created Phase 5 source mappings or
+imported Phase 5 workbook history. The active, accepted 2026-11-07 workbook
+batch currently has two approved, staged mappings for Adult service attendance
+(52 rows each); those are not Phase 5 ministry metrics.
+
+Current development data check (2026-11-13): the Giving historical backfill is
+complete (41,875 pages; 110,535 fetched; 109,564 revised; no pending pages).
+Check-Ins, People and Services have completed incremental runs; Groups has a
+completed current-window run (1,326 pages; 10,430 fetched), not a historical
+backfill. These source records are staged, but there are currently no active
+Phase 5 source mappings and no ministry metric publications. A completed PCO
+sync is therefore not yet a published ministry dashboard.
 
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
@@ -134,17 +145,22 @@ Missing observations are not automatically zero. Calendar bucketing uses Chicago
 
 ## Remaining Phase 5 gates
 
-1. Owner/Admin authorizes any additional PCO permissions and the relevant
-   restricted development-data environment.
-2. Execute current-data scans, identify/map actual events, rooms, groups, funds
-   and teams, and accept representative source-to-storage-to-screen results.
-3. Run PCO historical backfills and accepted workbook mappings for all domains;
-   resolve actual historical units/era mappings and coverage gaps.
-4. Complete the focused authenticated browser pass, live-source acceptance
-   and owner development signoff. These are not claimed by type checks or
+1. Complete the privacy review and approve a suitably restricted development
+   environment before adding more identifiable donor, group-member or child
+   history. This gates additional sensitive scans, not work on existing,
+   already-staged sources.
+2. Map the existing PCO events, rooms, groups and funds to approved ministry
+   measures; publish completed scans and accept representative
+   source-to-storage-to-screen results. Do not infer a ministry from an
+   unreviewed name or treat all synced records as reportable.
+3. Run the remaining historical backfills and accepted workbook mappings for
+   all applicable Phase 5 domains after the data/privacy gates; resolve actual
+   historical units, era mappings, overlaps and coverage gaps.
+4. Complete the focused authenticated browser pass, live-source acceptance and
+   owner development signoff. These are not claimed by type checks or
    synthetic/rollback fixtures.
-5. Keep production, publishing, enabling unattended scheduling, and the earlier
-   deferred production lifecycle checks separate from this development gate.
+5. Keep production deployment and unattended scheduling separate from this
+   development gate.
 
 ## Deferred follow-ups: Integrations usability and PCO speed
 
@@ -164,45 +180,35 @@ unchanged. This is a small admin usability improvement that can be implemented
 independently of sync processing; defer it until the owner wants that UI work
 started.
 
-### PCO processing: measure, then improve safely
+### PCO processing: page efficiency improved; durable deltas remain
 
-The current worker advances one API page per two-second tick and serializes
-workers behind a shared database advisory lock. Each page is committed
-durably, but entities within it are persisted through multiple database
-operations, and some source relationships fan out into additional queued
-requests. A run can therefore take many hours even though progress is saved.
-The current `incremental` run mode also initializes from product root
-collections rather than a persisted per-product last-success checkpoint; a
-completed backfill is required, but by itself does not make the next run
-resume from the prior processing time.
+The shared worker now adapts its request spacing to Planning Center rate-limit
+headers and `Retry-After`; source pages are written in set-based batches while
+keeping each page and its cursor durable and replayable. Giving and Groups also
+fetch supported linked records in batches instead of issuing one relationship
+request per record. Workers remain serialized; no unbounded parallelism or
+scheduler setting was added.
 
-Recommended order:
+The Giving backfill processed 41,875 pages over the run period. This is a
+completed-history result, not evidence that every future sync finishes in
+minutes. Manual and scheduled `incremental` runs now start from the latest
+completed backfill/incremental run with a three-day overlap; the cutoff is
+stored on the run so retries resume the same window. Filter parameters are
+preserved across pagination and service-plan child discovery.
 
-1. After the current imports settle, capture safe per-product baselines:
-   elapsed time, API pages, records received, database revisions, unchanged
-   records, retries and rate-limit responses. Do not log source payloads,
-   donor details or credentials.
-2. Implement a true incremental checkpoint per product/resource. Store a
-   durable provider-supported `updated_at` watermark (or the narrowest reliable
-   equivalent), use a documented overlap window for late changes, and dedupe
-   by the existing source identity/hash. Verify which PCO endpoints support
-   reliable change filters and relationship updates before relying on them;
-   retain a bounded reconciliation path for endpoints that do not.
-3. Reduce request and database overhead without dropping lineage or recovery:
-   use supported collection includes/relationship lookups instead of
-   per-record requests where possible, batch idempotent writes and observation
-   records per page, and retain atomic page checkpoints and safe replay.
-4. Replace fixed one-page polling with a rate-limit-aware worker that can
-   process pages efficiently and use carefully bounded parallelism only for
-   independent resources. Preserve fairness between runs, pause/cancel
-   behavior, the provider's `Retry-After` guidance, and deduplication. If
-   workers are parallelized, replace the broad lock with durable page claims
-   and fencing/lease checks so a crash or overlapping worker cannot skip or
-   double-apply a page.
-5. Test restart/resume, duplicate replay, late updates, relationship changes,
-   partial page failure, cancellation and rate limiting against isolated
-   fixtures. Compare elapsed time and request counts to the baseline before
-   considering the speed work complete.
+Verified update filters are used for People, Check-Ins, Giving donations, and
+Services plans. Other small product roots may still be re-read. Groups keeps
+a full reconciliation because the supported API filters do not safely capture
+membership edits or changed attendance on older events. This is a product-level
+date checkpoint, not a per-resource watermark; Groups and Services assignment
+relationship coverage still need a bounded reconciliation/late-change policy.
+
+Next, verify those relationship-change boundaries and add periodic
+reconciliation for resources without reliable delta filters. Test
+restart/resume, duplicate replay, late updates, relationship changes, partial
+page failure, cancellation and rate limiting against isolated fixtures. Do not
+start new sensitive scans to benchmark this work before the privacy gate is
+cleared.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.

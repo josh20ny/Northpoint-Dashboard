@@ -226,8 +226,23 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       expect(end).toMatchObject({ status: "complete", pages: 2, fetched: 2, revised: 2 });
       expect(f.mock.calls[1]![0]).toContain("offset=100");
       const replay = await pco.startSync(p, "people", "incremental");
+      expect(replay.coverageStart).not.toBeNull();
+      const incremental = (
+        await c.query(
+          "SELECT queue,coverage_start::text AS coverage_start FROM pco_sync_runs WHERE id=$1",
+          [replay.id],
+        )
+      ).rows[0];
+      expect(incremental.coverage_start).toBe(replay.coverageStart);
+      expect(incremental.queue).toMatchObject([
+        { since: replay.coverageStart, windowField: "updated_at" },
+      ]);
+      f.mockClear();
       f.mockResolvedValueOnce(response({ data: [payload(), payload("2")] }));
       expect(await pco.advanceSync(p, replay.id)).toMatchObject({ status: "complete", revised: 0 });
+      expect(
+        new URL(String(f.mock.calls[0]![0])).searchParams.get("where[updated_at][gte]"),
+      ).toBe(`${replay.coverageStart}T00:00:00Z`);
       expect(
         (
           await c.query(
