@@ -155,6 +155,21 @@ queue now allows an Admin to include or exclude an unresolved Check-In. Each
 decision is audit-logged, affects publication only after republishing, and
 never changes Planning Center or merges profile identities.
 
+The Admin mapping form now supports routing-only service-session mappings for
+Check-In Events and routing-only student-ministry classifications for Groups.
+Transit/InsideOut Check-Ins can be classified only through a mapped Group
+membership; that mapping does not publish group totals or person-level data.
+The calculation uses only the latest completed Groups snapshot for its nearest
+completed Sunday and does not backcast today's memberships into older weeks.
+These mapping options do not create source mappings or publications by
+themselves. No mapping has been saved and no new PCO scan has been started.
+
+The classification fixtures and full workspace test suite pass, and workspace
+typechecking passes. The API health endpoint and public dashboard preview load.
+The preview capture cannot verify the signed-in Admin mapping screen, and the
+rollback-only database integration test timed out before reporting a result;
+database-backed publication is not yet claimed as verified.
+
 Each source/version is idempotent. Select the newest revision from each source,
 then prefer complete PCO over overlapping complete workbook values; never add
 the sources together. Archived/withdrawn/changed mappings and changed formulas

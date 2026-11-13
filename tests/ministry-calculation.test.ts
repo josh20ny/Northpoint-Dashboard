@@ -313,6 +313,207 @@ describe("ministry source-to-metric semantics", () => {
       flags: ["limited_to_imported_history"],
     });
   });
+  it("excludes non-Sunday Check-Ins instead of rolling them into a Sunday week", () => {
+    const result = compileMinistryFacts(
+      "check_ins",
+      [
+        e(
+          "EventPeriod",
+          "saturday-period",
+          { starts_at: "2026-11-07T15:00:00Z" },
+          { event: r("Event", "9") },
+        ),
+        e(
+          "EventPeriod",
+          "sunday-period",
+          { starts_at: "2026-11-08T15:00:00Z" },
+          { event: r("Event", "9") },
+        ),
+        e(
+          "CheckIn",
+          "saturday-missing-profile",
+          { kind: "Guest" },
+          {
+            event_period: r("EventPeriod", "saturday-period"),
+            person: { data: null },
+            locations: { data: [] },
+          },
+        ),
+        e(
+          "CheckIn",
+          "sunday-checkin",
+          { kind: "Regular" },
+          {
+            event_period: r("EventPeriod", "sunday-period"),
+            person: r("Person", "3"),
+            locations: { data: [] },
+          },
+        ),
+      ],
+      [mapping("check_ins", "Event", "9", "attendance")],
+      start,
+      end,
+      now,
+    );
+    expect(result.values.find((row) => row.measure === "attendance")).toMatchObject({
+      value: 1,
+      quality: "complete",
+    });
+    expect(result.issues).toContain("non_sunday_checkins_excluded");
+    expect(result.issues.some((issue) => issue.startsWith("unresolved_checkins_pending"))).toBe(
+      false,
+    );
+  });
+  it("classifies current student service check-ins through mapped Group memberships only", () => {
+    const checkIns = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "CheckIn",
+        "student-checkin",
+        { kind: "Guest" },
+        {
+          event_period: r("EventPeriod", "period"),
+          person: r("Person", "student"),
+          locations: { data: [] },
+        },
+      ),
+    ];
+    const groups = [
+      e("Group", "10", { archived_at: null }),
+      e(
+        "Membership",
+        "membership",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "10"), person: r("Person", "student") },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      checkIns,
+      [
+        {
+          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
+          scope: "service-1",
+        },
+      ],
+      start,
+      end,
+      now,
+      new Map(),
+      groups,
+      [mapping("groups", "Group", "10", "student_group_classification", "transit")],
+      new Date("2026-11-10T12:00:00Z"),
+    );
+    expect(result.values).toContainEqual(
+      expect.objectContaining({
+        ministry: "transit",
+        measure: "attendance",
+        scope: "service-1",
+        week: "2026-11-08",
+        value: 1,
+      }),
+    );
+    expect(result.values.some((row) => row.ministry === "service-programming")).toBe(false);
+  });
+  it("does not backcast the current Groups snapshot to older Check-In weeks", () => {
+    const checkIns = [
+      e("EventPeriod", "period", { starts_at: "2026-11-01T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "CheckIn",
+        "student-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "period"),
+          person: r("Person", "student"),
+          locations: { data: [] },
+        },
+      ),
+    ];
+    const groups = [
+      e("Group", "10", { archived_at: null }),
+      e(
+        "Membership",
+        "membership",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "10"), person: r("Person", "student") },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      checkIns,
+      [
+        {
+          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
+          scope: "service-1",
+        },
+      ],
+      start,
+      end,
+      now,
+      new Map(),
+      groups,
+      [mapping("groups", "Group", "10", "student_group_classification", "transit")],
+      new Date("2026-11-10T12:00:00Z"),
+    );
+    expect(result.values).toEqual([]);
+    expect(result.issues).toContain("unmapped_student_group_snapshot");
+  });
+  it("does not guess when a student belongs to groups mapped to two ministries", () => {
+    const checkIns = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e(
+        "CheckIn",
+        "student-checkin",
+        { kind: "Regular" },
+        {
+          event_period: r("EventPeriod", "period"),
+          person: r("Person", "student"),
+          locations: { data: [] },
+        },
+      ),
+    ];
+    const groups = [
+      e("Group", "10", { archived_at: null }),
+      e("Group", "11", { archived_at: null }),
+      e(
+        "Membership",
+        "membership-1",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "10"), person: r("Person", "student") },
+      ),
+      e(
+        "Membership",
+        "membership-2",
+        { joined_at: "2026-01-01", role: "member" },
+        { group: r("Group", "11"), person: r("Person", "student") },
+      ),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      checkIns,
+      [
+        {
+          ...mapping("check_ins", "Event", "9", "service_session", "service-programming"),
+          scope: "service-1",
+        },
+      ],
+      start,
+      end,
+      now,
+      new Map(),
+      groups,
+      [
+        mapping("groups", "Group", "10", "student_group_classification", "transit"),
+        {
+          ...mapping("groups", "Group", "11", "student_group_classification", "insideout"),
+          id: "insideout-map",
+        },
+      ],
+      new Date("2026-11-10T12:00:00Z"),
+    );
+    expect(result.values).toEqual([]);
+    expect(result.issues).toContain("unmapped_student_group_ambiguous");
+  });
   it("uses dated linked service times and never claims schedules prove actual serving", () => {
     const records = [
       e("Plan", "1", { sort_date: "2026-11-08" }),

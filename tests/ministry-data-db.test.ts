@@ -264,6 +264,137 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         quality: "complete",
       });
     });
+    it("uses the latest Groups snapshot for student classification without publishing group totals", async () => {
+      const groupsRunId = randomUUID();
+      const checkInRunId = randomUUID();
+      const groupId = `test-group-${randomUUID()}`;
+      const membershipId = `test-membership-${randomUUID()}`;
+      const personId = `test-person-${randomUUID()}`;
+      const eventId = `test-event-${randomUUID()}`;
+      const periodId = `test-period-${randomUUID()}`;
+      const checkInId = `test-checkin-${randomUUID()}`;
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at)
+        VALUES($1,$2,'groups','current','complete','[]',$3,now()+interval '4 seconds','2026-11-10T12:00:00Z')`,
+        [groupsRunId, account, admin.userId],
+      );
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at)
+        VALUES($1,$2,'check_ins','incremental','complete','[]',$3,now()+interval '5 seconds','2026-11-10T12:01:00Z')`,
+        [checkInRunId, account, admin.userId],
+      );
+
+      const staged: { product: string; runId: string; entity: SourceEntity; path: string }[] = [
+        {
+          product: "groups",
+          runId: groupsRunId,
+          entity: { type: "Group", id: groupId, attributes: { archived_at: null } },
+          path: "/groups/v2/groups",
+        },
+        {
+          product: "groups",
+          runId: groupsRunId,
+          entity: {
+            type: "Membership",
+            id: membershipId,
+            attributes: { joined_at: "2026-01-01T00:00:00Z", role: "member" },
+            relationships: {
+              group: { data: { type: "Group", id: groupId } },
+              person: { data: { type: "Person", id: personId } },
+            },
+          },
+          path: `/groups/v2/groups/${groupId}/memberships`,
+        },
+        {
+          product: "check_ins",
+          runId: checkInRunId,
+          entity: {
+            type: "Event",
+            id: eventId,
+            attributes: { name: "Synthetic student service" },
+          },
+          path: "/check-ins/v2/events",
+        },
+        {
+          product: "check_ins",
+          runId: checkInRunId,
+          entity: {
+            type: "EventPeriod",
+            id: periodId,
+            attributes: { starts_at: "2026-11-08T15:00:00Z" },
+            relationships: { event: { data: { type: "Event", id: eventId } } },
+          },
+          path: "/check-ins/v2/event_periods",
+        },
+        {
+          product: "check_ins",
+          runId: checkInRunId,
+          entity: {
+            type: "CheckIn",
+            id: checkInId,
+            attributes: { kind: "Guest" },
+            relationships: {
+              person: { data: { type: "Person", id: personId } },
+              event_period: { data: { type: "EventPeriod", id: periodId } },
+              event_times: { data: [] },
+              locations: { data: [] },
+            },
+          },
+          path: "/check-ins/v2/check_ins",
+        },
+      ];
+      for (const { product, runId: sourceRunId, entity, path } of staged) {
+        const rawId = randomUUID();
+        await c.query(
+          `INSERT INTO raw_source_records(id,provider,account_ref,object_type,external_id,payload_json,payload_hash)
+          VALUES($1,'planning_center',$2,$3,$4,$5,$6)`,
+          [
+            rawId,
+            account,
+            `${product}:${entity.type}`,
+            entity.id,
+            JSON.stringify(entity),
+            digest(JSON.stringify(entity)),
+          ],
+        );
+        await c.query(
+          `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,observed_run_id,normalized)
+          VALUES($1,$2,$3,$4,$5,$6,$6,$7)`,
+          [
+            account,
+            product,
+            entity.type,
+            entity.id,
+            rawId,
+            sourceRunId,
+            JSON.stringify(normalized(entity, path)),
+          ],
+        );
+      }
+      await c.query(
+        `INSERT INTO ministry_source_mappings(product,object_type,external_id,account_ref,ministry,measure,scope,effective_from,note,created_by)
+        VALUES
+          ('check_ins','Event',$2,$1,'service-programming','service_session','service-1','2026-01-01','Synthetic service session',$3),
+          ('groups','Group',$4,$1,'transit','student_group_classification','all','2026-01-01','Synthetic student ministry',$3)`,
+        [account, eventId, admin.userId, groupId],
+      );
+
+      await repo.publishMinistryData(admin, {
+        product: "check_ins",
+        start: "2026-11-08",
+        end: "2026-11-08",
+      });
+      const workspace = await repo.readMinistryData(admin, "transit", "2026-11-08", "2026-11-08");
+      expect(
+        workspace.metrics.find(
+          (metric) => metric.measure === "attendance" && metric.scope === "service-1",
+        ),
+      ).toMatchObject({ value: 1, quality: "complete" });
+      expect(workspace.metrics.some((metric) => metric.measure === "group_attendance")).toBe(false);
+      expect(JSON.stringify(workspace)).not.toContain(personId);
+      expect(JSON.stringify(workspace)).not.toContain(checkInId);
+      expect(JSON.stringify(workspace)).not.toContain(groupId);
+    });
     it("invalidates a prior publication after mapping interpretation changes without rewriting it", async () => {
       const publication = await publish();
       await c.query("SELECT set_config('np.role','admin',true)");

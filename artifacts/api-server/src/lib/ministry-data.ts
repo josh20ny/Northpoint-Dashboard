@@ -33,6 +33,7 @@ import { canonical } from "./planning-center-source";
 import {
   compileMinistryFacts,
   MINISTRY_DEFINITION_VERSION,
+  MAPPING_ONLY_MEASURES,
   MINISTRY_SLUGS,
   MEASURES,
   SAFE_SCOPES,
@@ -48,20 +49,43 @@ const mappingSelect = `SELECT id,product,object_type AS "objectType",external_id
  FROM ministry_source_mappings`;
 const allowedMapping: Record<string, Record<string, string[]>> = {
   check_ins: {
-    Event: ["attendance", "volunteers", "first_known"],
+    Event: ["attendance", "volunteers", "first_known", "service_session"],
     Location: ["attendance", "volunteers", "first_known"],
   },
   serving: { ServiceType: ["scheduled", "accepted"], Team: ["scheduled", "accepted"] },
-  groups: { Group: ["group_attendance", "group_memberships", "group_leaders"] },
+  groups: {
+    Group: [
+      "group_attendance",
+      "group_memberships",
+      "group_leaders",
+      "student_group_classification",
+    ],
+  },
   giving: { Fund: ["fund_giving"] },
 };
 function validateTarget(ministry: string, measure: string, scope: string) {
   if (
     !MINISTRY_SLUGS.some((s) => s === ministry) ||
-    !MEASURES[measure] ||
+    (!MEASURES[measure] && !MAPPING_ONLY_MEASURES.has(measure)) ||
     !SAFE_SCOPES.some((s) => s === scope)
   )
     throw new AccessError(400, "Choose a supported ministry, measure and fixed aggregate scope");
+  if (
+    measure === "service_session" &&
+    (ministry !== "service-programming" || !["service-1", "service-2"].includes(scope))
+  )
+    throw new AccessError(
+      400,
+      "Service session mappings must be Service Programming service-1 or service-2",
+    );
+  if (
+    measure === "student_group_classification" &&
+    (!["transit", "insideout"].includes(ministry) || scope !== "all")
+  )
+    throw new AccessError(
+      400,
+      "Student group classification must target Transit or InsideOut with all scope",
+    );
   if (
     [
       "giving_total",
@@ -485,6 +509,63 @@ async function publishMinistryDataInTransaction(
     input.product === "check_ins"
       ? await readCheckInResolutions(c, account)
       : new Map<string, "include" | "exclude">();
+  let groupMappings: SourceMapping[] = [];
+  let groupFacts: SourceFact[] = [];
+  let groupRunId: string | null = null;
+  let groupSnapshotAt: Date | null = null;
+  if (input.product === "check_ins") {
+    groupMappings = (
+      await c.query<SourceMapping>(
+        `${mappingSelect} WHERE account_ref=$1 AND product='groups' AND measure='student_group_classification'
+        AND enabled AND id NOT IN (SELECT supersedes_id FROM ministry_source_mappings WHERE supersedes_id IS NOT NULL)
+        ORDER BY id`,
+        [account],
+      )
+    ).rows;
+    if (groupMappings.length) {
+      const groupRun = (
+        await c.query(
+          `SELECT id,finished_at FROM pco_sync_runs
+          WHERE account_ref=$1 AND product='groups' AND status='complete'
+          ORDER BY started_at DESC,id DESC LIMIT 1`,
+          [account],
+        )
+      ).rows[0];
+      if (groupRun?.finished_at) {
+        groupRunId = String(groupRun.id);
+        groupSnapshotAt = new Date(groupRun.finished_at);
+        const groupSources = await c.query(
+          `SELECT jsonb_build_object(
+            'sourceType',object_type,
+            'sourceId',external_id,
+            'attributes',CASE
+              WHEN object_type='Group' THEN jsonb_build_object(
+                'archived_at',normalized->'attributes'->'archived_at')
+              ELSE jsonb_build_object(
+                'joined_at',normalized->'attributes'->'joined_at',
+                'role',normalized->'attributes'->'role')
+            END,
+            'sourceRelationships',normalized->'sourceRelationships',
+            'sourceCollection',normalized->'sourceCollection'
+          ) AS normalized
+          FROM pco_source_entities
+          WHERE account_ref=$1 AND product='groups' AND object_type IN ('Group','Membership')
+            AND observed_run_id=$2 AND missing_run_id IS NULL
+          LIMIT 200001`,
+          [account, groupRunId],
+        );
+        if (groupSources.rows.length > 200000)
+          throw new AccessError(409, "Groups membership snapshot exceeds the safe matching limit");
+        groupFacts = groupSources.rows.map(({ normalized: n }) => ({
+          type: n.sourceType,
+          id: n.sourceId,
+          attributes: n.attributes ?? {},
+          relationships: n.sourceRelationships ?? {},
+          sourceCollection: n.sourceCollection ?? null,
+        }));
+      }
+    }
+  }
   const compiled = compileMinistryFacts(
     input.product,
     facts,
@@ -493,6 +574,9 @@ async function publishMinistryDataInTransaction(
     input.end,
     new Date(run.finished_at),
     checkInResolutions,
+    groupFacts,
+    groupMappings,
+    groupSnapshotAt,
   );
   const givingPolicy = input.product === "giving" ? await currentGivingPolicy(c) : null;
   let givingUnits;
@@ -613,13 +697,26 @@ async function publishMinistryDataInTransaction(
           }))
         : [];
   expected.push(
-    ...mappings.map((m) => ({
-      ministry: m.ministry,
-      measure: m.measure,
-      scope: m.scope,
-      unit: MEASURES[m.measure].unit,
-    })),
+    ...mappings
+      .filter((m) => !MAPPING_ONLY_MEASURES.has(m.measure))
+      .map((m) => ({
+        ministry: m.ministry,
+        measure: m.measure,
+        scope: m.scope,
+        unit: MEASURES[m.measure].unit,
+      })),
   );
+  if (input.product === "check_ins") {
+    const serviceSessions = mappings.filter((m) => m.measure === "service_session");
+    for (const session of serviceSessions)
+      for (const groupMapping of groupMappings)
+        expected.push({
+          ministry: groupMapping.ministry,
+          measure: "attendance",
+          scope: session.scope,
+          unit: MEASURES.attendance.unit,
+        });
+  }
   const slots = new Map(
     expected.map((m) => [[m.ministry, m.measure, m.scope, m.unit].join("|"), m]),
   );
@@ -655,6 +752,8 @@ async function publishMinistryDataInTransaction(
         mappings,
         input,
         checkInResolutions: [...checkInResolutions].sort(([a], [b]) => a.localeCompare(b)),
+        groupRunId,
+        groupMappings,
         givingPolicy,
         version: MINISTRY_DEFINITION_VERSION,
       }),
@@ -667,7 +766,7 @@ async function publishMinistryDataInTransaction(
       runId: run.id,
       mappingIds: mappings.map((m) => m.id),
       issues: compiled.issues,
-      sourceRows: facts.length,
+      sourceRows: facts.length + groupFacts.length,
       ...(input.product === "check_ins"
         ? {
             checkInResolutions: {
@@ -675,6 +774,11 @@ async function publishMinistryDataInTransaction(
                 .length,
               excluded: [...checkInResolutions.values()].filter((action) => action === "exclude")
                 .length,
+            },
+            studentGroupClassification: {
+              groupRunId,
+              groupSnapshotAsOf: groupSnapshotAt?.toISOString() ?? null,
+              mappingIds: groupMappings.map((m) => m.id),
             },
           }
         : {}),
@@ -698,6 +802,7 @@ export async function refreshPublishedMinistry(
   account: string,
 ) {
   if (!["giving", "groups", "serving", "check_ins"].includes(product)) return;
+  const refreshCheckInClassification = product === "groups";
   const previous = (
     await c.query(
       `SELECT coverage_start::text AS start,coverage_end::text AS "end"
@@ -706,7 +811,10 @@ export async function refreshPublishedMinistry(
       [product, account],
     )
   ).rows[0];
-  if (!previous) return;
+  if (!previous) {
+    if (refreshCheckInClassification) await refreshPublishedMinistry(c, p, "check_ins", account);
+    return;
+  }
   const current = reportingWeekEnding(new Date());
   await c.query("SAVEPOINT ministry_refresh");
   try {
@@ -727,6 +835,7 @@ export async function refreshPublishedMinistry(
       [account, product],
     );
   }
+  if (refreshCheckInClassification) await refreshPublishedMinistry(c, p, "check_ins", account);
 }
 export async function givingTransactions(
   p: Principal,

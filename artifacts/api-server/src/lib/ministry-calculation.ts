@@ -1,12 +1,13 @@
 import type { SourceEntity } from "./planning-center-source";
-import { chicagoDate, shiftDate, sunday } from "./attendance-calculation";
+import { chicagoDate, completedSunday, shiftDate, sunday } from "./attendance-calculation";
 import {
   findCheckInReviewCandidates,
   type CheckInResolutionAction,
 } from "./ministry-checkin-review";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v2";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v3";
+export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
   "connection",
@@ -71,7 +72,7 @@ export const MEASURES: Record<string, { title: string; unit: string; definition:
     title: "Weekly unique participants",
     unit: "people",
     definition:
-      "Distinct Check-Ins product person IDs with regular check-ins within the selected ministry/scope/week. Anonymous check-ins counted separately only in quality flags, never invented identities.",
+      "Distinct people with regular or linked guest Check-Ins on Sunday within the selected ministry/scope/week. Anonymous check-ins need an explicit Admin resolution.",
   },
   attendance_headcount: {
     title: "Attendance (workbook headcount)",
@@ -271,6 +272,9 @@ export function compileMinistryFacts(
   end: string,
   asOf: Date,
   checkInResolutions: ReadonlyMap<string, CheckInResolutionAction> = new Map(),
+  groupFacts: SourceFact[] = [],
+  groupMappings: SourceMapping[] = [],
+  groupSnapshotAt: Date | null = null,
 ) {
   if (!sunday(start) || !sunday(end) || end < start) throw new Error("Invalid Sunday range");
   const issues = new Set<string>();
@@ -311,10 +315,20 @@ export function compileMinistryFacts(
     mappings.filter(
       (m) =>
         m.product === product &&
+        !MAPPING_ONLY_MEASURES.has(m.measure) &&
         m.objectType === type &&
         m.externalId === id &&
         activeMapping(m, chicagoDate(date)) &&
         (!measure || m.measure === measure),
+    );
+  const serviceSessions = (id: string | null, date: Date) =>
+    mappings.filter(
+      (m) =>
+        m.product === "check_ins" &&
+        m.objectType === "Event" &&
+        m.measure === "service_session" &&
+        m.externalId === id &&
+        activeMapping(m, chicagoDate(date)),
     );
   const apply = (matches: SourceMapping[], date: Date, count: number, id: string) => {
     const unique = new Map<string, SourceMapping>();
@@ -461,7 +475,9 @@ export function compileMinistryFacts(
     }
   }
   if (product === "check_ins") {
-    const reviewItems = findCheckInReviewCandidates(entities);
+    const reviewItems = findCheckInReviewCandidates(entities).filter(
+      (item) => !item.serviceDate || sunday(item.serviceDate),
+    );
     const reviewById = new Map(reviewItems.map((item) => [item.checkInId, item]));
     const pendingReviews = reviewItems.filter((item) => !checkInResolutions.has(item.checkInId));
     if (pendingReviews.length) {
@@ -472,6 +488,44 @@ export function compileMinistryFacts(
     const periods = new Map(entities.filter((e) => e.type === "EventPeriod").map((e) => [e.id, e]));
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
     const first = new Map<string, string>();
+    const groupSnapshots = new Map(
+      groupFacts.filter((e) => e.type === "Group").map((e) => [e.id, e]),
+    );
+    const membershipsByPerson = new Map<string, { groupId: string; joinedAt: string | null }[]>();
+    for (const membership of groupFacts.filter((e) => e.type === "Membership")) {
+      const person = ref(membership, "person");
+      const groupId = ref(membership, "group");
+      const group = groupId ? groupSnapshots.get(groupId) : null;
+      if (!person || !groupId || !group || group.attributes.archived_at !== null) continue;
+      if (membership.attributes.role === "leader") continue;
+      const rows = membershipsByPerson.get(person) ?? [];
+      rows.push({
+        groupId,
+        joinedAt:
+          typeof membership.attributes.joined_at === "string"
+            ? membership.attributes.joined_at.slice(0, 10)
+            : null,
+      });
+      membershipsByPerson.set(person, rows);
+    }
+    const classifiedMinistries = (person: string, date: Date) => {
+      const day = chicagoDate(date);
+      const ministries = new Set<string>();
+      for (const membership of membershipsByPerson.get(person) ?? []) {
+        if (membership.joinedAt && membership.joinedAt > day) continue;
+        for (const mapping of groupMappings) {
+          if (
+            mapping.product === "groups" &&
+            mapping.objectType === "Group" &&
+            mapping.measure === "student_group_classification" &&
+            mapping.externalId === membership.groupId &&
+            activeMapping(mapping, day)
+          )
+            ministries.add(mapping.ministry);
+        }
+      }
+      return [...ministries];
+    };
     const candidates: {
       m: SourceMapping;
       d: Date;
@@ -496,6 +550,10 @@ export function compileMinistryFacts(
         issues.add("checkin_date_person_or_period_missing");
         continue;
       }
+      if (!sunday(chicagoDate(d))) {
+        issues.add("non_sunday_checkins_excluded");
+        continue;
+      }
       if (review && !resolution) continue;
       if (!person && resolution !== "include") {
         issues.add("checkin_date_person_or_period_missing");
@@ -506,7 +564,8 @@ export function compileMinistryFacts(
         ...match("Event", eventId, d),
         ...refs(e, "locations").flatMap((id) => match("Location", id, d)),
       ];
-      if (!ms.length) {
+      const sessions = serviceSessions(eventId, d);
+      if (!ms.length && !sessions.length) {
         issues.add("unmapped_checkins");
         continue;
       }
@@ -522,13 +581,49 @@ export function compileMinistryFacts(
           issues.add("unknown_checkin_kind");
           continue;
         }
-        const identity =
-          resolution === "include" && review ? `checkin:${e.id}` : person!;
+        const identity = resolution === "include" && review ? `checkin:${e.id}` : person!;
         candidates.push({ m, d, person, kind, identity });
         if (kind === "regular" && person) {
           const k = `${m.ministry}|${m.scope}|${person}`,
             w = reportingWeekEnding(d);
           if (!first.has(k) || first.get(k)! > w) first.set(k, w);
+        }
+      }
+      for (const session of sessions) {
+        if (!groupSnapshotAt || reportingWeekEnding(d) !== completedSunday(groupSnapshotAt)) {
+          issues.add("unmapped_student_group_snapshot");
+          continue;
+        }
+        if (!person) {
+          issues.add("unmapped_student_group_person");
+          continue;
+        }
+        const ministries = classifiedMinistries(person, d);
+        if (ministries.length !== 1) {
+          issues.add(
+            ministries.length > 1
+              ? "unmapped_student_group_ambiguous"
+              : "unmapped_student_group_membership",
+          );
+          continue;
+        }
+        const kind = String(e.attributes.kind).toLowerCase();
+        if (!["regular", "guest"].includes(kind)) continue;
+        candidates.push({
+          m: {
+            ...session,
+            ministry: ministries[0],
+            measure: "attendance",
+          },
+          d,
+          person,
+          kind,
+          identity: person,
+        });
+        if (kind === "regular") {
+          const key = `${ministries[0]}|${session.scope}|${person}`;
+          const week = reportingWeekEnding(d);
+          if (!first.has(key) || first.get(key)! > week) first.set(key, week);
         }
       }
     }
@@ -549,7 +644,10 @@ export function compileMinistryFacts(
   // Any bad/incomplete source linkage must not silently produce a complete
   // partial number. Source absence is not an automatic zero.
   const incomplete = [...issues].some(
-    (x) => !x.startsWith("unmapped_") && x !== "group_event_not_eligible",
+    (x) =>
+      !x.startsWith("unmapped_") &&
+      x !== "group_event_not_eligible" &&
+      x !== "non_sunday_checkins_excluded",
   );
   if (incomplete)
     for (const r of output.values()) {

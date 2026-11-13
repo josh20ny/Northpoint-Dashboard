@@ -64,3 +64,12 @@ called out these data-quality exceptions.
 when calculating attendance. Deduplicate rechecks only when the same PCO person
 identifier establishes the match; do not guess that different profile IDs are
 the same person.
+
+Transit/InsideOut Groups matching is for ministry classification only; do not
+publish group-level totals or person-level data from this join.
+
+**Why:** The owner explicitly chose ministry classification as the Groups match
+output.
+
+**How to apply:** Map Groups to a ministry and use membership only to classify
+service Check-Ins. Keep the published result aggregate-only.

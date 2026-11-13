@@ -32,7 +32,7 @@ export const MEASURES: { key: string; label: string }[] = [
   { key: "legacy_first_time_givers", label: "First-time givers (workbook definition)" },
   { key: "legacy_recurring_givers", label: "Recurring givers (workbook definition)" },
   { key: "legacy_lapsed_givers", label: "Lapsed givers (workbook definition)" },
-  { key: "attendance", label: "Weekly unique participants (identified PCO people)" },
+  { key: "attendance", label: "Weekly unique participants (regular + linked guests)" },
   { key: "attendance_headcount", label: "Attendance (workbook headcount)" },
   { key: "volunteer_headcount", label: "Volunteers (workbook count)" },
   { key: "volunteers", label: "Volunteers" },
@@ -54,6 +54,13 @@ export const MEASURES: { key: string; label: string }[] = [
   { key: "groups_reported", label: "Groups reported" },
   { key: "member_attendance", label: "Member attendance" },
 ];
+const MAPPING_ONLY_MEASURES: { key: string; label: string }[] = [
+  { key: "service_session", label: "Service session (mapping only)" },
+  {
+    key: "student_group_classification",
+    label: "Student ministry classification (mapping only)",
+  },
+];
 
 export const PRODUCTS = ["check_ins", "serving", "groups", "giving"] as const;
 export type Product = (typeof PRODUCTS)[number];
@@ -66,16 +73,22 @@ export const PRODUCT_LABEL: Record<Product, string> = {
 export const PRODUCT_PAIRS: Record<Product, { objectTypes: string[]; measures: string[] }> = {
   check_ins: {
     objectTypes: ["Event", "Location"],
-    measures: ["attendance", "volunteers", "first_known"],
+    measures: ["attendance", "volunteers", "first_known", "service_session"],
   },
   serving: { objectTypes: ["ServiceType", "Team"], measures: ["scheduled", "accepted"] },
   groups: {
     objectTypes: ["Group"],
-    measures: ["group_attendance", "group_leaders", "group_memberships"],
+    measures: [
+      "group_attendance",
+      "group_leaders",
+      "group_memberships",
+      "student_group_classification",
+    ],
   },
   giving: { objectTypes: ["Fund"], measures: ["fund_giving"] },
 };
-export const measureLabel = (key: string) => MEASURES.find((m) => m.key === key)?.label ?? key;
+export const measureLabel = (key: string) =>
+  [...MEASURES, ...MAPPING_ONLY_MEASURES].find((m) => m.key === key)?.label ?? key;
 
 export const ministryPolling = {
   staleTime: 30000,
