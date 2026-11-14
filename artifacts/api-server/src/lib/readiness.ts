@@ -81,6 +81,8 @@ export async function databaseReadiness() {
         AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
           AND table_name='pco_sync_runs' AND column_name='coverage_start')
         AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+          AND table_name='pco_sync_runs' AND column_name='coverage_end')
+        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
           AND table_name='pco_sync_schedules' AND column_name='products')
         AS schema_ready FROM foundation_metadata WHERE key = $1`,
       ["application"],

@@ -18,6 +18,7 @@ import {
   sourceEntity,
   sourceHash,
   incrementalSinceDate,
+  validDateWindow,
 } from "../artifacts/api-server/src/lib/planning-center-source";
 import { ministryPagePath, parseMinistryPage } from "../artifacts/api-server/src/lib/ministry-source";
 import { createPlanningCenterRouter } from "../artifacts/api-server/src/routes/planning-center";
@@ -46,6 +47,7 @@ describe("Planning Center secure transport and source contract", () => {
         mode: "current" as const,
         status: "running" as const,
         coverage_start: new Date(2026, 10, 10),
+        coverage_end: new Date(2026, 10, 12),
         queue: [],
         visited: [],
         fetched: 0,
@@ -64,6 +66,8 @@ describe("Planning Center secure transport and source contract", () => {
       );
       expect(syncView({ ...run, coverage_start: "2026-10-12" }).coverageStart).toBe("2026-10-12");
       expect(syncView({ ...run, coverage_start: null }).coverageStart).toBeNull();
+      expect(syncView(run).coverageEnd).toBe("2026-11-12");
+      expect(syncView({ ...run, coverage_end: null }).coverageEnd).toBeNull();
     }
   });
   beforeEach(() => {
@@ -501,5 +505,45 @@ describe("Planning Center HTTP permission boundary", () => {
       .send({ enabled: true });
     expect(automatic.status).toBe(403);
     expect(automatic.body.error).toBe("Request verification failed");
+  });
+  it("bounds Check-Ins to an inclusive, validated date window on creation and update scans", () => {
+    expect(validDateWindow("2026-11-06", "2026-11-08")).toBe(true);
+    expect(validDateWindow("2026-11-08", "2026-11-06")).toBe(false);
+    expect(validDateWindow("2026-11-06", "2026-12-07")).toBe(false);
+    expect(validDateWindow("2026-02-30", "2026-03-01")).toBe(false);
+
+    const pages = scanRoots("check_ins", "2026-11-06", "current", "2026-11-08");
+    const created = pages.find((page) => page.type === "CheckIn" && !page.windowField)!;
+    const updated = pages.find(
+      (page) => page.type === "CheckIn" && page.windowField === "updated_at",
+    )!;
+    expect(created).toMatchObject({ since: "2026-11-06", until: "2026-11-08" });
+    expect(updated).toMatchObject({
+      since: "2026-11-06",
+      until: "2026-11-08",
+      windowField: "updated_at",
+    });
+
+    for (const [page, field] of [
+      [created, "created_at"],
+      [updated, "updated_at"],
+    ] as const) {
+      const url = new URL(pagePath(page, "check_ins"), "https://api.planningcenteronline.com");
+      expect(url.searchParams.get(`where[${field}][gte]`)).toBe("2026-11-06");
+      expect(url.searchParams.get(`where[${field}][lte]`)).toBe("2026-11-08");
+      const next = parsePage(
+        {
+          data: [],
+          links: {
+            next: "https://api.planningcenteronline.com/check-ins/v2/check_ins?offset=100",
+          },
+        },
+        page,
+        "check_ins",
+      ).nextPages[0]!;
+      expect(next).toMatchObject({ since: "2026-11-06", until: "2026-11-08" });
+      const nextUrl = new URL(pagePath(next, "check_ins"), "https://api.planningcenteronline.com");
+      expect(nextUrl.searchParams.get(`where[${field}][lte]`)).toBe("2026-11-08");
+    }
   });
 });

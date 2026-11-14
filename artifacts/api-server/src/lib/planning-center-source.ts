@@ -49,7 +49,22 @@ export interface Page {
   path: string;
   type: string;
   since?: string;
+  until?: string;
   windowField?: "received_at" | "updated_at";
+}
+export function validDateWindow(since: string, until: string, maxDays = 31): boolean {
+  const start = Date.parse(`${since}T00:00:00Z`);
+  const end = Date.parse(`${until}T00:00:00Z`);
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(since) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(until) &&
+    Number.isFinite(start) &&
+    Number.isFinite(end) &&
+    new Date(start).toISOString().slice(0, 10) === since &&
+    new Date(end).toISOString().slice(0, 10) === until &&
+    end >= start &&
+    end - start < maxDays * 24 * 60 * 60 * 1000
+  );
 }
 export const PCO_INCREMENTAL_OVERLAP_DAYS = 3;
 export function incrementalSinceDate(
@@ -111,11 +126,11 @@ export function pagePath(page: Page, product: Product) {
   if (page.type === "CheckIn")
     query.set("include", "event_period,event_times,locations,person");
   if (page.since) {
-    if (page.type === "CheckIn")
-      query.set(
-        `where[${page.windowField === "updated_at" ? "updated_at" : "created_at"}][gte]`,
-        `${page.since}T00:00:00Z`,
-      );
+    if (page.type === "CheckIn") {
+      const dateField = page.windowField === "updated_at" ? "updated_at" : "created_at";
+      query.set(`where[${dateField}][gte]`, page.until ? page.since : `${page.since}T00:00:00Z`);
+      if (page.until) query.set(`where[${dateField}][lte]`, page.until);
+    }
     if (product === "people" && page.type === "Person" && page.windowField === "updated_at")
       query.set("where[updated_at][gte]", `${page.since}T00:00:00Z`);
     if (product === "services" && page.type === "Plan" && page.windowField === "updated_at")
@@ -140,6 +155,7 @@ export function scanRoots(
   product: Product,
   since?: string | null,
   mode: "current" | "incremental" = "current",
+  until?: string | null,
 ): Page[] {
   // The Groups API has no reliable updated_at filters for membership changes or
   // attendance revisions. Keep its complete, idempotent reconciliation path.
@@ -150,12 +166,17 @@ export function scanRoots(
       : undefined;
   const pages = roots(product).map((p) =>
     since && (product !== "people" || p.type === "Person")
-      ? { ...p, since, ...(incrementalField ? { windowField: incrementalField } : {}) }
+      ? {
+          ...p,
+          since,
+          ...(until && product === "check_ins" && p.type === "CheckIn" ? { until } : {}),
+          ...(incrementalField ? { windowField: incrementalField } : {}),
+        }
       : p,
   );
   if (since && (product === "giving" || product === "check_ins")) {
     const original = pages.find((p) => p.type === (product === "giving" ? "Donation" : "CheckIn"))!;
-    pages.push({ ...original, windowField: "updated_at" });
+    pages.push({ ...original, ...(until && product === "check_ins" ? { until } : {}), windowField: "updated_at" });
   }
   return pages;
 }
@@ -252,7 +273,11 @@ export function parsePage(
   if ([...main, ...extra].some((e) => !allowedTypes.includes(e.type))) throw new ProviderError(422);
   const nextPages: Page[] = [];
   const scanWindow = page.since
-    ? { since: page.since, ...(page.windowField ? { windowField: page.windowField } : {}) }
+    ? {
+        since: page.since,
+        ...(page.until ? { until: page.until } : {}),
+        ...(page.windowField ? { windowField: page.windowField } : {}),
+      }
     : {};
   const next = (value.links as { next?: unknown } | undefined)?.next;
   if (next !== undefined && next !== null) {

@@ -141,7 +141,13 @@ export function createPlanningCenterRouter(auth: AuthProvider = sessionAuthProvi
         .status(201)
         .json(
           StartPlanningCenterSyncResponse.parse(
-            await pco.startSync(res.locals.principal, b.data.product, b.data.mode, b.data.since),
+            await pco.startSync(
+              res.locals.principal,
+              b.data.product,
+              b.data.mode,
+              b.data.since,
+              b.data.until,
+            ),
           ),
         );
     }),

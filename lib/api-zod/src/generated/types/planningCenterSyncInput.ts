@@ -13,4 +13,6 @@ export interface PlanningCenterSyncInput {
   mode: PlanningCenterSyncInputMode;
   /** @nullable */
   since?: string | null;
+  /** @nullable */
+  until?: string | null;
 }

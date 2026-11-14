@@ -393,6 +393,7 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
           {s.coverageStart && (
             <span className="font-normal text-muted-foreground" data-testid={`text-coverage-${s.id}`}>
               {" "}· From {s.coverageStart.slice(0, 10)}
+              {s.coverageEnd && ` through ${s.coverageEnd.slice(0, 10)}`}
             </span>
           )}
         </p>
@@ -453,7 +454,8 @@ function SyncRow({ s }: { s: PlanningCenterSync }) {
       {open && (
         <>
           <p className="mt-2 text-[11.5px] text-muted-foreground">
-            Committed pages are staging only. No metrics are published from a partial sync.
+            Committed pages stay staged until completion. A complete sync refreshes applicable
+            published ministry metrics; partial syncs do not.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
@@ -512,13 +514,45 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
   const openFor = (p: string) =>
     ws.syncs.some((s) => s.product === p && (s.status === "running" || s.status === "retry"));
   const granted = (p: string) => !!ws.connection?.scopes.includes(SCOPE_FOR[p] ?? p);
-  const [since, setSince] = useState<Record<string, string>>({});
+  const [since, setSince] = useState<Record<string, string>>({
+    check_ins: "2026-11-06",
+  });
+  const [until, setUntil] = useState<Record<string, string>>({
+    check_ins: "2026-11-08",
+  });
   const [askBackfill, setAskBackfill] = useState<string | null>(null);
   const go = (product: PlanningCenterSyncInputProduct, mode: PlanningCenterSyncInputMode) =>
     start.mutate(
-      { data: mode === "current" ? { product, mode, since: since[product] } : { product, mode } },
+      {
+        data:
+          mode === "current"
+            ? {
+                product,
+                mode,
+                since: since[product],
+                ...(product === "check_ins" ? { until: until[product] } : {}),
+              }
+            : { product, mode },
+      },
       { onSuccess: () => setAskBackfill(null) },
     );
+  const currentWindowValid = (product: PlanningCenterSyncInputProduct) => {
+    const startDate = since[product] ?? "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return false;
+    if (product !== "check_ins") return true;
+    const endDate = until[product] ?? "";
+    const startTime = Date.parse(`${startDate}T00:00:00Z`);
+    const endTime = Date.parse(`${endDate}T00:00:00Z`);
+    return (
+      /^\d{4}-\d{2}-\d{2}$/.test(endDate) &&
+      Number.isFinite(startTime) &&
+      Number.isFinite(endTime) &&
+      new Date(startTime).toISOString().slice(0, 10) === startDate &&
+      new Date(endTime).toISOString().slice(0, 10) === endDate &&
+      endTime >= startTime &&
+      endTime - startTime < 31 * 24 * 60 * 60 * 1000
+    );
+  };
 
   return (
     <Panel className="p-5 sm:p-6">
@@ -543,9 +577,9 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
           deletion. Requires a completed backfill for that product.
         </p>
         <p>
-          <strong className="text-foreground">Current</strong> reads only records from the chosen
-          date onward, without a historical backfill. Reports cover that bounded period only;
-          earlier weeks stay missing rather than zero.
+          <strong className="text-foreground">Current</strong> reads records from the chosen date
+          onward, without a historical backfill. Check-Ins can also use an inclusive end date for a
+          short, bounded refresh.
         </p>
       </div>
       <p className="mt-3 text-[12.5px]">
@@ -590,7 +624,7 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
             </div>
             <div className="mt-2 flex flex-wrap items-end gap-1.5">
               <label className="grid gap-0.5 text-[11px] text-muted-foreground">
-                Current since
+                {p === "check_ins" ? "Check-Ins from" : "Current since"}
                 <input
                   type="date"
                   value={since[p] ?? ""}
@@ -599,19 +633,37 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
                   data-testid={`input-since-${p}`}
                 />
               </label>
+              {p === "check_ins" && (
+                <label className="grid gap-0.5 text-[11px] text-muted-foreground">
+                  Through (inclusive)
+                  <input
+                    type="date"
+                    value={until[p] ?? ""}
+                    onChange={(e) => setUntil((x) => ({ ...x, [p]: e.target.value }))}
+                    className="h-8 rounded-md border border-input bg-background px-2 text-[12px] text-foreground"
+                    data-testid="input-until-check_ins"
+                  />
+                </label>
+              )}
               <button
                 type="button"
                 className={btn}
                 disabled={
                   !connected || !granted(p) || start.isPending || openFor(p) ||
-                  !/^\d{4}-\d{2}-\d{2}$/.test(since[p] ?? "")
+                  !currentWindowValid(p)
                 }
                 onClick={() => go(p, "current")}
                 data-testid={`button-current-${p}`}
               >
-                Current
+                {p === "check_ins" ? "Start bounded sync" : "Current"}
               </button>
             </div>
+            {p === "check_ins" && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Inclusive dates, up to 31 days. A completed sync can refresh published Check-In
+                metrics.
+              </p>
+            )}
             {askBackfill === p && (
               <div className="mt-2 space-y-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-[11.5px] text-amber-950">
                 <p>Full backfill reads all accessible history for {label}. This can take a long time.</p>

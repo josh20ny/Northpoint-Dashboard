@@ -21,6 +21,7 @@ import {
   pagePath,
   parsePage,
   incrementalSinceDate,
+  validDateWindow,
   type Page,
 } from "./planning-center-source";
 
@@ -37,6 +38,7 @@ interface Run {
   product: provider.Product;
   mode: "backfill" | "incremental" | "current";
   coverage_start?: string | Date | null;
+  coverage_end?: string | Date | null;
   status: PlanningCenterSync["status"];
   queue: Page[];
   visited: string[];
@@ -52,18 +54,19 @@ interface Run {
   last_automatic_at: Date | null;
 }
 const iso = (v: Date | null) => v?.toISOString() ?? null;
+const civilDate = (value: Date | string | null | undefined) => {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return `${value.getFullYear().toString().padStart(4, "0")}-${(value.getMonth() + 1).toString().padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
+};
 export function syncView(r: Run): PlanningCenterSync {
   // pg decodes DATE as local midnight; it is a civil date, not an instant.
-  const start = r.coverage_start;
-  const coverageStart =
-    start instanceof Date
-      ? `${start.getFullYear().toString().padStart(4, "0")}-${(start.getMonth() + 1).toString().padStart(2, "0")}-${start.getDate().toString().padStart(2, "0")}`
-      : (start ?? null);
   return {
     id: r.id,
     product: r.product,
     mode: r.mode,
-    coverageStart,
+    coverageStart: civilDate(r.coverage_start),
+    coverageEnd: civilDate(r.coverage_end),
     status: r.status,
     fetched: r.fetched,
     revised: r.revised,
@@ -439,6 +442,7 @@ export async function startSync(
   product: provider.Product,
   mode: "backfill" | "incremental" | "current",
   since?: string | null,
+  until?: string | null,
 ) {
   provider.requireConfiguration();
   if (
@@ -453,6 +457,20 @@ export async function startSync(
     );
   if (mode !== "current" && since != null)
     throw new AccessError(400, "Only a current-window scan accepts a starting date");
+  if (mode !== "current" && until != null)
+    throw new AccessError(400, "Only a current-window scan accepts an ending date");
+  if (
+    until != null &&
+    (product !== "check_ins" ||
+      !since ||
+      !validCalendarDate(since) ||
+      !validCalendarDate(until) ||
+      !validDateWindow(since, until))
+  )
+    throw new AccessError(
+      400,
+      "A bounded Check-Ins scan requires an inclusive date window of 31 days or less",
+    );
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
     connected(v);
@@ -503,10 +521,11 @@ export async function startSync(
       product,
       mode === "current" ? since : incrementalSince,
       mode === "incremental" ? "incremental" : "current",
+      mode === "current" ? until : null,
     );
     const run = await c.query<Run>(
-      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,lifecycle_version,coverage_start)
-      VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO pco_sync_runs(account_ref,product,mode,queue,started_by,lifecycle_version,coverage_start,coverage_end)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [
         v.account_ref,
         product,
@@ -515,6 +534,7 @@ export async function startSync(
         p.userId,
         mode === "current" ? 2 : 1,
         coverageStart,
+        mode === "current" ? until ?? null : null,
       ],
     );
     await recordAudit(

@@ -652,6 +652,7 @@ export const GetPlanningCenterResponse = zod.object({
   "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
   "mode": zod.enum(['backfill', 'incremental', 'current']),
   "coverageStart": zod.string().nullish(),
+  "coverageEnd": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -790,7 +791,8 @@ export const DisconnectPlanningCenterResponse = zod.void()
 export const StartPlanningCenterSyncBody = zod.object({
   "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
   "mode": zod.enum(['backfill', 'incremental', 'current']),
-  "since": zod.string().nullish()
+  "since": zod.string().nullish(),
+  "until": zod.string().nullish()
 })
 
 export const StartPlanningCenterSyncResponse = zod.object({
@@ -798,6 +800,7 @@ export const StartPlanningCenterSyncResponse = zod.object({
   "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
   "mode": zod.enum(['backfill', 'incremental', 'current']),
   "coverageStart": zod.string().nullish(),
+  "coverageEnd": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -821,6 +824,7 @@ export const AdvancePlanningCenterSyncResponse = zod.object({
   "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
   "mode": zod.enum(['backfill', 'incremental', 'current']),
   "coverageStart": zod.string().nullish(),
+  "coverageEnd": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),
@@ -848,6 +852,7 @@ export const SetPlanningCenterAutomationResponse = zod.object({
   "product": zod.enum(['people', 'services', 'check_ins', 'giving', 'groups', 'serving']),
   "mode": zod.enum(['backfill', 'incremental', 'current']),
   "coverageStart": zod.string().nullish(),
+  "coverageEnd": zod.string().nullish(),
   "status": zod.enum(['running', 'retry', 'complete', 'failed', 'cancelled']),
   "fetched": zod.number().int(),
   "revised": zod.number().int(),

@@ -85,6 +85,7 @@ export const pcoSyncRuns = pgTable(
     lastAutomaticAt: timestamp("last_automatic_at", { withTimezone: true }),
     lifecycleVersion: integer("lifecycle_version").notNull().default(1),
     coverageStart: date("coverage_start", { mode: "string" }),
+    coverageEnd: date("coverage_end", { mode: "string" }),
   },
   (t) => [
     admin(),

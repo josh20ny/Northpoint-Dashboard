@@ -15,6 +15,8 @@ export interface PlanningCenterSync {
   mode: PlanningCenterSyncMode;
   /** @nullable */
   coverageStart?: string | null;
+  /** @nullable */
+  coverageEnd?: string | null;
   status: PlanningCenterSyncStatus;
   fetched: number;
   revised: number;

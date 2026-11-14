@@ -1,0 +1,1 @@
+ALTER TABLE "pco_sync_runs" ADD COLUMN "coverage_end" date;

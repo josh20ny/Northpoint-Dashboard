@@ -1194,6 +1194,7 @@ components:
         product: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
         mode: { type: string, enum: [backfill, incremental, current] }
         since: { type: [string, "null"] }
+        until: { type: [string, "null"] }
     PlanningCenterAutomationInput:
       type: object
       required: [enabled]
@@ -1223,6 +1224,7 @@ components:
         product: { type: string, enum: [people, services, check_ins, giving, groups, serving] }
         mode: { type: string, enum: [backfill, incremental, current] }
         coverageStart: { type: [string, "null"] }
+        coverageEnd: { type: [string, "null"] }
         status: { type: string, enum: [running, retry, complete, failed, cancelled] }
         fetched: { type: integer }
         revised: { type: integer }

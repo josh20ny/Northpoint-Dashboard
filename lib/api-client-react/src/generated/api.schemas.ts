@@ -700,6 +700,8 @@ export interface PlanningCenterSyncInput {
   mode: PlanningCenterSyncInputMode;
   /** @nullable */
   since?: string | null;
+  /** @nullable */
+  until?: string | null;
 }
 
 export interface PlanningCenterAutomationInput {
@@ -744,6 +746,8 @@ export interface PlanningCenterSync {
   mode: PlanningCenterSyncMode;
   /** @nullable */
   coverageStart?: string | null;
+  /** @nullable */
+  coverageEnd?: string | null;
   status: PlanningCenterSyncStatus;
   fetched: number;
   revised: number;
