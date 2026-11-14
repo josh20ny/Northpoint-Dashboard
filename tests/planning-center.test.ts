@@ -546,6 +546,9 @@ describe("Planning Center HTTP permission boundary", () => {
       const url = new URL(pagePath(page, "check_ins"), "https://api.planningcenteronline.com");
       expect(url.searchParams.get(`where[${field}][gte]`)).toBe("2026-11-06");
       expect(url.searchParams.get(`where[${field}][lte]`)).toBe("2026-11-08");
+      expect(url.searchParams.get("where[created_at][lt]")).toBe(
+        page === updated ? "2026-11-06" : null,
+      );
       const next = parsePage(
         {
           data: [],
@@ -559,6 +562,9 @@ describe("Planning Center HTTP permission boundary", () => {
       expect(next).toMatchObject({ since: "2026-11-06", until: "2026-11-08" });
       const nextUrl = new URL(pagePath(next, "check_ins"), "https://api.planningcenteronline.com");
       expect(nextUrl.searchParams.get(`where[${field}][lte]`)).toBe("2026-11-08");
+      expect(nextUrl.searchParams.get("where[created_at][lt]")).toBe(
+        page === updated ? "2026-11-06" : null,
+      );
     }
   });
   it("accepts included Check-In people while retaining only their grade", () => {

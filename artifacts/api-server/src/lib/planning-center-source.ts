@@ -130,6 +130,11 @@ export function pagePath(page: Page, product: Product) {
       const dateField = page.windowField === "updated_at" ? "updated_at" : "created_at";
       query.set(`where[${dateField}][gte]`, page.until ? page.since : `${page.since}T00:00:00Z`);
       if (page.until) query.set(`where[${dateField}][lte]`, page.until);
+      // The created_at pass already reads every record created in this window.
+      // Restrict the updated_at pass to older records so new records do not
+      // consume a second page of bandwidth and staging work.
+      if (page.windowField === "updated_at")
+        query.set("where[created_at][lt]", page.until ? page.since : `${page.since}T00:00:00Z`);
     }
     if (product === "people" && page.type === "Person" && page.windowField === "updated_at")
       query.set("where[updated_at][gte]", `${page.since}T00:00:00Z`);
