@@ -195,7 +195,7 @@ export interface ParsedPage {
   sourceCollections?: Record<string, string>;
 }
 const idValid = (x: unknown): x is string => typeof x === "string" && /^[0-9]{1,30}$/.test(x);
-export function sourceEntity(value: unknown): SourceEntity {
+export function sourceEntity(value: unknown, product?: Product): SourceEntity {
   if (!value || typeof value !== "object") throw new ProviderError(422);
   const v = value as Record<string, unknown>;
   if (
@@ -209,7 +209,9 @@ export function sourceEntity(value: unknown): SourceEntity {
     throw new ProviderError(422);
   const attrs = v.attributes as Record<string, unknown>;
   const attributes: Record<string, unknown> = {};
-  for (const key of fields[v.type]) {
+  const allowedAttributes =
+    product === "check_ins" && v.type === "Person" ? ["grade"] : fields[v.type];
+  for (const key of allowedAttributes) {
     const x = attrs[key];
     if (x === undefined) continue;
     if (
@@ -258,18 +260,18 @@ export function parsePage(
 ): ParsedPage {
   if (isMinistryProduct(product)) return parseMinistryPage(value, page, product);
   if (!Array.isArray(value.data) || value.data.length > 100) throw new ProviderError(422);
-  const main = value.data.map(sourceEntity);
+  const main = value.data.map((entity) => sourceEntity(entity, product));
   if (main.some((e) => e.type !== page.type)) throw new ProviderError(422);
   if (value.included !== undefined && !Array.isArray(value.included)) throw new ProviderError(422);
   const included = (value.included ?? []) as unknown[];
   if (included.length > 5000) throw new ProviderError(422);
-  const extra = included.map(sourceEntity);
+  const extra = included.map((entity) => sourceEntity(entity, product));
   const allowedTypes =
     product === "people"
       ? ["Person"]
       : product === "services"
         ? ["ServiceType", "Plan", "PlanTime"]
-        : ["CheckIn", "Event", "EventPeriod", "EventTime", "Location"];
+        : ["CheckIn", "Event", "EventPeriod", "EventTime", "Location", "Person"];
   if ([...main, ...extra].some((e) => !allowedTypes.includes(e.type))) throw new ProviderError(422);
   const nextPages: Page[] = [];
   const scanWindow = page.since

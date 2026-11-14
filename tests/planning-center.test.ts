@@ -371,14 +371,29 @@ describe("Planning Center secure transport and source contract", () => {
       { path: "/services/v2/service_types/3/plans/4/plan_times", type: "PlanTime" },
     ]);
   });
-  it("rejects included giving/health objects instead of silently ingesting them", () => {
+  it("rejects included giving objects and strips health fields from linked people", () => {
     expect(() =>
       parsePage(
-        { data: [], included: [{ type: "Person", id: "3", attributes: {} }] },
+        { data: [], included: [{ type: "Donation", id: "3", attributes: {} }] },
         roots("check_ins")[1]!,
         "check_ins",
       ),
     ).toThrow();
+    const parsed = parsePage(
+      {
+        data: [],
+        included: [
+          {
+            type: "Person",
+            id: "3",
+            attributes: { grade: "5th Grade", medical_notes: "must not persist" },
+          },
+        ],
+      },
+      roots("check_ins")[1]!,
+      "check_ins",
+    );
+    expect(parsed.entities[0]?.attributes).toEqual({ grade: "5th Grade" });
   });
   it("never follows HTTP redirects and sanitizes provider errors", async () => {
     const f = vi
@@ -545,5 +560,42 @@ describe("Planning Center HTTP permission boundary", () => {
       const nextUrl = new URL(pagePath(next, "check_ins"), "https://api.planningcenteronline.com");
       expect(nextUrl.searchParams.get(`where[${field}][lte]`)).toBe("2026-11-08");
     }
+  });
+  it("accepts included Check-In people while retaining only their grade", () => {
+    const checkInPage = scanRoots("check_ins")[1]!;
+    const parsed = parsePage(
+      {
+        data: [
+          {
+            type: "CheckIn",
+            id: "11",
+            attributes: { kind: "Regular", created_at: "2026-11-08T15:00:00Z" },
+            relationships: {
+              person: { data: { type: "Person", id: "42" } },
+              event_period: { data: null },
+              event_times: { data: [] },
+              locations: { data: [] },
+            },
+          },
+        ],
+        included: [
+          {
+            type: "Person",
+            id: "42",
+            attributes: {
+              grade: "5th Grade",
+              status: "active",
+              inactivated_at: null,
+              updated_at: "2026-11-01T00:00:00Z",
+            },
+          },
+        ],
+      },
+      checkInPage,
+      "check_ins",
+    );
+    expect(parsed.entities.find((entity) => entity.type === "Person")?.attributes).toEqual({
+      grade: "5th Grade",
+    });
   });
 });
