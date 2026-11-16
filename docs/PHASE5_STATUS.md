@@ -384,6 +384,43 @@ Snapshot measures describe their scan date, not an invented historical Sunday.
 Unfinished reporting weeks and partial first-window weeks are not final actuals.
 Missing observations are not automatically zero. Calendar bucketing uses Chicago.
 
+## Connection aggregate snapshot — published 2026-11-16
+
+Using the already-completed Groups snapshot from 2026-11-13, the audited
+publisher created a current Connection snapshot for the reporting week ending
+2026-11-15:
+
+| Measure | Value | Meaning |
+| --- | ---: | --- |
+| Active groups | 196 | Non-archived PCO Groups at snapshot time |
+| Group memberships | 3,780 | Membership records, not unique people |
+| Group leaders | 487 | Leader-role membership records |
+
+Publication validity and all three stored values were verified. The operation
+did not start a scan or expose group/person names or IDs. Group meeting
+attendance remains unpublished because no eligible PCO Groups-to-ministry
+attendance mappings have been defined; the source preview reported
+`unmapped_group_attendance`. This is a current snapshot, not historical group
+count or membership coverage, and does not complete Connection acceptance.
+
+### Group-attendance category evidence
+
+A read-only aggregation of the same completed snapshot found eligible ended,
+non-cancelled Events and distinct attended Event/Person pairs by PCO GroupType:
+
+| PCO category | Eligible events | Attended event/person pairs |
+| --- | ---: | ---: |
+| Groups | 52 | 198 |
+| InsideOut General | 1 | 0 |
+| InsideOut Leaders | 42 | 68 |
+| Teams | 2 | 11 |
+| Uncategorized | 1 | 9 |
+
+Other staged categories had no eligible attendance pairs in this snapshot.
+These source facts do not decide which categories belong in Connection group
+meeting attendance. In particular, student categories and Teams are not
+implicitly included. No category was mapped or attendance total published.
+
 ## Remaining Phase 5 gates
 
 1. Complete the privacy review and approve a suitably restricted development
