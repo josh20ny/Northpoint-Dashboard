@@ -41,6 +41,16 @@ EventTimes, EventPeriods, routing templates and membership snapshot into the
 calculation. Do not treat a narrowed preview as proof that the full publisher
 has been partitioned too.
 
+A date-bounded output does not guarantee a fast database read. Verify attendance
+loading through the application's pool, not only an administrative SQL callback.
+
+**Why:** A November 8 preview repeatedly hit the application's query-read timeout
+even though aggregate SQL checks returned the correct small source window.
+
+**How to apply:** Profile the actual query plan and related-context joins before
+claiming the attendance preview or publisher works. Do not raise timeouts or
+publish totals merely because a separate aggregate query succeeds.
+
 PCO Groups returns a synthetic GroupType whose ID is the literal `unique`.
 Accept that exact sentinel for GroupType records and GroupType linkage, while
 retaining numeric-ID validation for other resource types.
