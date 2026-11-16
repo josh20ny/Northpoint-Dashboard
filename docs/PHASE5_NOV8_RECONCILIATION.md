@@ -138,3 +138,39 @@ The resulting read-only November 8 preview is:
 This supersedes the earlier EventTime-only student totals. All four pending
 review candidates remain unresolved, results remain partial, and no metrics
 were published by the preview.
+
+## Children's room reconciliation completed
+
+The extended aggregate-only diagnostic reproduced every supplied children's
+room count using distinct linked people per room, plus the one missing-profile
+guest in 5th Boys B. This supersedes the earlier statement that the UpStreet
+classroom reference had not been reproduced:
+
+- Kindergarten: 20; first grade: 22; second: 24; third: 30; fourth: 27;
+  fifth: 34 including the unresolved guest. Sum: 157.
+- Hangout: 14 distinct linked people.
+- Waumba Land: 74, matching all seven room counts in the screenshots.
+
+Room headcounts are not additive unique ministry attendance. Thirteen of the
+14 Hangout people also have an UpStreet classroom Check-In; eleven share the
+same Check-In record across both room links, while two use separate records.
+There is also one cross-classroom person overlap in the classroom sum.
+
+The actual calculator's accepted, person-linked preview remains:
+
+| Ministry | 9 AM | 11 AM | Weekly distinct people | Attended both services |
+| --- | ---: | ---: | ---: | ---: |
+| UpStreet, including Hangout | 98 | 76 | 156 | 18 |
+| Waumba Land | 46 | 31 | 74 | 3 |
+
+Weekly distinct people were independently reconstructed from each accepted
+Check-In's calculator output and deduplicated across the two services. This is
+diagnostic verification, not a new published weekly metric. The screenshots
+were for all times, so they validate room headcounts, not independently the
+per-service splits.
+
+One UpStreet guest without a linked profile is still excluded pending Admin
+review. Waumba's pending duplicate shares an already counted person and does
+not increase distinct attendance. The two Transit duplicates likewise remain
+pending. No source, calculation, mapping, or resolution policy was changed
+during this review, and no metrics were published. API typecheck passed.

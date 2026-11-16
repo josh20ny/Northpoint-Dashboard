@@ -81,6 +81,10 @@ async function main() {
       multiTimeRows: number }> = {};
     const roomBranches: Record<string, { rows: number; people: Set<string>; missing: number }> = {};
     const transitEvidence: Record<string, { rows: number; people: Set<string>; pending: number }> = {};
+    const kidsRooms: Record<string, { rows: number; people: Set<string>; missing: number;
+      pending: number }> = {};
+    const kidsPeople: Record<string, Set<string>> = {};
+    const countedKids: Record<string, Set<string>> = {};
     if (process.argv.includes("--reconcile")) {
       const links = (f: SourceFact, key: string) => {
         const data = f.relationships[key]?.data;
@@ -101,6 +105,20 @@ async function main() {
         const hasClassroom = checkInMappings.some(m => m.objectType === "Location" &&
           m.measure === "attendance" && m.ministry === "upstreet" &&
           !hangoutIds.has(m.externalId) && locationIds.includes(m.externalId));
+        for (const locationId of locationIds) {
+          const mapped = checkInMappings.find(m => m.objectType === "Location" &&
+            m.measure === "attendance" && ["upstreet", "waumba-land"].includes(m.ministry) &&
+            m.externalId === locationId);
+          if (!mapped) continue;
+          const room = context.find(f => f.type === "Location" && f.id === locationId);
+          // Children's room labels only; never emit child names or identifiers.
+          const key = `${mapped.ministry}|${String(room?.attributes.name ?? "unnamed")}`;
+          const bucket = kidsRooms[key] ??= { rows: 0, people: new Set(), missing: 0, pending: 0 };
+          bucket.rows++;
+          const p = links(fact, "person")[0];
+          if (p) bucket.people.add(p); else bucket.missing++;
+          if (pending.has(fact.id)) bucket.pending++;
+        }
         for (const branch of [
           ...(hasHangout ? ["hangout"] : []), ...(hasClassroom ? ["upstreet_classrooms"] : []),
           ...(hasHangout && hasClassroom ? ["hangout_and_classroom"] : []),
@@ -108,7 +126,10 @@ async function main() {
           const b = roomBranches[branch] ??= { rows: 0, people: new Set(), missing: 0 };
           b.rows++;
           const p = links(fact, "person")[0];
-          if (p) b.people.add(p); else b.missing++;
+          if (p) {
+            b.people.add(p);
+            (kidsPeople[branch] ??= new Set()).add(p);
+          } else b.missing++;
         }
         const combinedKey = `${children}|${String(fact.attributes.kind).toLowerCase()}`;
         const total = combined[combinedKey] ??= { rows: 0, people: new Set(), missingPeople: 0,
@@ -123,6 +144,14 @@ async function main() {
           new Date(checkRun.finished_at), resolutions, groupFacts, groupMappings,
           new Date(groupRun.finished_at), gradeFacts,
         );
+        const linkedPerson = links(fact, "person")[0];
+        if (linkedPerson) {
+          for (const value of isolated?.values ?? []) {
+            if (value.measure !== "attendance" ||
+                !["upstreet", "waumba-land"].includes(value.ministry)) continue;
+            (countedKids[`${value.ministry}|${value.scope}`] ??= new Set()).add(linkedPerson);
+          }
+        }
         for (const timeId of links(fact, "event_times")) {
           const starts = times.get(timeId)?.attributes.starts_at;
           const clock = typeof starts === "string" ? new Intl.DateTimeFormat("en-GB", {
@@ -173,6 +202,19 @@ async function main() {
             multiTimeRows: v.multiTimeRows }])),
         roomBranches: Object.fromEntries(Object.entries(roomBranches).map(([key, v]) =>
           [key, { rows: v.rows, distinctPeople: v.people.size, missingPeople: v.missing }])),
+        kidsRooms: Object.fromEntries(Object.entries(kidsRooms).map(([key, v]) =>
+          [key, { rows: v.rows, distinctPeople: v.people.size, missingPeople: v.missing,
+            pendingRows: v.pending }])),
+        hangoutClassroomPeopleOverlap: [...(kidsPeople.hangout ?? [])]
+          .filter(p => kidsPeople.upstreet_classrooms?.has(p)).length,
+        kidsWeeklyAttendance: Object.fromEntries(["upstreet", "waumba-land"].map(ministry => {
+          const morning = countedKids[`${ministry}|service-1`] ?? new Set<string>();
+          const late = countedKids[`${ministry}|service-2`] ?? new Set<string>();
+          return [ministry, {
+            distinctPeople: new Set([...morning, ...late]).size,
+            attendedBothServices: [...morning].filter(p => late.has(p)).length,
+          }];
+        })),
         transitEvidence: Object.fromEntries(Object.entries(transitEvidence).map(([key, v]) =>
           [key, { rows: v.rows, distinctPeople: v.people.size, pending: v.pending }])),
       } : {}),
