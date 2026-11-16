@@ -60,3 +60,30 @@ No timeout was raised and the isolated timeout is not evidence of missing data.
 The existing preview operation accepts `--reconcile` to emit only aggregate
 diagnostics (no child names or profile IDs). It uses a read-only transaction and
 never publishes metrics.
+
+## Subsequent owner-authorized corrections
+
+The owner approved fixing service assignments and clarified that missing Groups
+membership must not exclude a student from Check-In attendance. Such students
+remain unassigned and uncounted in group splits.
+
+The calculator now retains every applicable direct-mapped service scope. A
+unique routed student ministry can establish attendance without a Groups
+membership, while mapped children's-room records do not also become Transit
+attendance. Shared student routes still require disambiguating evidence.
+No group membership, group-attendance record or metric publication is created.
+
+The November 8 read-only calculation now returns:
+
+| Ministry | 9 AM | 11 AM | 4:30 PM |
+| --- | ---: | ---: | ---: |
+| UpStreet | 98 | 76 | — |
+| Waumba Land | 46 | 31 | — |
+| Transit | 49 | 59 | — |
+| InsideOut | — | — | 89 |
+
+These are per-service counts, not additive weekly unique totals. Four unresolved
+review candidates keep the results partial. The screenshot discrepancies,
+including Transit's 109 combined reference and different service distribution,
+remain open; matching InsideOut's 89 is not acceptance of all ministry totals.
+The earlier sections describe the pre-correction investigation.

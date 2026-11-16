@@ -83,17 +83,17 @@ students and volunteers, not adult volunteers exclusively.
 “Leaders.” Preserve individual membership roles and Check-In kinds when
 distinguishing student attendance from volunteer activity.
 
-Use the confirmed service-time routes to resolve cross-ministry Groups
-memberships: eligible Transit membership at morning services, and eligible
-InsideOut membership at 4:30 PM. A service route does not replace missing
-membership evidence.
+Use confirmed service-time routes for student ministry attendance. Students
+without Groups assignments still count in their clearly routed ministry's
+Check-In attendance, but remain uncounted in group splits.
 
-**Why:** The owner approved using confirmed service times after the November 8
-comparison found people belonging to both student ministries.
+**Why:** The owner clarified that group assignments may not happen until future
+weeks and must not prevent counting current Check-In attendance.
 
-**How to apply:** Narrow eligible membership classifications to the ministries
-routed for the actual Check-In time. Keep missing memberships and cases with
-multiple eligible routed ministries unresolved.
+**How to apply:** Use the unique student ministry routed to the actual service,
+excluding mapped children's-room attendance. Use eligible memberships to resolve
+shared student routes; leave genuinely ambiguous cases unresolved. Never invent
+a group membership or backfill a group split merely because someone attended.
 
 The owner identified **Normal Service Times** as the Check-Ins event for weekly
 ministry attendance and supplied its active location hierarchy as mapping
@@ -137,6 +137,6 @@ in the Admin-only exception workflow, while keeping aggregate reporting safe.
 
 **How to apply:** A grade suggestion may choose only among eligible mapped
 memberships when resolving an overlap on the latest completed Sunday. Keep
-missing membership, older weeks or unsupported grade labels unresolved; never
-infer an age from a birthdate or use a grade suggestion to replace missing
-membership evidence.
+ambiguous shared routes, older weeks or unsupported grade labels unresolved;
+never infer an age from a birthdate or fabricate group membership. A unique
+service route may still establish attendance under the rule above.

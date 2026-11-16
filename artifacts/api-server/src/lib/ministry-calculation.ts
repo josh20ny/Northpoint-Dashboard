@@ -519,7 +519,7 @@ export function compileMinistryFacts(
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
     const people = new Map(entities.filter((e) => e.type === "Person").map((e) => [e.id, e]));
     const gradeFallbackWeeks = new Set<string>();
-    const serviceRouteFallbackWeeks = new Set<string>();
+    const serviceRouteFallbackRows = new Set<string>();
     const first = new Map<string, string>();
     const groupSnapshots = new Map(
       groupFacts.filter((e) => e.type === "Group").map((e) => [e.id, e]),
@@ -679,13 +679,16 @@ export function compileMinistryFacts(
           mapping.measure === "attendance",
       );
       for (const session of studentSessions) {
+        // A mapped children's room is not a student-service Check-In merely
+        // because Transit runs at the same clock time.
+        if (hasDirectChildAttendance) continue;
         if (!person) {
           issues.add("unmapped_student_group_person");
           continue;
         }
         const memberships = classifiedMinistries(person, d);
-        // Owner-confirmed service routes narrow overlapping memberships.
-        // A route alone never substitutes for an eligible Groups membership.
+        // Memberships disambiguate shared routes; a unique student service can
+        // establish ministry attendance without establishing any group split.
         let ministries = memberships.filter((ministry) => routedStudentMinistries.has(ministry));
         if (ministries.length > 1) {
           const gradeMinistry = ministryForGradeLabel(
@@ -701,36 +704,20 @@ export function compileMinistryFacts(
             gradeFallbackWeeks.add(reportingWeekEnding(d));
           }
         }
-        // A single student ministry routed to this service is enough for its
-        // attendance total; Groups is only needed for a shared/ambiguous route.
-        // When several ministries share the time, current grade may resolve a
-        // missing Groups classification, but an unknown grade stays unassigned.
         const routeMinistries = [...routedStudentMinistries];
         const isCurrentGroupSnapshot =
           !!groupSnapshotAt && reportingWeekEnding(d) === completedSunday(groupSnapshotAt);
         if (
-          !memberships.length &&
-          !ministries.length &&
           routeMinistries.length === 1 &&
           !hasDirectChildAttendance
         ) {
           ministries = routeMinistries;
-          serviceRouteFallbackWeeks.add(reportingWeekEnding(d));
-        } else if (
-          !memberships.length &&
-          !ministries.length &&
-          routeMinistries.length > 1 &&
-          isCurrentGroupSnapshot
-        ) {
-          const gradeMinistry = ministryForGradeLabel(
-            gradeLabelFor(people.get(person), gradeFacts),
-          );
-          if (gradeMinistry && routeMinistries.includes(gradeMinistry)) {
-            ministries = [gradeMinistry];
-            gradeFallbackWeeks.add(reportingWeekEnding(d));
-          }
+          if (!memberships.includes(session.ministry) || !isCurrentGroupSnapshot)
+            serviceRouteFallbackRows.add(
+              `${session.ministry}|${session.scope}|${reportingWeekEnding(d)}`,
+            );
         }
-        if (memberships.length && !isCurrentGroupSnapshot) {
+        if (routeMinistries.length > 1 && !isCurrentGroupSnapshot) {
           issues.add("unmapped_student_group_snapshot");
           continue;
         }
@@ -786,7 +773,10 @@ export function compileMinistryFacts(
       }
       if (gradeFallbackWeeks.has(row.week) && row.measure === "attendance")
         row.flags.push("ministry_classified_from_pco_grade");
-      if (serviceRouteFallbackWeeks.has(row.week) && row.measure === "attendance")
+      if (
+        serviceRouteFallbackRows.has(`${row.ministry}|${row.scope}|${row.week}`) &&
+        row.measure === "attendance"
+      )
         row.flags.push("ministry_classified_from_unique_service_route");
     }
   }

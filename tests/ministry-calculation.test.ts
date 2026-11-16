@@ -574,7 +574,7 @@ describe("ministry source-to-metric semantics", () => {
       }),
     );
   });
-  it("does not backcast the current Groups snapshot to older Check-In weeks", () => {
+  it("does not backcast the current Groups snapshot to disambiguate older Check-In weeks", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-01T15:00:00Z" }, { event: r("Event", "9") }),
       e(
@@ -609,6 +609,7 @@ describe("ministry source-to-metric semantics", () => {
       checkIns,
       [
         serviceRoute("time", "transit", "service-1"),
+        { ...serviceRoute("time", "insideout", "service-3"), id: "shared-route" },
       ],
       start,
       end,
@@ -621,11 +622,50 @@ describe("ministry source-to-metric semantics", () => {
     expect(result.values).toEqual([]);
     expect(result.issues).toContain("unmapped_student_group_snapshot");
   });
+  it.each(["Regular", "Guest", "Volunteer"])(
+    "counts only participant attendance without Groups data (%s)",
+    (kind) => {
+      const facts = [
+        e("EventPeriod", "period", { starts_at: "2026-11-08T22:30:00Z" }, { event: r("Event", "9") }),
+        e("EventTime", "time", { starts_at: "2026-11-08T22:30:00Z" }, { event: r("Event", "9") }),
+        e("CheckIn", "checkin", { kind }, {
+          event_period: r("EventPeriod", "period"), event_times: r("EventTime", "time"),
+          person: r("Person", "student"),
+        }),
+      ];
+      const result = compileMinistryFacts("check_ins", facts,
+        [serviceRoute("time", "insideout", "service-3")], start, end, now);
+      if (kind === "Volunteer") expect(result.values).toEqual([]);
+      else expect(result.values).toEqual([expect.objectContaining({
+        ministry: "insideout", measure: "attendance", scope: "service-3", value: 1,
+      })]);
+      expect(result.values.some(v => v.measure.includes("group"))).toBe(false);
+    },
+  );
+  it("does not assign children's room attendees to Transit without membership", () => {
+    const facts = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("EventTime", "time", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("CheckIn", "child", { kind: "Regular" }, {
+        event_period: r("EventPeriod", "period"), event_times: r("EventTime", "time"),
+        person: r("Person", "child"), locations: r("Location", "room"),
+      }),
+    ];
+    const result = compileMinistryFacts("check_ins", facts, [
+      serviceRoute("time", "transit", "service-1"),
+      serviceRoute("time", "upstreet", "service-1"),
+      mapping("check_ins", "Location", "room", "attendance", "upstreet"),
+    ], start, end, now);
+    expect(result.values.filter(v => v.measure === "attendance")).toEqual([
+      expect.objectContaining({ ministry: "upstreet", value: 1 }),
+    ]);
+  });
   it.each([
     { label: "routes overlapping memberships to morning Transit", time: "15:00", route: "transit", expected: "transit", kind: "Regular", missing: false },
     { label: "routes overlapping memberships to evening InsideOut", time: "22:30", route: "insideout", expected: "insideout", kind: "Guest", missing: false },
     { label: "keeps overlapping service routes ambiguous", time: "15:00", route: "both", expected: null, kind: "Regular", missing: false },
     { label: "counts a uniquely routed student without a Groups classification", time: "22:30", route: "insideout", expected: "insideout", kind: "Regular", missing: true },
+    { label: "does not invent a ministry when unmatched students have shared routes", time: "15:00", route: "both", expected: null, kind: "Regular", missing: true },
     { label: "does not count volunteer Check-Ins as students", time: "22:30", route: "insideout", expected: null, kind: "Volunteer", missing: false },
   ])("$label", ({ time, route, expected, kind, missing }) => {
     const startsAt = `2026-11-08T${time}:00Z`;
@@ -694,10 +734,10 @@ describe("ministry source-to-metric semantics", () => {
       expect(result.values.filter((row) => row.measure === "attendance")).toHaveLength(1);
       expect(result.issues).not.toContain("unmapped_student_group_ambiguous");
     } else expect(result.values).toEqual([]);
-    if (route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
+    if (route === "both" && !missing) expect(result.issues).toContain("unmapped_student_group_ambiguous");
     if (missing && route === "insideout")
       expect(result.values[0]?.flags).toContain("ministry_classified_from_unique_service_route");
-    if (missing && route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
+    if (missing && route === "both") expect(result.issues).toContain("unmapped_student_group_membership");
   });
   it("uses the linked PCO grade label to resolve overlapping student memberships", () => {
     const startsAt = "2026-11-08T15:00:00Z";
