@@ -4,6 +4,7 @@ import {
   compileMinistryFacts, type SourceFact, type SourceMapping,
 } from "../lib/ministry-calculation";
 import { readCheckInResolutions } from "../lib/ministry-checkin-review-store";
+import { findCheckInReviewCandidates } from "../lib/ministry-checkin-review";
 import {
   checkInTemplateIds,
   loadCheckInFactsForWindow,
@@ -73,12 +74,89 @@ async function main() {
       new Date(groupRun.finished_at),
       gradeFacts,
     );
+    // Diagnostic aggregates only: no names, profile IDs or persisted decisions.
+    const reconciliation: Record<string, { rows: number; people: Set<string>; pending: number;
+      classifiedStudents: Set<string> }> = {};
+    const combined: Record<string, { rows: number; people: Set<string>; missingPeople: number;
+      multiTimeRows: number }> = {};
+    const roomBranches: Record<string, { rows: number; people: Set<string>; missing: number }> = {};
+    if (process.argv.includes("--reconcile")) {
+      const links = (f: SourceFact, key: string) => {
+        const data = f.relationships[key]?.data;
+        return (Array.isArray(data) ? data : data ? [data] : []).map(r => r.id);
+      };
+      const context = checkInFacts.filter(f => f.type !== "CheckIn");
+      const times = new Map(context.filter(f => f.type === "EventTime").map(f => [f.id, f]));
+      const pending = new Set(findCheckInReviewCandidates(checkInFacts)
+        .filter(r => !resolutions.has(r.checkInId)).map(r => r.checkInId));
+      for (const fact of checkInFacts.filter(f => f.type === "CheckIn")) {
+        const children = [...new Set(checkInMappings.filter(m => m.objectType === "Location" &&
+          m.measure === "attendance" && links(fact, "locations").includes(m.externalId))
+          .map(m => m.ministry))].sort().join("+") || "no_kids_room_mapping";
+        const locationIds = links(fact, "locations");
+        const hangoutIds = new Set(context.filter(f => f.type === "Location" &&
+          f.attributes.name === "Hangout").map(f => f.id));
+        const hasHangout = locationIds.some(id => hangoutIds.has(id));
+        const hasClassroom = checkInMappings.some(m => m.objectType === "Location" &&
+          m.measure === "attendance" && m.ministry === "upstreet" &&
+          !hangoutIds.has(m.externalId) && locationIds.includes(m.externalId));
+        for (const branch of [
+          ...(hasHangout ? ["hangout"] : []), ...(hasClassroom ? ["upstreet_classrooms"] : []),
+          ...(hasHangout && hasClassroom ? ["hangout_and_classroom"] : []),
+        ]) {
+          const b = roomBranches[branch] ??= { rows: 0, people: new Set(), missing: 0 };
+          b.rows++;
+          const p = links(fact, "person")[0];
+          if (p) b.people.add(p); else b.missing++;
+        }
+        const combinedKey = `${children}|${String(fact.attributes.kind).toLowerCase()}`;
+        const total = combined[combinedKey] ??= { rows: 0, people: new Set(), missingPeople: 0,
+          multiTimeRows: 0 };
+        total.rows++;
+        const person = links(fact, "person")[0];
+        if (person) total.people.add(person);
+        else total.missingPeople++;
+        if (links(fact, "event_times").length > 1) total.multiTimeRows++;
+        const isolated = pending.has(fact.id) ? null : compileMinistryFacts(
+          "check_ins", [...context, fact], checkInMappings, "2026-11-08", "2026-11-08",
+          new Date(checkRun.finished_at), resolutions, groupFacts, groupMappings,
+          new Date(groupRun.finished_at), gradeFacts,
+        );
+        for (const timeId of links(fact, "event_times")) {
+          const starts = times.get(timeId)?.attributes.starts_at;
+          const clock = typeof starts === "string" ? new Intl.DateTimeFormat("en-GB", {
+            timeZone: "America/Chicago", hour: "2-digit", minute: "2-digit",
+          }).format(new Date(starts)) : "unknown";
+          const kind = String(fact.attributes.kind).toLowerCase();
+          const key = `${clock}|${children}|${kind}`;
+          const bucket = reconciliation[key] ??= { rows: 0, people: new Set(),
+            pending: 0, classifiedStudents: new Set() };
+          bucket.rows++;
+          const person = links(fact, "person")[0];
+          if (person) bucket.people.add(person);
+          if (pending.has(fact.id)) bucket.pending++;
+          if (person && isolated?.values.some(v => ["transit", "insideout"].includes(v.ministry) &&
+            v.measure === "attendance" && v.value === 1)) bucket.classifiedStudents.add(person);
+        }
+      }
+    }
     await c.query("COMMIT");
     console.log(JSON.stringify({
       mode: "read_only_preview", date: "2026-11-08",
       studentAttendance: result.values.filter((value) =>
         ["transit","insideout"].includes(value.ministry) && value.measure === "attendance"),
       issues: result.issues, metricsPublished: false,
+      ...(process.argv.includes("--reconcile") ? {
+        attendance: result.values.filter(v => v.measure === "attendance"),
+        reconciliation: Object.fromEntries(Object.entries(reconciliation).map(([key, v]) =>
+          [key, { rows: v.rows, distinctPeople: v.people.size, pendingRows: v.pending,
+            classifiedStudents: v.classifiedStudents.size }])),
+        combined: Object.fromEntries(Object.entries(combined).map(([key, v]) =>
+          [key, { rows: v.rows, distinctPeople: v.people.size, missingPeople: v.missingPeople,
+            multiTimeRows: v.multiTimeRows }])),
+        roomBranches: Object.fromEntries(Object.entries(roomBranches).map(([key, v]) =>
+          [key, { rows: v.rows, distinctPeople: v.people.size, missingPeople: v.missing }])),
+      } : {}),
     }));
   } catch (error) {
     await c.query("ROLLBACK");
