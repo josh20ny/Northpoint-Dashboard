@@ -264,7 +264,15 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         quality: "complete",
       });
     });
-    it("uses the latest Groups snapshot for student classification without publishing group totals", async () => {
+    it("publishes a Friday–Sunday Check-In window with the latest Groups snapshot without publishing group totals", async () => {
+      // The bounded loader intentionally includes earlier observed Check-Ins.
+      // Isolate this fixture's organization within the rollback transaction so
+      // the test cannot read the development organization's staged attendance.
+      account = `publication-fixture-${randomUUID()}`;
+      await c.query(
+        "UPDATE pco_connections SET account_ref=$1 WHERE id='planning_center'",
+        [account],
+      );
       const groupsRunId = randomUUID();
       const checkInRunId = randomUUID();
       const groupId = `test-group-${randomUUID()}`;
@@ -280,8 +288,8 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         [groupsRunId, account, admin.userId],
       );
       await c.query(
-        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at)
-        VALUES($1,$2,'check_ins','incremental','complete','[]',$3,now()+interval '5 seconds','2026-11-10T12:01:00Z')`,
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at,coverage_start,coverage_end)
+        VALUES($1,$2,'check_ins','incremental','complete','[]',$3,now()+interval '5 seconds','2026-11-10T12:01:00Z','2026-11-06','2026-11-08')`,
         [checkInRunId, account, admin.userId],
       );
 

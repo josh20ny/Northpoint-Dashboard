@@ -464,7 +464,7 @@ async function publish(
   return { publicationId: id, values: input.values.length, issues: input.issues, reused: false };
 }
 export async function publishMinistryData(
-  p: Principal,
+  p: AdminActor,
   input: MinistryPublicationInput,
 ): Promise<MinistryPublicationResult> {
   dates(input.start, input.end);
@@ -482,7 +482,7 @@ async function publishMinistryDataInTransaction(
   const account = connection.rows[0]?.account_ref;
   if (!account) throw new AccessError(409, "No Planning Center organization");
   const runs = await c.query(
-    `SELECT id,status,finished_at,coverage_start FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 ORDER BY started_at DESC,id DESC LIMIT 1`,
+    `SELECT id,status,finished_at,coverage_start::text AS coverage_start FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 ORDER BY started_at DESC,id DESC LIMIT 1`,
     [account, input.product],
   );
   const run = runs.rows[0];
@@ -687,7 +687,9 @@ async function publishMinistryDataInTransaction(
       });
     }
   }
-  const firstCoveredWeek = run.coverage_start
+  // Check-Ins attendance is Sunday-only: a bounded Friday–Sunday scan covers
+  // that entire attendance Sunday. Other products still need a full week.
+  const firstCoveredWeek = input.product !== "check_ins" && run.coverage_start
     ? new Date(`${run.coverage_start}T12:00:00Z`).getUTCDay() === 1
       ? null
       : (() => {

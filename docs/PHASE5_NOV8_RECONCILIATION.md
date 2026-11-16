@@ -174,3 +174,19 @@ review. Waumba's pending duplicate shares an already counted person and does
 not increase distinct attendance. The two Transit duplicates likewise remain
 pending. No source, calculation, mapping, or resolution policy was changed
 during this review, and no metrics were published. API typecheck passed.
+
+## Owner-approved partial publication
+
+The owner approved publication of the verified November 8 attendance while
+leaving all four review cases unresolved. The audited publisher saved the seven
+service attendance values above with `partial` quality. The saved values and
+publication validity were verified under the persisted Admin author's access.
+Replay reused the same publication rather than adding a duplicate.
+
+Publication's coverage check now treats a Friday–Sunday Check-In scan as covering
+Sunday attendance; the full-week truncation rule remains for other products.
+The coverage date is read as civil-date text. A rollback-only database regression
+confirmed that a bounded Check-In window stays visible through the staff
+aggregate read path. Source mappings, PCO data and review decisions were not
+changed. This publication did not publish weekly-unique diagnostic totals or
+deploy the application.

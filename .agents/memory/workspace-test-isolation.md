@@ -8,3 +8,15 @@ Do not assume a Vitest module mock of the workspace database package intercepts 
 **Why:** An alias-only mock did not intercept the server's pool in this environment. Synthetic tests unexpectedly reached the development database; nonexistent synthetic Admin membership safely blocked changes. Spying on the shared instance intercepted the calls correctly.
 
 **How to apply:** Keep provider calls stubbed and synthetic credentials installed as a second boundary. Retain the database fixture guard against running connector fixtures where a real Planning Center connection already exists. Never relax that guard to make tests pass.
+
+For rollback-only publication fixtures, isolate the synthetic organization as
+well as the pool connection. Do not reuse the connected organization's source
+history merely because the test has created a new synthetic sync run.
+
+**Why:** A bounded attendance loader correctly read earlier observed snapshots,
+so an otherwise isolated fixture unintentionally included real staged attendance
+and failed its synthetic assertions.
+
+**How to apply:** Scope synthetic source data and the transaction-local connection
+organization consistently inside the rollback boundary. Never persist a changed
+integration organization or weaken the production loader to accommodate a test.
