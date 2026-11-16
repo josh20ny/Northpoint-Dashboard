@@ -4,6 +4,11 @@ import {
   compileMinistryFacts, type SourceFact, type SourceMapping,
 } from "../lib/ministry-calculation";
 import { readCheckInResolutions } from "../lib/ministry-checkin-review-store";
+import {
+  checkInTemplateIds,
+  loadCheckInFactsForWindow,
+  loadCheckInGradeFacts,
+} from "../lib/ministry-checkin-source";
 
 let stage = "connect";
 async function main() {
@@ -27,43 +32,6 @@ async function main() {
     const checkRun = runs.rows.find((run) => run.product === "check_ins");
     const groupRun = runs.rows.find((run) => run.product === "groups");
     if (!checkRun || !groupRun) throw new Error("Completed source snapshots required");
-    stage = "staged_sources";
-    const sources = await c.query(
-      `WITH times AS MATERIALIZED (
-         SELECT normalized FROM pco_source_entities
-         WHERE account_ref=$1 AND product='check_ins' AND object_type='EventTime'
-           AND observed_run_id IS NOT NULL AND missing_run_id IS NULL
-           AND ((normalized->'attributes'->>'starts_at')::timestamptz
-             AT TIME ZONE 'America/Chicago')::date=$3::date
-       ), checks AS MATERIALIZED (
-         SELECT normalized FROM pco_source_entities e
-         WHERE e.account_ref=$1 AND e.product='check_ins' AND e.object_type='CheckIn'
-           AND e.observed_run_id IS NOT NULL AND e.missing_run_id IS NULL
-           AND EXISTS (SELECT 1 FROM times t WHERE
-             e.normalized->'sourceRelationships'->'event_times'->'data'
-               @> jsonb_build_array(jsonb_build_object(
-                 'type','EventTime','id',t.normalized->>'sourceId')))
-       )
-       SELECT 'check_ins' AS product,normalized FROM times
-       UNION ALL SELECT 'check_ins',normalized FROM checks
-       UNION ALL
-       SELECT 'check_ins',e.normalized FROM pco_source_entities e
-       WHERE e.account_ref=$1 AND e.product='check_ins' AND e.object_type='EventPeriod'
-         AND e.missing_run_id IS NULL AND e.external_id IN (
-           SELECT normalized->'sourceRelationships'->'event_period'->'data'->>'id' FROM checks)
-       UNION ALL
-       SELECT 'groups',normalized FROM pco_source_entities
-       WHERE account_ref=$1 AND product='groups' AND observed_run_id=$2
-         AND missing_run_id IS NULL AND object_type IN ('Group','Membership')
-       LIMIT 500001`, [account, groupRun.id, "2026-11-08"],
-    );
-    if (sources.rows.length > 500000) throw new Error("Preview size exceeded");
-    const facts = (product: string): SourceFact[] => sources.rows
-      .filter((row) => row.product === product)
-      .map(({ normalized: n }) => ({
-        type: n.sourceType, id: n.sourceId, attributes: n.attributes ?? {},
-        relationships: n.sourceRelationships ?? {}, sourceCollection: n.sourceCollection ?? null,
-      }));
     stage = "source_mappings";
     const mappings = await c.query<SourceMapping>(
       `SELECT id,product,object_type AS "objectType",external_id AS "externalId",
@@ -74,16 +42,36 @@ async function main() {
          AND NOT EXISTS(SELECT 1 FROM ministry_source_mappings n WHERE n.supersedes_id=m.id)`,
       [account],
     );
+    const checkInMappings = mappings.rows.filter((mapping) => mapping.product === "check_ins");
+    const groupMappings = mappings.rows.filter((mapping) => mapping.product === "groups");
+    stage = "checkin_sources";
+    const checkInFacts = await loadCheckInFactsForWindow(
+      c, account, "2026-11-08", "2026-11-08", checkInTemplateIds(checkInMappings),
+    );
+    stage = "grade_sources";
+    const gradeFacts = await loadCheckInGradeFacts(c, account);
+    stage = "group_sources";
+    const groupSources = await c.query(
+      `SELECT normalized FROM pco_source_entities
+       WHERE account_ref=$1 AND product='groups' AND observed_run_id=$2
+         AND missing_run_id IS NULL AND object_type IN ('Group','Membership')
+       LIMIT 500001`,
+      [account, groupRun.id],
+    );
+    if (groupSources.rows.length > 500000) throw new Error("Groups preview size exceeded");
+    const groupFacts: SourceFact[] = groupSources.rows.map(({ normalized: n }) => ({
+      type: n.sourceType, id: n.sourceId, attributes: n.attributes ?? {},
+      relationships: n.sourceRelationships ?? {}, sourceCollection: n.sourceCollection ?? null,
+    }));
     stage = "review_decisions";
     const resolutions = await readCheckInResolutions(c, account);
     stage = "calculation";
     const result = compileMinistryFacts(
-      "check_ins", facts("check_ins"),
-      mappings.rows.filter((mapping) => mapping.product === "check_ins"),
+      "check_ins", checkInFacts, checkInMappings,
       "2026-11-08", "2026-11-08", new Date(checkRun.finished_at),
-      resolutions, facts("groups"),
-      mappings.rows.filter((mapping) => mapping.product === "groups"),
+      resolutions, groupFacts, groupMappings,
       new Date(groupRun.finished_at),
+      gradeFacts,
     );
     await c.query("COMMIT");
     console.log(JSON.stringify({
