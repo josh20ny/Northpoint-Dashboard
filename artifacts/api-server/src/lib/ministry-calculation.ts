@@ -519,6 +519,7 @@ export function compileMinistryFacts(
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
     const people = new Map(entities.filter((e) => e.type === "Person").map((e) => [e.id, e]));
     const gradeFallbackWeeks = new Set<string>();
+    const serviceRouteFallbackWeeks = new Set<string>();
     const first = new Map<string, string>();
     const groupSnapshots = new Map(
       groupFacts.filter((e) => e.type === "Group").map((e) => [e.id, e]),
@@ -617,12 +618,19 @@ export function compileMinistryFacts(
         ...match("Event", eventId, d),
         ...refs(e, "locations").flatMap((id) => match("Location", id, d)),
       ];
-      const routedScopes = new Map(sessions.map((session) => [session.ministry, session.scope]));
+      const routedScopes = new Map<string, Set<string>>();
+      for (const session of sessions) {
+        const scopes = routedScopes.get(session.ministry) ?? new Set<string>();
+        scopes.add(session.scope);
+        routedScopes.set(session.ministry, scopes);
+      }
       const ms = routeConfigured
         ? rawMatches.flatMap((m) => {
-            const scope = routedScopes.get(m.ministry);
-            if (!scope || (m.scope !== "all" && m.scope !== scope)) return [];
-            return [{ ...m, scope }];
+            const scopes = routedScopes.get(m.ministry);
+            if (!scopes) return [];
+            return [...scopes]
+              .filter((scope) => m.scope === "all" || m.scope === scope)
+              .map((scope) => ({ ...m, scope }));
           })
         : rawMatches;
       if (!ms.length && !sessions.length) {
@@ -665,11 +673,12 @@ export function compileMinistryFacts(
       }
       const studentSessions = sessions.filter((m) => ["transit", "insideout"].includes(m.ministry));
       const routedStudentMinistries = new Set(studentSessions.map((m) => m.ministry));
+      const hasDirectChildAttendance = directMatches.some(
+        (mapping) =>
+          ["upstreet", "waumba-land"].includes(mapping.ministry) &&
+          mapping.measure === "attendance",
+      );
       for (const session of studentSessions) {
-        if (!groupSnapshotAt || reportingWeekEnding(d) !== completedSunday(groupSnapshotAt)) {
-          issues.add("unmapped_student_group_snapshot");
-          continue;
-        }
         if (!person) {
           issues.add("unmapped_student_group_person");
           continue;
@@ -682,10 +691,48 @@ export function compileMinistryFacts(
           const gradeMinistry = ministryForGradeLabel(
             gradeLabelFor(people.get(person), gradeFacts),
           );
-          if (gradeMinistry && ministries.includes(gradeMinistry)) {
+          if (
+            gradeMinistry &&
+            ministries.includes(gradeMinistry) &&
+            groupSnapshotAt &&
+            reportingWeekEnding(d) === completedSunday(groupSnapshotAt)
+          ) {
             ministries = [gradeMinistry];
             gradeFallbackWeeks.add(reportingWeekEnding(d));
           }
+        }
+        // A single student ministry routed to this service is enough for its
+        // attendance total; Groups is only needed for a shared/ambiguous route.
+        // When several ministries share the time, current grade may resolve a
+        // missing Groups classification, but an unknown grade stays unassigned.
+        const routeMinistries = [...routedStudentMinistries];
+        const isCurrentGroupSnapshot =
+          !!groupSnapshotAt && reportingWeekEnding(d) === completedSunday(groupSnapshotAt);
+        if (
+          !memberships.length &&
+          !ministries.length &&
+          routeMinistries.length === 1 &&
+          !hasDirectChildAttendance
+        ) {
+          ministries = routeMinistries;
+          serviceRouteFallbackWeeks.add(reportingWeekEnding(d));
+        } else if (
+          !memberships.length &&
+          !ministries.length &&
+          routeMinistries.length > 1 &&
+          isCurrentGroupSnapshot
+        ) {
+          const gradeMinistry = ministryForGradeLabel(
+            gradeLabelFor(people.get(person), gradeFacts),
+          );
+          if (gradeMinistry && routeMinistries.includes(gradeMinistry)) {
+            ministries = [gradeMinistry];
+            gradeFallbackWeeks.add(reportingWeekEnding(d));
+          }
+        }
+        if (memberships.length && !isCurrentGroupSnapshot) {
+          issues.add("unmapped_student_group_snapshot");
+          continue;
         }
         if (memberships.length && !ministries.length) continue;
         if (ministries.length !== 1) {
@@ -739,6 +786,8 @@ export function compileMinistryFacts(
       }
       if (gradeFallbackWeeks.has(row.week) && row.measure === "attendance")
         row.flags.push("ministry_classified_from_pco_grade");
+      if (serviceRouteFallbackWeeks.has(row.week) && row.measure === "attendance")
+        row.flags.push("ministry_classified_from_unique_service_route");
     }
   }
   // Any bad/incomplete source linkage must not silently produce a complete

@@ -498,6 +498,34 @@ describe("ministry source-to-metric semantics", () => {
     );
     expect(result.values.some((row) => row.ministry === "service-programming")).toBe(false);
   });
+  it("keeps every confirmed service scope linked to one Check-In", () => {
+    const checkIns = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("EventTime", "time-9", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      e("EventTime", "time-11", { starts_at: "2026-11-08T17:00:00Z" }, { event: r("Event", "9") }),
+      e("CheckIn", "multi-service", { kind: "Regular" }, {
+        event_period: r("EventPeriod", "period"),
+        event_times: { data: [{ type: "EventTime", id: "time-9" }, { type: "EventTime", id: "time-11" }] },
+        person: r("Person", "child"),
+        locations: { data: [{ type: "Location", id: "room" }] },
+      }),
+    ];
+    const result = compileMinistryFacts(
+      "check_ins",
+      checkIns,
+      [
+        serviceRoute("time-9", "upstreet", "service-1"),
+        serviceRoute("time-11", "upstreet", "service-2"),
+        mapping("check_ins", "Location", "room", "attendance", "upstreet"),
+      ],
+      start, end, now,
+    );
+    expect(result.values.filter(row => row.ministry === "upstreet" && row.measure === "attendance"))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ scope: "service-1", value: 1 }),
+        expect.objectContaining({ scope: "service-2", value: 1 }),
+      ]));
+  });
   it("classifies a student through the mapped GroupType of their Group", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
@@ -597,7 +625,7 @@ describe("ministry source-to-metric semantics", () => {
     { label: "routes overlapping memberships to morning Transit", time: "15:00", route: "transit", expected: "transit", kind: "Regular", missing: false },
     { label: "routes overlapping memberships to evening InsideOut", time: "22:30", route: "insideout", expected: "insideout", kind: "Guest", missing: false },
     { label: "keeps overlapping service routes ambiguous", time: "15:00", route: "both", expected: null, kind: "Regular", missing: false },
-    { label: "does not replace missing membership with service routing", time: "22:30", route: "insideout", expected: null, kind: "Regular", missing: true },
+    { label: "counts a uniquely routed student without a Groups classification", time: "22:30", route: "insideout", expected: "insideout", kind: "Regular", missing: true },
     { label: "does not count volunteer Check-Ins as students", time: "22:30", route: "insideout", expected: null, kind: "Volunteer", missing: false },
   ])("$label", ({ time, route, expected, kind, missing }) => {
     const startsAt = `2026-11-08T${time}:00Z`;
@@ -667,7 +695,9 @@ describe("ministry source-to-metric semantics", () => {
       expect(result.issues).not.toContain("unmapped_student_group_ambiguous");
     } else expect(result.values).toEqual([]);
     if (route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
-    if (missing) expect(result.issues).toContain("unmapped_student_group_membership");
+    if (missing && route === "insideout")
+      expect(result.values[0]?.flags).toContain("ministry_classified_from_unique_service_route");
+    if (missing && route === "both") expect(result.issues).toContain("unmapped_student_group_ambiguous");
   });
   it("uses the linked PCO grade label to resolve overlapping student memberships", () => {
     const startsAt = "2026-11-08T15:00:00Z";
