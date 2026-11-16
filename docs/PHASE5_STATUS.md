@@ -8,8 +8,9 @@ proof that new provider permissions or live datasets have been accepted.
 
 - Trust accurately retrieved PCO data. Verify storage, calculation and display
   fidelity, not every individual source value.
-- Build current/future ingestion first. Historical backfills for **every**
-  Phase 5 domain remain in Phase 5, after current ingestion.
+- Prioritize current/future ingestion. Historical backfills for **every**
+  Phase 5 domain remain in Phase 5 and may proceed when their source and mapping
+  gates are ready; they do not need to wait until all current ingestion is done.
 - Most PCO history starts around 2022, not a universal hard cutoff. Combine PCO
   and the accepted workbook, particularly for older Giving, without summing
   overlapping versions of the same weekly metric.
@@ -106,21 +107,27 @@ An explicitly selected historical year uses ordinal Sundays **within that
 source date axis**, not the current year's literal date and not the first row
 of a partial-year selection. A year without a matching Sunday is flagged.
 Workbook snapshot dates still limit what may be imported.
-The non-Giving candidate sheet/measure map is documented in
-`PHASE5_WORKBOOK_CROSSWALK.md`; it has not created Phase 5 source mappings or
-imported Phase 5 workbook history. The active, accepted 2026-11-07 workbook
-batch currently has two approved, staged mappings for Adult service attendance
-(52 rows each); those are not Phase 5 ministry metrics.
+The non-Giving workbook crosswalk is documented in
+`PHASE5_WORKBOOK_CROSSWALK.md`. The accepted Connection total-groups-attendance
+series is now mapped and published for 2018–2026. The active, accepted
+2026-11-07 workbook batch also has two approved, staged mappings for Adult
+service attendance (52 rows each); those are not Phase 5 ministry metrics.
 
-Current development data check (2026-11-13): the Giving historical backfill is
+Initial development data check (2026-11-13): the Giving historical backfill is
 complete (41,875 pages; 110,535 fetched; 109,564 revised; no pending pages).
 Check-Ins, People and Services have completed incremental runs; Groups has a
 completed current-window run (1,326 pages; 10,430 fetched), not a historical
 backfill. At the initial review these source records were staged without
 Phase 5 source mappings or ministry metric publications. The owner-approved
-location mappings recorded below have since been saved; no ministry metric
-publications have been created. A completed PCO sync is not itself a published
-ministry dashboard.
+location mappings recorded below have since been saved. A completed PCO sync
+is not itself a published ministry dashboard.
+
+Development update (2026-11-16): The Groups historical backfill completed. The
+accepted Connection workbook series was imported into nine valid annual
+publications: 52 weekly rows for each year 2018–2025 and 44 for 2026. The
+2026-11-07 workbook snapshot limits the 2026 history; future and unreadable or
+unsafe source values remain missing. Past literal blank attendance cells are
+handled as zero. The import did not start or modify a PCO sync.
 
 ## Staged PCO mapping review — 2026-11-13
 

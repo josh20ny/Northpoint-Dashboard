@@ -1,5 +1,5 @@
 - [Brand direction](brand-direction.md) — preserve the liked dashboard layout; use practical copy and the brand guide plus both Northpoint websites.
-- [Source trust and history](historical-source-review.md) — trust PCO; verify storage/display; Phase 5 includes PCO/workbook backfills after current ingestion.
+- [Source trust and history](historical-source-review.md) — trust PCO; verify storage/display; prioritize current ingestion without deferring Phase 5 PCO/workbook backfills.
 - [Confidential upload tracking](storage-tracking.md) — commit intents before storage; unknown is not absent, and declarative RLS must match custom migrations.
 - [OAuth key ownership](oauth-key-ownership.md) — application owns its persistent encryption key; never ask Planning Center to provide it or regenerate on startup.
 - [Workspace test isolation](workspace-test-isolation.md) — mock the shared pool instance, not only its package alias; assert the stub is used before mutation tests.

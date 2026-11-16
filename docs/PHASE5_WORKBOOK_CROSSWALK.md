@@ -2,12 +2,13 @@
 
 ## Scope and status
 
-This is an offline candidate map for the non-Giving Phase 5 history in the
-accepted workbook. It uses sheet headings and the existing metric registry; it
-does not inspect individual numeric observations, create import mappings,
-publish metrics, or change the active Giving run. Workbook values are accepted
-by the owner. Remaining work is to preserve the source's measure, unit, scope,
-date axis and lineage when applying the existing Imports mappings.
+This crosswalk documents the non-Giving Phase 5 history in the accepted
+workbook. It uses sheet headings and the existing metric registry; it does not
+inspect individual numeric observations or change the active Giving run.
+Workbook values are accepted by the owner. The Connection total-groups-
+attendance series has been mapped and published for 2018–2026; other listed
+series remain candidates. Preserve each source's measure, unit, scope, date axis
+and lineage when applying Imports mappings.
 
 `data/legacy_columns.csv` records 2026 operating-tab headers. Its
 `UNREVIEWED` mapping status means those headers have not been mapped to
@@ -88,5 +89,6 @@ population differs.
    flow. Do not execute workbook formulas or require per-week/per-cell
    reapproval. Preserve actual unreadable, duplicate, ambiguous or undated
    cells as flagged gaps.
-5. Apply these source mappings only after the active Giving backfill is finished;
-   this crosswalk itself has not changed database mappings or source records.
+5. The Connection history mapping is applied for the accepted 2026-11-07
+   workbook. Other rows remain candidate interpretations, not database
+   mappings; this crosswalk itself does not create or approve mappings.
