@@ -498,6 +498,33 @@ describe("ministry source-to-metric semantics", () => {
     );
     expect(result.values.some((row) => row.ministry === "service-programming")).toBe(false);
   });
+  it.each([
+    { linked: "time-11", room: "9:00 7th Grade Guys", scope: "service-1" },
+    { linked: "time-evening", room: "9:00 6th Grade Girls", scope: "service-1" },
+    { linked: "time-9", room: "11:00 8th Grade Guys", scope: "service-2" },
+  ])("uses actual Transit room attendance over $linked", ({ linked, room, scope }) => {
+    const facts = [
+      e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),
+      ...[
+        ["time-9", "15:00"], ["time-11", "17:00"], ["time-evening", "22:30"],
+      ].map(([id, time]) => e("EventTime", id, { starts_at: `2026-11-08T${time}:00Z` },
+        { event: r("Event", "9") })),
+      e("Location", "room", { name: room }),
+      ...["one", "recheck"].map((id) => e("CheckIn", id, { kind: "Regular" }, {
+        event_period: r("EventPeriod", "period"),
+        event_times: r("EventTime", linked),
+        person: r("Person", "student"), locations: r("Location", "room"),
+      })),
+    ];
+    const result = compileMinistryFacts("check_ins", facts, [
+      serviceRoute("time-9", "transit", "service-1"),
+      serviceRoute("time-11", "transit", "service-2"),
+      serviceRoute("time-evening", "insideout", "service-3"),
+    ], start, end, now);
+    expect(result.values.filter((v) => v.measure === "attendance")).toEqual([
+      expect.objectContaining({ ministry: "transit", scope, value: 1 }),
+    ]);
+  });
   it("keeps every confirmed service scope linked to one Check-In", () => {
     const checkIns = [
       e("EventPeriod", "period", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),

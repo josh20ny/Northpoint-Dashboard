@@ -125,6 +125,17 @@ Times event and November 8, 2026 source screenshot.
 records by the same Event and Chicago-local start time. Do not map the Event
 itself to one scope or reuse a dated EventTime ID literally.
 
+Transit's time-labelled Check-Ins rooms indicate the **actual attended service**,
+not the student's assigned group or roster. Prefer that room time over a
+conflicting linked EventTime when assigning Transit attendance.
+
+**Why:** The owner explicitly confirmed this meaning after reconciliation found
+morning Transit rooms linked to another morning service or the evening service.
+
+**How to apply:** Resolve the room's clock time through active Transit service
+routes for the same event. Preserve person-level deduplication, volunteer
+exclusions and unresolved-record review; do not fabricate Groups assignments.
+
 Use the PCO grade label as a fallback only to resolve an existing cross-ministry
 overlap on the latest completed Sunday: preschool → Waumba Land, Kindergarten–5th
 → UpStreet, 6th–8th → Transit, and 9th–12th → InsideOut. The Admin Check-In

@@ -517,6 +517,7 @@ export function compileMinistryFacts(
     }
     const periods = new Map(entities.filter((e) => e.type === "EventPeriod").map((e) => [e.id, e]));
     const times = new Map(entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]));
+    const locations = new Map(entities.filter((e) => e.type === "Location").map((e) => [e.id, e]));
     const people = new Map(entities.filter((e) => e.type === "Person").map((e) => [e.id, e]));
     const gradeFallbackWeeks = new Set<string>();
     const serviceRouteFallbackRows = new Set<string>();
@@ -604,20 +605,54 @@ export function compileMinistryFacts(
       for (const { time, date } of starts)
         for (const session of serviceSessions(time, date))
           routed.set(`${session.ministry}|${session.scope}`, session);
-      const sessions = [...routed.values()];
+      let sessions = [...routed.values()];
       const routeConfigured = serviceMappings.some((mapping) => {
         if (!activeMapping(mapping, chicagoDate(d))) return false;
         const template = eventTimeTemplates.get(mapping.externalId);
         return !!template && ref(template, "event") === eventId;
       });
-      if (routeConfigured && sessions.length === 0) {
-        issues.add("unmapped_checkin_service_time");
-        continue;
-      }
       const rawMatches = [
         ...match("Event", eventId, d),
         ...refs(e, "locations").flatMap((id) => match("Location", id, d)),
       ];
+      // Owner-confirmed Transit convention: these room prefixes describe the
+      // service actually attended, not a roster assignment. Resolve against
+      // active Transit templates for this same event, never a hardcoded scope.
+      // Children's mapped rooms must not inherit this student-only convention.
+      if (!rawMatches.some((m) => ["upstreet", "waumba-land"].includes(m.ministry))) {
+        const roomClocks = new Set(
+          refs(e, "locations").flatMap((id) => {
+            const name = locations.get(id)?.attributes.name;
+            const prefix = typeof name === "string" ? /^(9:00|11:00)\b/.exec(name.trim()) : null;
+            return prefix ? [prefix[1] === "9:00" ? "09:00" : "11:00"] : [];
+          }),
+        );
+        if (roomClocks.size) {
+          const roomSessions = serviceMappings.filter((mapping) => {
+            if (mapping.ministry !== "transit" || !activeMapping(mapping, chicagoDate(d))) return false;
+            const template = eventTimeTemplates.get(mapping.externalId);
+            const start = template && instant(template.attributes.starts_at);
+            return !!template && !!start && ref(template, "event") === eventId &&
+              roomClocks.has(chicagoTime(start));
+          });
+          // Do not silently revert to a conflicting EventTime when a room's
+          // actual service has no configured route.
+          const matchedClocks = new Set(roomSessions.map((mapping) =>
+            chicagoTime(instant(eventTimeTemplates.get(mapping.externalId)!.attributes.starts_at)!)));
+          if ([...roomClocks].some((clock) => !matchedClocks.has(clock))) {
+            issues.add("unmapped_transit_location_service_time");
+            continue;
+          }
+          sessions = [
+            ...sessions.filter((m) => !["transit", "insideout"].includes(m.ministry)),
+            ...roomSessions,
+          ];
+        }
+      }
+      if (routeConfigured && sessions.length === 0) {
+        issues.add("unmapped_checkin_service_time");
+        continue;
+      }
       const routedScopes = new Map<string, Set<string>>();
       for (const session of sessions) {
         const scopes = routedScopes.get(session.ministry) ?? new Set<string>();

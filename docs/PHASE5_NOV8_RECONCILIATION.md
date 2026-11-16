@@ -117,3 +117,24 @@ It remains necessary to decide whether these location names describe the service
 that should count or a roster/group label that may differ from actual service
 attendance. A relationship to several locations does not pair a particular
 location with a particular EventTime.
+
+## Owner-confirmed Transit attendance rule
+
+The owner confirmed that Transit time-labelled rooms represent actual attended
+service, not assigned rosters. The calculator now resolves those room times
+through active Transit service routes for the same event, overriding conflicting
+student EventTimes. Mapped children's rooms are excluded from this convention.
+Unconfigured room times are not silently assigned to the conflicting service.
+Volunteer exclusions, person deduplication, and pending review exclusions remain.
+No Groups assignments are created.
+
+The resulting read-only November 8 preview is:
+
+| Ministry | 9 AM | 11 AM | 4:30 PM |
+| --- | ---: | ---: | ---: |
+| Transit | 70 | 39 | — |
+| InsideOut | — | — | 88 |
+
+This supersedes the earlier EventTime-only student totals. All four pending
+review candidates remain unresolved, results remain partial, and no metrics
+were published by the preview.
