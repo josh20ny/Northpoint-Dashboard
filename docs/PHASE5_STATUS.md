@@ -421,6 +421,22 @@ These source facts do not decide which categories belong in Connection group
 meeting attendance. In particular, student categories and Teams are not
 implicitly included. No category was mapped or attendance total published.
 
+### Owner-approved Connection attendance category — 2026-11-16
+
+The owner selected **Groups only**. The audited mapping now targets that exact
+PCO GroupType, effective from the completed source window's start on November 8,
+2026. Student, leader, Teams and uncategorized categories remain excluded. The
+mapping was applied without starting a PCO scan, and the existing Groups data
+was republished with a valid publication.
+
+The source run began November 8 and finished November 13, before the November
+15 reporting week closed. Accordingly, November 8 group attendance is marked
+partial and November 15 attendance is marked future; both values are withheld
+as `null`, not displayed as final counts. The aggregate attendance calculation
+is configured, but current Connection meeting attendance still needs a complete
+source window before it can be accepted. No historical period before the
+November 8 source coverage is inferred.
+
 ## Remaining Phase 5 gates
 
 1. Complete the privacy review and approve a suitably restricted development

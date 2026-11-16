@@ -328,6 +328,52 @@ describe("ministry source-to-metric semantics", () => {
       week: "2026-11-15",
     });
   });
+  it("counts attended events only for the mapped GroupType category", () => {
+    const records = [
+      e("GroupType", "groups-category", { name: "Groups" }),
+      e("GroupType", "leaders-category", { name: "Leaders" }),
+      e("Group", "group-1", { archived_at: null }, {
+        group_type: r("GroupType", "groups-category"),
+      }),
+      e("Group", "group-2", { archived_at: null }, {
+        group_type: r("GroupType", "leaders-category"),
+      }),
+      e("Event", "event-1", {
+        starts_at: "2026-11-09T12:00:00Z",
+        ends_at: "2026-11-09T13:00:00Z",
+        canceled: false,
+      }, { group: r("Group", "group-1") }),
+      e("Event", "event-2", {
+        starts_at: "2026-11-09T12:00:00Z",
+        ends_at: "2026-11-09T13:00:00Z",
+        canceled: false,
+      }, { group: r("Group", "group-2") }),
+      e("Attendance", "attendance-1", { attended: true }, {
+        event: r("Event", "event-1"),
+        person: r("Person", "person-1"),
+      }),
+      e("Attendance", "attendance-2", { attended: true }, {
+        event: r("Event", "event-2"),
+        person: r("Person", "person-2"),
+      }),
+    ];
+    const result = compileMinistryFacts(
+      "groups",
+      records,
+      [mapping("groups", "GroupType", "groups-category", "group_attendance", "connection")],
+      start,
+      end,
+      now,
+    );
+    expect(result.values.filter((row) => row.measure === "group_attendance")).toEqual([
+      expect.objectContaining({
+        ministry: "connection",
+        measure: "group_attendance",
+        week: "2026-11-15",
+        value: 1,
+      }),
+    ]);
+  });
   it("counts guest attendance, deduplicates rechecks and bounds first-known by imported history", () => {
     const records = [
       e("EventPeriod", "1", { starts_at: "2026-11-08T15:00:00Z" }, { event: r("Event", "9") }),

@@ -66,7 +66,7 @@ const allowedMapping: Record<string, Record<string, string[]>> = {
       "group_leaders",
       "student_group_classification",
     ],
-    GroupType: ["student_group_classification"],
+    GroupType: ["group_attendance", "student_group_classification"],
   },
   giving: { Fund: ["fund_giving"] },
 };

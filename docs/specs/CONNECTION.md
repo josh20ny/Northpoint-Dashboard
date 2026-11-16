@@ -2,6 +2,14 @@
 
 **Status:** v0.1. Business rules not explicitly confirmed remain draft.
 
+## Owner-confirmed PCO attendance rule
+
+Connection group meeting attendance includes only explicit attended records for
+non-cancelled, ended events whose group is in the PCO **Groups** category.
+Membership, RSVP, student ministry categories, leader categories, Teams and
+uncategorized groups do not count toward this measure unless separately
+approved. Attendance is deduplicated by event/person pair.
+
 ## Questions the page must answer
 What is happening this week? How does it compare to plan, 4-week trend and YoY? Where is ministry health improving or declining? Which measurable next step deserves attention?
 

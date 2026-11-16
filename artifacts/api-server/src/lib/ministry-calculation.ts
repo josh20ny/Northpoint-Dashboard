@@ -455,7 +455,12 @@ export function compileMinistryFacts(
         issues.add("group_event_not_eligible");
         continue;
       }
-      const ms = match("Group", ref(event, "group"), d, "group_attendance");
+      const groupId = ref(event, "group");
+      const group = groups.get(groupId ?? "");
+      const ms = [
+        ...match("Group", groupId, d, "group_attendance"),
+        ...match("GroupType", group ? ref(group, "group_type") : null, d, "group_attendance"),
+      ];
       if (!ms.length) {
         issues.add("unmapped_group_attendance");
         continue;
