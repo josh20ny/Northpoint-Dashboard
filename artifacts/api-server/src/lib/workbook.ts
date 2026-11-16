@@ -288,3 +288,28 @@ export function stageRows(
   }
   return staged;
 }
+
+const blankAttendanceMeasures = new Set([
+  "attendance",
+  "attendance_headcount",
+  "member_attendance",
+  "large_group",
+  "small_group",
+]);
+
+/**
+ * The owner-confirmed workbook policy treats a past literal blank attendance
+ * cell as zero. Formula cells without a usable cached value remain unknown.
+ * Callers must first exclude dates after the accepted workbook snapshot.
+ */
+export function acceptedBlankAttendanceIsZero(
+  measure: string,
+  row: Pick<StagedImportRow, "value" | "formula" | "flags">,
+) {
+  return (
+    blankAttendanceMeasures.has(measure) &&
+    row.value === null &&
+    row.formula === null &&
+    row.flags.includes("missing_value")
+  );
+}

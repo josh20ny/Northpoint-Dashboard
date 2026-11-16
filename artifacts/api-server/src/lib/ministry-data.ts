@@ -48,6 +48,7 @@ import {
   type SourceMapping,
   type MetricFact,
 } from "./ministry-calculation";
+import { acceptedBlankAttendanceIsZero } from "./workbook";
 
 const mappingSelect = `SELECT id,product,object_type AS "objectType",external_id AS "externalId",supersedes_id AS "supersedesId",enabled,
  ministry,measure,scope,effective_from::text AS "effectiveFrom",effective_to::text AS "effectiveTo",note
@@ -931,7 +932,7 @@ export async function givingTransactions(
   });
 }
 export async function importMinistryHistory(
-  p: Principal,
+  p: AdminActor,
   input: MinistryHistoryInput,
 ): Promise<MinistryPublicationResult> {
   validateTarget(input.ministry, input.measure, input.scope);
@@ -1025,7 +1026,11 @@ export async function importMinistryHistory(
         ),
       );
       let value: number | null = null;
-      if (
+      const blankAttendanceIsZero =
+        !unsafe && acceptedBlankAttendanceIsZero(input.measure, row);
+      if (blankAttendanceIsZero) {
+        value = 0;
+      } else if (
         !unsafe &&
         typeof row.value === "number" &&
         Number.isFinite(row.value) &&
@@ -1050,9 +1055,11 @@ export async function importMinistryHistory(
         quality: value === null ? "missing" : "complete",
         denominator: null,
         flags:
-          input.year === null
-            ? ["workbook_source_defined"]
-            : ["workbook_source_defined", "explicit_ordinal_year_alignment"],
+          [
+            "workbook_source_defined",
+            ...(input.year === null ? [] : ["explicit_ordinal_year_alignment"]),
+            ...(blankAttendanceIsZero ? ["past_blank_attendance_as_zero"] : []),
+          ],
       });
     }
     if (!values.length)

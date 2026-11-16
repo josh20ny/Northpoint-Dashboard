@@ -10,7 +10,12 @@ import type {
   ImportEvidenceReview,
 } from "@workspace/api-zod";
 import type { Principal } from "./auth";
-import { adminTransaction, AccessError, validCalendarDate } from "./administration";
+import {
+  adminTransaction,
+  AccessError,
+  validCalendarDate,
+  type AdminActor,
+} from "./administration";
 import { recordAudit } from "./audit";
 import { digest, readWorkbook, stageRows, columnNumber, type Catalog } from "./workbook";
 import { originalWorkbook, importStorageReady } from "./import-storage";
@@ -37,7 +42,7 @@ async function batch(c: PoolClient, id: string, active = true): Promise<Batch> {
     throw new AccessError(409, "Restore this withdrawn batch before continuing");
   return b;
 }
-async function audit(c: PoolClient, p: Principal, action: string, id: string) {
+async function audit(c: PoolClient, p: AdminActor, action: string, id: string) {
   await recordAudit(p.userId!, `import.${action}`, "import_batch", id, "success", c);
 }
 export async function listImports(p: Principal) {
@@ -211,7 +216,7 @@ export async function changeImportState(p: Principal, id: string, state: string,
     await audit(c, p, state === "active" ? "restored" : "withdrawn", id);
   });
 }
-export async function createMapping(p: Principal, id: string, input: ImportMappingInput) {
+export async function createMapping(p: AdminActor, id: string, input: ImportMappingInput) {
   return adminTransaction(p, async (c) => {
     const b = await batch(c, id);
     const sheet = b.catalog.sheets.find((s) => s.name === input.sheet);
@@ -273,7 +278,7 @@ async function mapping(c: PoolClient, id: string, mappingId: string) {
   return m;
 }
 export async function reviewMapping(
-  p: Principal,
+  p: AdminActor,
   id: string,
   mappingId: string,
   decision: string,
@@ -297,7 +302,7 @@ export async function reviewMapping(
     await audit(c, p, `mapping_${decision}`, id);
   });
 }
-export async function stageMapping(p: Principal, id: string, mappingId: string) {
+export async function stageMapping(p: AdminActor, id: string, mappingId: string) {
   await adminTransaction(p, async (c) => {
     const b = await batch(c, id);
     const m = await mapping(c, id, mappingId);

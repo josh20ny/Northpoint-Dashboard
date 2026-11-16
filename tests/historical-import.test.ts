@@ -7,6 +7,7 @@ import {
   excelDate,
   stageRows,
   digest,
+  acceptedBlankAttendanceIsZero,
 } from "../artifacts/api-server/src/lib/workbook";
 import {
   buildReport,
@@ -54,6 +55,24 @@ describe("historical workbook discovery and raw-only staging", () => {
       expect.arrayContaining(["external_dependency", "missing_formula_cache", "missing_value"]),
     );
     expect(rows[1]!.flags).toContain("missing_or_invalid_date");
+  });
+  it("treats only literal blank attendance cells as zero after date eligibility", () => {
+    const blank = { value: null, formula: null, flags: ["missing_value"] };
+    expect(acceptedBlankAttendanceIsZero("member_attendance", blank)).toBe(true);
+    expect(acceptedBlankAttendanceIsZero("attendance_headcount", blank)).toBe(true);
+    expect(acceptedBlankAttendanceIsZero("group_count", blank)).toBe(false);
+    expect(
+      acceptedBlankAttendanceIsZero("member_attendance", {
+        ...blank,
+        formula: 'IF(A1="", "", A1)',
+      }),
+    ).toBe(false);
+    expect(
+      acceptedBlankAttendanceIsZero("member_attendance", {
+        ...blank,
+        flags: ["non_numeric_value"],
+      }),
+    ).toBe(false);
   });
   it("preserves explicit zero; flags future weeks, repeated dates, and spreadsheet errors", () => {
     const w = readWorkbook(
