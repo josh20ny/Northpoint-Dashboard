@@ -80,6 +80,7 @@ async function main() {
     const combined: Record<string, { rows: number; people: Set<string>; missingPeople: number;
       multiTimeRows: number }> = {};
     const roomBranches: Record<string, { rows: number; people: Set<string>; missing: number }> = {};
+    const transitEvidence: Record<string, { rows: number; people: Set<string>; pending: number }> = {};
     if (process.argv.includes("--reconcile")) {
       const links = (f: SourceFact, key: string) => {
         const data = f.relationships[key]?.data;
@@ -137,6 +138,22 @@ async function main() {
           if (pending.has(fact.id)) bucket.pending++;
           if (person && isolated?.values.some(v => ["transit", "insideout"].includes(v.ministry) &&
             v.measure === "attendance" && v.value === 1)) bucket.classifiedStudents.add(person);
+          {
+            const labels = context.filter(f => f.type === "Location" && locationIds.includes(f.id))
+              .map(f => String(f.attributes.name ?? ""));
+            const locationClocks = [...new Set(labels.flatMap(label => {
+              if (/^9:00\b/.test(label)) return ["09:00"];
+              if (/^11:00\b/.test(label)) return ["11:00"];
+              return [];
+            }))].sort().join("+") || "not_time_labelled";
+            if (locationClocks === "not_time_labelled" && children !== "no_kids_room_mapping")
+              continue;
+            const evidence = transitEvidence[`${clock}|location:${locationClocks}|${children}|${kind}`] ??=
+              { rows: 0, people: new Set(), pending: 0 };
+            evidence.rows++;
+            if (person) evidence.people.add(person);
+            if (pending.has(fact.id)) evidence.pending++;
+          }
         }
       }
     }
@@ -156,6 +173,8 @@ async function main() {
             multiTimeRows: v.multiTimeRows }])),
         roomBranches: Object.fromEntries(Object.entries(roomBranches).map(([key, v]) =>
           [key, { rows: v.rows, distinctPeople: v.people.size, missingPeople: v.missing }])),
+        transitEvidence: Object.fromEntries(Object.entries(transitEvidence).map(([key, v]) =>
+          [key, { rows: v.rows, distinctPeople: v.people.size, pending: v.pending }])),
       } : {}),
     }));
   } catch (error) {

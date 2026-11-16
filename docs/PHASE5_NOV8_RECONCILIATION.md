@@ -87,3 +87,33 @@ review candidates keep the results partial. The screenshot discrepancies,
 including Transit's 109 combined reference and different service distribution,
 remain open; matching InsideOut's 89 is not acceptance of all ministry totals.
 The earlier sections describe the pre-correction investigation.
+
+## Transit location versus EventTime reconciliation
+
+A subsequent read-only pass reproduced the screenshot's 70/39 location branch
+counts from the stored facts:
+
+| Linked EventTime | Transit location label prefix | Raw records | Distinct linked people |
+| --- | --- | ---: | ---: |
+| 9 AM | 9:00 | 49 | 49 |
+| 11 AM | 9:00 | 20 | 20 |
+| 4:30 PM | 9:00 | 1 | 1 |
+| 11 AM | 11:00 | 41 | 39 |
+
+The 9:00-prefixed rooms therefore account for 70 people; the 11:00-prefixed
+rooms account for 39. These location-branch counts reproduce 109, while
+EventTime-based routing places the first three groups at their linked clock
+times. The 4:30 record is included in the current InsideOut service total.
+
+The two extra 11:00-branch records are the two pending possible-duplicate
+Transit Check-Ins. They do not explain the remaining 109-versus-108 ministry
+difference: those records share already-counted person identities. The remaining
+person is present at 4:30 under EventTime routing, not lost from storage.
+
+This comparison used the room-label prefixes visible in the owner's screenshots
+as diagnostic evidence only. No label-based routing mapping was saved, no review
+decisions were applied, and the calculator still uses confirmed EventTimes.
+It remains necessary to decide whether these location names describe the service
+that should count or a roster/group label that may differ from actual service
+attendance. A relationship to several locations does not pair a particular
+location with a particular EventTime.
