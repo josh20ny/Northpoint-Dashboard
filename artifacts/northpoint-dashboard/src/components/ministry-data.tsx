@@ -164,14 +164,42 @@ function SummaryCards({ series, week }: { series: Series[]; week: string }) {
 
 function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: string[]; label: string }) {
   return (
-    <div className="overflow-x-auto">
+    <>
+    <div className="sm:hidden" data-testid={`history-mobile-${slugId(label)}`}>
+      {weeks.map((week) => (
+        <section key={week} className="border-b px-4 py-3 last:border-0" aria-label={`Week of ${week}`}>
+          <h3 className="mb-2 font-mono text-[12px] font-medium">{week}</h3>
+          <dl className="space-y-3">
+            {series.map((s) => {
+              const metric = s.byWeek.get(week);
+              return (
+                <div key={s.key} className="flex items-start justify-between gap-4">
+                  <dt className="min-w-0 text-[12px]">
+                    {s.measure === "member_attendance" ? "Attendance (workbook)" : s.title}
+                    <span className="block text-[11px] text-muted-foreground">{scopeLabel(s.scope)}</span>
+                    {metric && <span className="block text-[11px] text-muted-foreground">{metric.source === "workbook" ? "Accepted workbook" : "Planning Center"}</span>}
+                  </dt>
+                  <dd className="shrink-0 text-right text-[13px] tabular-nums" data-testid={`history-value-${slugId(s.key)}-${week}`}>
+                    {formatMetricValue(metric?.value ?? null, s.unit)}
+                    {metric && metric.quality !== "complete" && (
+                      <span className="block text-[10.5px] text-muted-foreground">{metric.quality}</span>
+                    )}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        </section>
+      ))}
+    </div>
+    <div className="hidden overflow-x-auto sm:block">
       <table className="w-full min-w-[480px] text-[12.5px]" aria-label={label}>
         <thead>
           <tr className="border-b bg-muted/40 text-left">
             <th scope="col" className="px-4 py-2 font-medium">Sunday</th>
             {series.map((s) => (
               <th key={s.key} scope="col" className="px-4 py-2 text-right font-medium">
-                {s.title}
+                {s.measure === "member_attendance" ? "Attendance (workbook)" : s.title}
                 <span className="block font-mono text-[10.5px] font-normal text-muted-foreground">{scopeLabel(s.scope)}{currencyOf(s.unit) ? ` · ${currencyOf(s.unit)}` : ""}</span>
               </th>
             ))}
@@ -202,6 +230,7 @@ function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: strin
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -357,11 +386,24 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       </Panel>
       {lead.length > 0 && (
         <Panel title={isGiving ? "Giving history" : "Attendance history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          {ministry === "connection" && (
+            <p className="border-b px-4 py-3 text-[12px] text-muted-foreground" data-testid="text-connection-history-sources">
+              Planning Center meeting attendance and accepted workbook attendance are separate series, not added together.
+              The default view shows 13 weeks; use Reporting controls below to view earlier years.
+              Workbook history is limited to its accepted snapshot date; later weeks remain missing.
+            </p>
+          )}
           <HistoryTable series={lead} weeks={weeks} label={isGiving ? "Giving history" : "Attendance history"} />
         </Panel>
       )}
       {other.length > 0 && (
         <Panel title="Other KPI history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          {ministry === "connection" && (
+            <p className="border-b px-4 py-3 text-[12px] text-muted-foreground" data-testid="text-connection-snapshot-history">
+              Active groups, memberships and leaders describe the source observation week, not historical weekly totals.
+              Missing means no eligible value was published for that week; current counts are not copied into past weeks.
+            </p>
+          )}
           <HistoryTable series={other} weeks={weeks} label="Other KPI history" />
         </Panel>
       )}
