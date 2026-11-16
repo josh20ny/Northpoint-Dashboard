@@ -32,6 +32,11 @@ describe("bounded Check-In source loading", () => {
     expect(calls[0]!.sql).toContain("AT TIME ZONE 'America/Chicago'");
     expect(calls[0]!.sql).toContain("UNION SELECT 'EventTime', unnest($5::text[])");
     expect(calls[0]!.sql).not.toContain("creation_date");
+    expect(calls[0]!.sql).toContain("candidate_ids AS MATERIALIZED");
+    expect(calls[0]!.sql).toContain("JOIN candidate_ids");
+    expect(calls[0]!.sql).toContain("(c.normalized->'sourceRelationships') @>");
+    expect(calls[0]!.sql).toContain("MIN(t.service_date)");
+    expect(calls[0]!.sql).toContain("COALESCE(t.service_date, p.service_date)");
   });
 
   it("can isolate records with no usable service date for the Admin exception queue", async () => {

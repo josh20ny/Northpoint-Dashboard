@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "pco_checkin_relationships" ON "pco_source_entities" USING gin (("normalized"->'sourceRelationships') jsonb_path_ops) WHERE "pco_source_entities"."product"='check_ins' AND "pco_source_entities"."object_type"='CheckIn' AND "pco_source_entities"."observed_run_id" IS NOT NULL AND "pco_source_entities"."missing_run_id" IS NULL;

@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   uniqueIndex,
+  index,
   check,
   boolean,
   date,
@@ -128,6 +129,9 @@ export const pcoSourceEntities = pgTable(
   (t) => [
     admin(),
     uniqueIndex("pco_entity_identity").on(t.accountRef, t.product, t.objectType, t.externalId),
+    index("pco_checkin_relationships").using(
+      "gin", sql`(${t.normalized}->'sourceRelationships') jsonb_path_ops`,
+    ).where(sql`${t.product}='check_ins' AND ${t.objectType}='CheckIn' AND ${t.observedRunId} IS NOT NULL AND ${t.missingRunId} IS NULL`),
   ],
 ).enableRLS();
 // Positive observations are independent of payload version selection.

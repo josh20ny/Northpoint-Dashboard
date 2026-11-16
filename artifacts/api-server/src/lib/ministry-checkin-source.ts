@@ -27,36 +27,62 @@ export async function loadCheckInFactsForWindow(
   templateIds: string[] = [],
   includeUndated = false,
 ): Promise<SourceFact[]> {
+  // Match the partial relationship index before expanding linkage. Keep the final
+  // MIN/fallback date check: a candidate may link to times outside this window too.
+  // The undated exception queue intentionally considers the full active source set.
   const result = await c.query(
-    `WITH checkins AS MATERIALIZED (
+    `WITH context_dates AS MATERIALIZED (
+      SELECT object_type, external_id,
+        ((normalized->'attributes'->>'starts_at')::timestamptz
+          AT TIME ZONE 'America/Chicago')::date AS service_date
+      FROM pco_source_entities
+      WHERE account_ref=$1 AND product='check_ins'
+        AND object_type IN ('EventTime','EventPeriod') AND missing_run_id IS NULL
+    ), candidate_ids AS MATERIALIZED (
+      SELECT c.external_id
+      FROM context_dates d
+      JOIN pco_source_entities c ON c.account_ref=$1
+        AND c.product='check_ins' AND c.object_type='CheckIn'
+        AND c.observed_run_id IS NOT NULL AND c.missing_run_id IS NULL
+        AND (
+          (c.normalized->'sourceRelationships') @> jsonb_build_object(
+            CASE d.object_type WHEN 'EventTime' THEN 'event_times' ELSE 'event_period' END,
+            jsonb_build_object('data', jsonb_build_object('id', d.external_id)))
+          OR (d.object_type='EventTime' AND
+            (c.normalized->'sourceRelationships') @> jsonb_build_object('event_times',
+              jsonb_build_object('data', jsonb_build_array(jsonb_build_object('id', d.external_id)))))
+        )
+      WHERE NOT $4::boolean AND d.service_date BETWEEN $2::date AND $3::date
+      UNION
+      SELECT external_id FROM pco_source_entities
+      WHERE $4::boolean AND account_ref=$1 AND product='check_ins' AND object_type='CheckIn'
+        AND observed_run_id IS NOT NULL AND missing_run_id IS NULL
+    ), checkin_rows AS MATERIALIZED (
       SELECT c.external_id, c.normalized,
         c.normalized->'sourceRelationships'->'event_period'->'data'->>'id' AS period_id,
-        c.normalized->'sourceRelationships'->'person'->'data'->>'id' AS person_id,
-        COALESCE(
-          (SELECT MIN((t.normalized->'attributes'->>'starts_at')::timestamptz
-            AT TIME ZONE 'America/Chicago')::date
-           FROM jsonb_array_elements(
-             CASE jsonb_typeof(c.normalized->'sourceRelationships'->'event_times'->'data')
-               WHEN 'array' THEN c.normalized->'sourceRelationships'->'event_times'->'data'
-               WHEN 'object' THEN jsonb_build_array(c.normalized->'sourceRelationships'->'event_times'->'data')
-               ELSE '[]'::jsonb
-             END
-           ) AS linked(item)
-           JOIN pco_source_entities t ON t.account_ref=c.account_ref
-             AND t.product='check_ins' AND t.object_type='EventTime'
-             AND t.external_id=linked.item->>'id' AND t.missing_run_id IS NULL),
-          (SELECT ((p.normalized->'attributes'->>'starts_at')::timestamptz
-            AT TIME ZONE 'America/Chicago')::date
-           FROM pco_source_entities p
-           WHERE p.account_ref=c.account_ref AND p.product='check_ins'
-             AND p.object_type='EventPeriod'
-             AND p.external_id=c.normalized->'sourceRelationships'->'event_period'->'data'->>'id'
-             AND p.missing_run_id IS NULL
-           LIMIT 1)
-        ) AS service_date
+        c.normalized->'sourceRelationships'->'person'->'data'->>'id' AS person_id
       FROM pco_source_entities c
+      JOIN candidate_ids i ON i.external_id=c.external_id
       WHERE c.account_ref=$1 AND c.product='check_ins' AND c.object_type='CheckIn'
         AND c.observed_run_id IS NOT NULL AND c.missing_run_id IS NULL
+    ), linked_dates AS MATERIALIZED (
+      SELECT c.external_id, MIN(t.service_date) AS service_date
+      FROM checkin_rows c
+      CROSS JOIN LATERAL jsonb_array_elements(
+        CASE jsonb_typeof(c.normalized->'sourceRelationships'->'event_times'->'data')
+          WHEN 'array' THEN c.normalized->'sourceRelationships'->'event_times'->'data'
+          WHEN 'object' THEN jsonb_build_array(c.normalized->'sourceRelationships'->'event_times'->'data')
+          ELSE '[]'::jsonb
+        END
+      ) AS linked(item)
+      JOIN context_dates t ON t.object_type='EventTime'
+        AND t.external_id=linked.item->>'id'
+      GROUP BY c.external_id
+    ), checkins AS (
+      SELECT c.*, COALESCE(t.service_date, p.service_date) AS service_date
+      FROM checkin_rows c
+      LEFT JOIN linked_dates t ON t.external_id=c.external_id
+      LEFT JOIN context_dates p ON p.object_type='EventPeriod' AND p.external_id=c.period_id
     ), selected AS MATERIALIZED (
       SELECT * FROM checkins
       WHERE ($4::boolean AND service_date IS NULL)
