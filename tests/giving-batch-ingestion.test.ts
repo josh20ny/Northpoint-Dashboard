@@ -161,7 +161,7 @@ describe("batched Giving designation ingestion", () => {
     );
     expect(result.issues).not.toContain("designation_parent_or_fields_missing");
     expect(result.values.find((value) => value.measure === "fund_giving")?.value).toBe(1000);
-    expect(result.values.find((value) => value.measure === "giving_total")?.value).toBe(1000);
+    expect(result.values.find((value) => value.measure === "all_fund_giving")?.value).toBe(1000);
   });
 
   it.each([

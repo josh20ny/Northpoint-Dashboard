@@ -73,7 +73,7 @@ const allowedMapping: Record<string, Record<string, string[]>> = {
     ],
     GroupType: ["group_attendance", "student_group_classification"],
   },
-  giving: { Fund: ["fund_giving"] },
+  giving: { Fund: ["giving_total", "fund_giving"] },
 };
 function validateTarget(ministry: string, measure: string, scope: string) {
   if (
@@ -102,6 +102,7 @@ function validateTarget(ministry: string, measure: string, scope: string) {
   if (
     [
       "giving_total",
+      "all_fund_giving",
       "refund_total",
       "fund_giving",
       "recurring_schedules",
@@ -114,6 +115,8 @@ function validateTarget(ministry: string, measure: string, scope: string) {
     (ministry === "giving")
   )
     throw new AccessError(400, "Financial measures belong only to Giving");
+  if (measure === "giving_total" && scope !== "all")
+    throw new AccessError(400, "General Giving must use the all-services scope");
 }
 function dates(start: string, end: string) {
   if (
@@ -196,19 +199,25 @@ export async function readMinistryData(
     // First select the newest revision from each source, THEN choose between
     // independent PCO/workbook sources. Never fall back to stale earlier PCO
     // data just because the newest revision marks that value missing.
+    // Validate each selected publication once, not once per metric/week:
+    // evidence is shared across a publication and can span years of records.
     const result = await c.query(
       `WITH revisions AS (
         SELECT v.*,p.source_kind,p.source_as_of,p.definition_version,p.created_at,
-          np_ministry_publication_valid(p.id) AS source_valid,
           row_number() OVER (PARTITION BY v.measure,v.scope,v.week,v.unit,p.product,p.source_kind
             ORDER BY p.created_at DESC,p.id DESC) AS revision
         FROM ministry_metric_values v JOIN ministry_publications p ON p.id=v.publication_id
         WHERE v.ministry=$1 AND v.week BETWEEN $2::date AND $3::date
+      ), current_rows AS MATERIALIZED (
+        SELECT * FROM revisions WHERE revision=1
+      ), validity AS MATERIALIZED (
+        SELECT id,np_ministry_publication_valid(id) AS source_valid
+        FROM (SELECT DISTINCT publication_id AS id FROM current_rows) ids
       ), chosen AS (
-        SELECT *,row_number() OVER (PARTITION BY measure,scope,week,unit ORDER BY
+        SELECT r.*,source_valid,row_number() OVER (PARTITION BY measure,scope,week,unit ORDER BY
           CASE WHEN NOT source_valid THEN 3 WHEN quality='complete' THEN 0 WHEN quality='partial' THEN 1 ELSE 2 END,
           CASE source_kind WHEN 'pco' THEN 0 ELSE 1 END,created_at DESC) AS preference
-        FROM revisions WHERE revision=1
+        FROM current_rows r JOIN validity s ON s.id=r.publication_id
       )
       SELECT measure,scope,week::text,CASE WHEN source_valid THEN value::float8 ELSE NULL END AS value,unit,
         CASE WHEN source_valid THEN quality ELSE 'invalidated' END AS quality,denominator::float8 AS denominator,
@@ -226,6 +235,7 @@ export async function readMinistryData(
       ministry === "giving"
         ? [
             "giving_total",
+            "all_fund_giving",
             "refund_total",
             "fund_giving",
             "recurring_schedules",
@@ -496,8 +506,8 @@ async function publish(
       reused: true,
     };
   const r = await c.query(
-    `INSERT INTO ministry_publications(product,account_ref,source_key,source_kind,definition_version,source_as_of,coverage_start,coverage_end)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+    `INSERT INTO ministry_publications(product,account_ref,source_key,source_kind,definition_version,source_as_of,coverage_start,coverage_end,created_at)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,clock_timestamp()) RETURNING id`,
     [
       input.product,
       input.account,
@@ -786,7 +796,7 @@ async function publishMinistryDataInTransaction(
       }
   const expected =
     input.product === "giving"
-      ? ["giving_total", "refund_total", "recurring_schedules"].map((measure) => ({
+      ? ["giving_total", "all_fund_giving", "refund_total", "recurring_schedules"].map((measure) => ({
           ministry: "giving",
           measure,
           scope: "all",

@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v4";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v5";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -35,7 +35,13 @@ export const SAFE_SCOPES = [
 ] as const;
 export const MEASURES: Record<string, { title: string; unit: string; definition: string }> = {
   giving_total: {
-    title: "Received giving",
+    title: "General Giving",
+    unit: "USD_minor",
+    definition:
+      "Received designations to the explicitly mapped General Giving fund, dated by the parent gift's received_at in Chicago. Succeeded, non-refunded gifts only; not all-fund totals. Accepted workbook General Giving fills historical gaps; sources are never added together.",
+  },
+  all_fund_giving: {
+    title: "Received giving (all funds)",
     unit: "USD_minor",
     definition:
       "Succeeded gifts dated by received_at in Chicago; fully refunded gifts excluded. Not net cash flow; refunds reported separately by refunded_at. Currencies never combined.",
@@ -367,6 +373,18 @@ export function compileMinistryFacts(
   };
   if (product === "giving") {
     const donations = new Map(entities.filter((e) => e.type === "Donation").map((e) => [e.id, e]));
+    const allocations = new Map<string, Map<string, number>>();
+    for (const e of entities.filter((row) => row.type === "Designation")) {
+      const parentId = e.sourceCollection?.match(/\/donations\/(\d+)\/designations$/)?.[1];
+      const parent = parentId && donations.get(parentId);
+      const amount = integer(e.attributes.amount_cents);
+      if (!parent || amount === null || amount < 0 ||
+        e.attributes.amount_currency !== parent.attributes.amount_currency ||
+        !ref(e, "fund")) continue;
+      const gifts = allocations.get(parent.id) ?? new Map<string, number>();
+      gifts.set(e.id, amount);
+      allocations.set(parent.id, gifts);
+    }
     for (const e of entities) {
       const a = e.attributes;
       if (e.type === "Donation") {
@@ -384,8 +402,23 @@ export function compileMinistryFacts(
           issues.add("giving_invalid_fields");
           continue;
         }
-        if (a.payment_status === "succeeded" && a.refunded === false)
-          add("giving", "giving_total", "all", d, n, e.id, `${c}_minor`);
+        if (a.payment_status === "succeeded" && a.refunded === false) {
+          add("giving", "all_fund_giving", "all", d, n, e.id, `${c}_minor`);
+          const generalMappings = mappings.filter((m) => m.product === "giving" &&
+            m.objectType === "Fund" && m.measure === "giving_total" &&
+            activeMapping(m, chicagoDate(d)));
+          if (generalMappings.length && reportingWeekEnding(d) >= start &&
+            reportingWeekEnding(d) <= end) {
+            const allocated = [...(allocations.get(e.id)?.values() ?? [])]
+              .reduce((sum, amount) => sum + amount, 0);
+            if (!allocations.has(e.id) || !Number.isSafeInteger(allocated) || allocated !== n)
+              issues.add("designation_coverage_incomplete");
+            else
+              // A fully allocated gift to other funds establishes an observed
+              // zero for General Giving, not an assumed missing value.
+              add("giving", "giving_total", "all", d, 0, undefined, `${c}_minor`);
+          }
+        }
       }
       if (e.type === "Refund") {
         const d = instant(a.refunded_at),
@@ -404,7 +437,8 @@ export function compileMinistryFacts(
         const d = parent && instant(parent.attributes.received_at),
           n = integer(a.amount_cents),
           c = currency(a.amount_currency);
-        if (!parent || !d || n === null || !c || n < 0) {
+        if (!parent || !d || n === null || !c || n < 0 ||
+          c !== parent.attributes.amount_currency || !ref(e, "fund")) {
           issues.add("designation_parent_or_fields_missing");
           continue;
         }
@@ -415,6 +449,8 @@ export function compileMinistryFacts(
           continue;
         for (const m of match("Fund", ref(e, "fund"), d, "fund_giving"))
           add("giving", "fund_giving", m.scope, d, n, e.id, `${c}_minor`);
+        for (const m of match("Fund", ref(e, "fund"), d, "giving_total"))
+          add("giving", "giving_total", m.scope, d, n, e.id, `${c}_minor`);
       }
       if (e.type === "RecurringDonation" && a.status === "active")
         add("giving", "recurring_schedules", "all", asOf, 1, e.id);
@@ -830,6 +866,10 @@ export function compileMinistryFacts(
   );
   if (incomplete)
     for (const r of output.values()) {
+      // Fund linkage cannot change an independently valid all-fund total or
+      // refund. Only withhold the financial measures that depend on it.
+      if (product === "giving" && [...issues].every((issue) => issue.startsWith("designation_")) &&
+        !["giving_total", "fund_giving"].includes(r.measure)) continue;
       r.quality = "partial";
       r.flags.push("incomplete_source_linkage");
       if (product !== "check_ins") r.value = null;

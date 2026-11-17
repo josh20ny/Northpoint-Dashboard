@@ -11,13 +11,14 @@ export function shiftDate(date: string, days: number) {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+const chicagoDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Chicago",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 export function chicagoDate(now: Date) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
+  return chicagoDateFormatter.format(now);
 }
 export function completedSunday(now: Date) {
   return shiftDate(reportingWeekEnding(now), -7);

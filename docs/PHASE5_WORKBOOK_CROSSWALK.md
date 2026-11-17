@@ -128,6 +128,12 @@ the sources are never added together.
 
 Important source limitation: the workbook labels this **general giving**, not
 all-fund cash flow, and explicitly notes a PCO gift excluded from its total.
+
+The owner subsequently chose **General Giving throughout** for the primary
+trend. The mapped PCO General Giving fund's eligible designations now publish
+to that same General Giving series, while all-fund received totals are a
+separate KPI. This resolves the fund-scope mismatch; it does not make sources
+additive or remove the workbook's documented exclusions and missing cells.
 These are source-defined historical amounts; do not assert that workbook and
 PCO totals have identical inclusion rules. Fund columns Q:V have not been
 mapped to PCO fund identities. X:Z first-time/recurring/lapsed headers have no

@@ -221,7 +221,7 @@ describe("ministry source-to-metric semantics", () => {
       end,
       now,
     );
-    const received = result.values.find((v) => v.measure === "giving_total")!;
+    const received = result.values.find((v) => v.measure === "all_fund_giving")!;
     expect(received).toMatchObject({ week: "2026-11-08", value: 10555, unit: "USD_minor" });
     expect(result.values.find((v) => v.measure === "recurring_schedules")).toMatchObject({
       value: 1,
@@ -254,7 +254,7 @@ describe("ministry source-to-metric semantics", () => {
       now,
     );
     expect(
-      result.values.filter((v) => v.measure === "giving_total").map((v) => [v.unit, v.value]),
+      result.values.filter((v) => v.measure === "all_fund_giving").map((v) => [v.unit, v.value]),
     ).toEqual([
       ["USD_minor", 10555],
       ["EUR_minor", 100],
@@ -288,11 +288,52 @@ describe("ministry source-to-metric semantics", () => {
       quality: "complete",
       unit: "USD_minor",
     });
-    expect(result.values.find((row) => row.measure === "giving_total")).toMatchObject({
+    expect(result.values.find((row) => row.measure === "all_fund_giving")).toMatchObject({
       value: 10555,
       quality: "complete",
     });
     expect(refund.attributes.amount_cents).toBe(-500);
+  });
+  it("uses only mapped General Giving designations from split gifts, deduplicates, and keeps other fund totals separate", () => {
+    const designation = (id: string, fund: string, amount: number) => e(
+      "Designation", id, { amount_cents: amount, amount_currency: "USD" },
+      { fund: r("Fund", fund) }, "/giving/v2/donations/1/designations",
+    );
+    const general = designation("10", "8", 3000);
+    const result = compileMinistryFacts(
+      "giving",
+      [giving("1"), general, general, designation("11", "9", 7555)],
+      [mapping("giving", "Fund", "8", "giving_total", "giving")],
+      start, end, now,
+    );
+    expect(result.issues).toEqual([]);
+    expect(result.values.find((row) => row.measure === "giving_total"))
+      .toMatchObject({ value: 3000, quality: "complete", unit: "USD_minor" });
+    expect(result.values.find((row) => row.measure === "all_fund_giving")?.value).toBe(10555);
+  });
+  it("reports observed zero General Giving for a fully allocated gift to another fund", () => {
+    const result = compileMinistryFacts("giving", [
+      giving("1"),
+      e("Designation", "11", { amount_cents: 10555, amount_currency: "USD" },
+        { fund: r("Fund", "9") }, "/giving/v2/donations/1/designations"),
+    ], [mapping("giving", "Fund", "8", "giving_total", "giving")], start, end, now);
+    expect(result.values.find((row) => row.measure === "giving_total"))
+      .toMatchObject({ value: 0, quality: "complete" });
+  });
+  it("never falls back to whole donations when General Giving allocation coverage is incomplete", () => {
+    const result = compileMinistryFacts("giving", [giving("1")], [
+      mapping("giving", "Fund", "8", "giving_total", "giving"),
+    ], start, end, now);
+    expect(result.issues).toContain("designation_coverage_incomplete");
+    expect(result.values.find((row) => row.measure === "giving_total")).toBeUndefined();
+    expect(result.values.find((row) => row.measure === "all_fund_giving"))
+      .toMatchObject({ value: 10555, quality: "complete" });
+  });
+  it("does not infer General Giving from a fund's name, default flag or donation total", () => {
+    const result = compileMinistryFacts("giving", [
+      giving("1"), e("Fund", "8", { name: "General Giving", default: true }),
+    ], [], start, end, now);
+    expect(result.values.some((row) => row.measure === "giving_total")).toBe(false);
   });
   it("does not treat memberships, cancelled meetings or RSVPs as attendance", () => {
     const records = [

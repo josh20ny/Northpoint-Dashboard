@@ -20,3 +20,13 @@ and failed its synthetic assertions.
 **How to apply:** Scope synthetic source data and the transaction-local connection
 organization consistently inside the rollback boundary. Never persist a changed
 integration organization or weaken the production loader to accommodate a test.
+
+PostgreSQL `now()` is the outer transaction's start time, including inside
+savepoints; it cannot establish publication order within rollback-only tests.
+
+**Why:** Sequential unresolved/resolved publications shared identical timestamps
+in a rollback fixture, so UUID tie-breaking sometimes selected the earlier one.
+
+**How to apply:** Ensure append-event timestamps reflect the actual insertion
+instant where revision order matters. Do not “fix” intermittent assertions by
+rerunning until UUID ordering happens to match the intended chronology.

@@ -14,6 +14,25 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       repo: typeof import("../artifacts/api-server/src/lib/ministry-data");
     let admin: Principal, staff: Principal, leadership: Principal, account: string, runId: string;
     let observedQueries = 0;
+    async function seedGivingSource(entity: SourceEntity, collection: string) {
+      const rawId = randomUUID();
+      await c.query(
+        `INSERT INTO raw_source_records(id,provider,account_ref,object_type,external_id,payload_json,payload_hash)
+        VALUES($1,'planning_center',$2,$3,$4,$5,$6)`,
+        [rawId, account, `giving:${entity.type}`, entity.id, JSON.stringify(entity), digest(JSON.stringify(entity))],
+      );
+      await c.query(
+        `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,observed_run_id,normalized)
+        VALUES($1,'giving',$2,$3,$4,$5,$5,$6)`,
+        [account, entity.type, entity.id, rawId, runId, JSON.stringify(normalized(entity, collection))],
+      );
+    }
+    const seedGeneralDesignation = (donation: SourceEntity) => seedGivingSource({
+      type: "Designation",
+      id: `designation-${donation.id}`,
+      attributes: { amount_cents: donation.attributes.amount_cents, amount_currency: "USD" },
+      relationships: { fund: { data: { type: "Fund", id: "101" } } },
+    }, `/giving/v2/donations/${donation.id}/designations`);
     beforeAll(async () => {
       db = await import("../lib/db/src/index");
       c = await db.pool.connect();
@@ -115,6 +134,17 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       await repo.ministryDataAdmin(admin);
       // Assert alias/pool interception BEFORE any mutation repository call.
       expect(observedQueries).toBeGreaterThan(0);
+      await seedGivingSource({
+        type: "Fund", id: "101",
+        attributes: { name: "General Giving", default: true }, relationships: {},
+      }, "/giving/v2/funds");
+      await seedGeneralDesignation(entity);
+      await repo.createMinistryMapping(admin, {
+        product: "giving", objectType: "Fund", externalId: "101",
+        ministry: "giving", measure: "giving_total", scope: "all",
+        effectiveFrom: "2013-01-01", effectiveTo: null, enabled: true,
+        note: "Synthetic owner-approved General Giving fixture",
+      });
     });
     afterEach(async () => {
       await c.query("ROLLBACK");
@@ -162,7 +192,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       );
       const olderDonation: SourceEntity = {
         type: "Donation",
-        id: `test-donation-${randomUUID()}`,
+        id: "1010001",
         attributes: {
           amount_cents: 6000,
           amount_currency: "USD",
@@ -177,7 +207,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       };
       const boundaryDonation: SourceEntity = {
         ...olderDonation,
-        id: `test-donation-${randomUUID()}`,
+        id: "1010002",
         attributes: {
           ...olderDonation.attributes,
           amount_cents: 2500,
@@ -208,6 +238,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
             JSON.stringify(normalized(donation, "/giving/v2/donations")),
           ],
         );
+        await seedGeneralDesignation(donation);
       }
 
       const publication = await repo.publishMinistryData(admin, {
@@ -229,6 +260,32 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         { week: "2026-11-01", value: "2500", quality: "complete" },
         { week: "2026-11-08", value: "12500", quality: "complete" },
       ]);
+    });
+    it("keeps other funds out of the main General Giving trend for every authorized role", async () => {
+      const gift: SourceEntity = {
+        type: "Donation", id: "1019999",
+        attributes: {
+          amount_cents: 7500, amount_currency: "USD",
+          received_at: "2026-11-08T15:00:00Z",
+          payment_status: "succeeded", refunded: false,
+        },
+        relationships: { person: { data: null }, recurring_donation: { data: null } },
+      };
+      await seedGivingSource(gift, "/giving/v2/donations");
+      await seedGivingSource({
+        type: "Designation", id: "designation-other-fund",
+        attributes: { amount_cents: 7500, amount_currency: "USD" },
+        relationships: { fund: { data: { type: "Fund", id: "202" } } },
+      }, "/giving/v2/donations/1019999/designations");
+      await publish();
+      for (const actor of [admin, staff, leadership]) {
+        const workspace = await repo.readMinistryData(actor, "giving", "2026-11-08", "2026-11-08");
+        expect(workspace.metrics.find((row) => row.measure === "giving_total"))
+          .toMatchObject({ title: "General Giving", value: 12500, quality: "complete" });
+        expect(workspace.metrics.find((row) => row.measure === "all_fund_giving"))
+          .toMatchObject({ title: "Received giving (all funds)", value: 20000, quality: "complete" });
+        expect(JSON.stringify(workspace)).not.toMatch(/1019999|887766554433|personId/);
+      }
     });
     it("audits Check-In include decisions and applies them on the next publication without exposing person data", async () => {
       const checkInRunId = randomUUID();

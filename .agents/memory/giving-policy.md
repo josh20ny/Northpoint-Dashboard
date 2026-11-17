@@ -11,6 +11,18 @@ ID or name should only be visible to Admins.
 **How to apply:** Separate broad totals from restricted donor transactions and
 person-linked financial signals, including health inputs and exports.
 
+Use General Giving throughout the main Giving trend. Show all-fund receipts
+separately.
+
+**Why:** When asked how workbook General Giving should connect to PCO's all-fund
+totals, the owner chose “Use General Giving throughout”.
+
+**How to apply:** Match the explicitly identified General Giving fund's
+designations to accepted workbook General Giving. Do not include an entire
+split gift in the main trend, add overlapping sources, or relabel all-fund
+receipts as General Giving. This choice does not change the first-time/lapsed
+giver definitions below, which concern gifts to Northpoint.
+
 A first-time giver is the first recorded giving event for that person/family at
 Northpoint. A lapsed giver has a consistent giving record/cadence (weekly,
 monthly, etc.) and then misses three consecutive expected gifts. A normally

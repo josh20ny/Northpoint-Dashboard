@@ -23,7 +23,8 @@ export const SERVING_MEASURES = new Set(["scheduled", "accepted"]);
 
 /** Measure keys accepted by the backend registry. Titles are plain labels only. */
 export const MEASURES: { key: string; label: string }[] = [
-  { key: "giving_total", label: "Received giving" },
+  { key: "giving_total", label: "General Giving" },
+  { key: "all_fund_giving", label: "Received giving (all funds)" },
   { key: "refund_total", label: "Refunds" },
   { key: "recurring_schedules", label: "Recurring schedules snapshot" },
   { key: "fund_giving", label: "Fund giving" },
@@ -85,7 +86,7 @@ export const PRODUCT_PAIRS: Record<Product, { objectTypes: string[]; measures: s
       "student_group_classification",
     ],
   },
-  giving: { objectTypes: ["Fund"], measures: ["fund_giving"] },
+  giving: { objectTypes: ["Fund"], measures: ["giving_total", "fund_giving"] },
 };
 export const measureLabel = (key: string) =>
   [...MEASURES, ...MAPPING_ONLY_MEASURES].find((m) => m.key === key)?.label ?? key;

@@ -271,8 +271,12 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
   const primary = all.filter((s) => !SERVING_MEASURES.has(s.measure));
   const serving = all.filter((s) => SERVING_MEASURES.has(s.measure));
   const isGiving = ministry === "giving";
-  const lead = isGiving ? primary : primary.filter((s) => ATTENDANCE_MEASURES.has(s.measure));
-  const other = isGiving ? [] : primary.filter((s) => !ATTENDANCE_MEASURES.has(s.measure));
+  const lead = primary.filter((s) =>
+    isGiving ? s.measure === "giving_total" : ATTENDANCE_MEASURES.has(s.measure),
+  );
+  const other = primary.filter((s) =>
+    isGiving ? s.measure !== "giving_total" : !ATTENDANCE_MEASURES.has(s.measure),
+  );
   const weeks = useMemo(() => (ws ? sundaysDesc(ws.start, ws.end) : []), [ws]);
   const id = slugId(ministry);
 
@@ -349,7 +353,7 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       {header}
       {issues}
       <Panel
-        title={isGiving ? "Giving" : "Attendance"}
+        title={isGiving ? "General Giving" : "Attendance"}
         meta={<span className="font-mono text-[11px] text-muted-foreground">Week of {formatDate(ws.latestCompletedWeek)}</span>}
       >
         <div className="p-5">
@@ -386,7 +390,14 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
         </div>
       </Panel>
       {lead.length > 0 && (
-        <Panel title={isGiving ? "Giving history" : "Attendance history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+        <Panel title={isGiving ? "General Giving history" : "Attendance history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          {isGiving && (
+            <p className="border-b px-4 py-3 text-[12px] text-muted-foreground" data-testid="text-giving-history-sources">
+              General Giving only: mapped Planning Center fund designations and accepted workbook General Giving.
+              Complete PCO values take precedence on overlapping weeks; sources are never added.
+              All-fund receipts, refunds and other giving KPIs are shown separately below.
+            </p>
+          )}
           {ministry === "connection" && (
             <p className="border-b px-4 py-3 text-[12px] text-muted-foreground" data-testid="text-connection-history-sources">
               Planning Center meeting attendance and accepted workbook attendance are separate series, not added together.
@@ -394,7 +405,7 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
               Workbook history is limited to its accepted snapshot date; later weeks remain missing.
             </p>
           )}
-          <HistoryTable series={lead} weeks={weeks} label={isGiving ? "Giving history" : "Attendance history"} />
+          <HistoryTable series={lead} weeks={weeks} label={isGiving ? "General Giving history" : "Attendance history"} />
         </Panel>
       )}
       {other.length > 0 && (

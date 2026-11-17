@@ -500,6 +500,37 @@ November 8 source coverage is inferred.
   storage/access suite also passed nine tests. Phase 5's other gates remain
   open; this is not overall Phase 5 signoff.
 
+### General Giving trend decision and publication — November 17, 2026
+
+- Owner chose **General Giving throughout**, not an all-fund series spliced
+  into historical workbook General Giving. The main card and history now use
+  `giving_total` for General Giving; `all_fund_giving` is a separate received
+  giving KPI in Other KPIs. First-time/lapsed definitions remain church-wide.
+- Appended an audited mapping for the unique staged PCO **General Giving**
+  fund. Financial calculation uses its designations and the parent gift's
+  Chicago received date, status and refund eligibility—not whole split gifts.
+  Full eligible designation coverage is checked before declaring General
+  Giving complete. An observed gift fully allocated to other funds contributes
+  an explicit zero; no source observations still means missing.
+- Published 424 complete weeks for each of General Giving and all-fund receipts
+  from October 7, 2018 through November 15, 2026. Publication was valid with no
+  calculation issues and took about seven seconds. No new scan or scheduler
+  changes were made. Historical workbook rows remain unchanged and valid;
+  complete PCO General Giving wins overlapping weeks rather than being added.
+- Reused timezone formatters in bulk calculations instead of repeatedly
+  constructing them. Aggregate history now validates shared publication
+  evidence once per publication rather than once per metric row. Measured
+  reads covering 2013–2018 and 2019–2026 took 37 ms and 68 ms respectively.
+- Source readback found 298 complete workbook weeks before PCO takes over,
+  one missing workbook week in the checked earlier range, and 424 complete
+  PCO weeks overall. No person-linked fields appeared in the aggregate read.
+- Verification: both app type checks passed, 92 focused calculation/display/
+  calendar tests passed (one opt-in test skipped), and ten rollback-only
+  publication/access tests passed, including role access, split-fund isolation,
+  overlap selection, replay and invalidation. Publication creation timestamps
+  use insertion time so sequential revisions remain ordered within an outer
+  transaction. Signed-in browser presentation is not claimed by these checks.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields.
