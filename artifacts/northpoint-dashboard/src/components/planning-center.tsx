@@ -530,7 +530,7 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
                 product,
                 mode,
                 since: since[product],
-                ...(product === "check_ins" ? { until: until[product] } : {}),
+                ...(["check_ins", "serving"].includes(product) && until[product] ? { until: until[product] } : {}),
               }
             : { product, mode },
       },
@@ -539,7 +539,7 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
   const currentWindowValid = (product: PlanningCenterSyncInputProduct) => {
     const startDate = since[product] ?? "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return false;
-    if (product !== "check_ins") return true;
+    if (product !== "check_ins" && (product !== "serving" || !until[product])) return true;
     const endDate = until[product] ?? "";
     const startTime = Date.parse(`${startDate}T00:00:00Z`);
     const endTime = Date.parse(`${endDate}T00:00:00Z`);
@@ -633,15 +633,15 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
                   data-testid={`input-since-${p}`}
                 />
               </label>
-              {p === "check_ins" && (
+              {(p === "check_ins" || p === "serving") && (
                 <label className="grid gap-0.5 text-[11px] text-muted-foreground">
-                  Through (inclusive)
+                  Through (inclusive{p === "serving" ? ", optional" : ""})
                   <input
                     type="date"
                     value={until[p] ?? ""}
                     onChange={(e) => setUntil((x) => ({ ...x, [p]: e.target.value }))}
                     className="h-8 rounded-md border border-input bg-background px-2 text-[12px] text-foreground"
-                    data-testid="input-until-check_ins"
+                    data-testid={`input-until-${p}`}
                   />
                 </label>
               )}
@@ -662,6 +662,12 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
               <p className="mt-1.5 text-[11px] text-muted-foreground">
                 Inclusive dates, up to 31 days. A completed sync can refresh published Check-In
                 metrics.
+              </p>
+            )}
+            {p === "serving" && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Add an ending date to limit Services to a Chicago date range of up to 31 days.
+                Assignments indicate scheduled or accepted responses, not actual participation.
               </p>
             )}
             {askBackfill === p && (

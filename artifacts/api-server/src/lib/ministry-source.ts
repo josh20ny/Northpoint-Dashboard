@@ -1,5 +1,24 @@
 import { PCO_ORIGIN, ProviderError } from "./planning-center-client";
 import type { Page, ParsedPage, SourceEntity } from "./planning-center-source";
+import { shiftDate } from "./attendance-calculation";
+
+const chicagoClock = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+});
+function chicagoMidnight(day: string): string {
+  const target = Date.parse(`${day}T00:00:00Z`);
+  let candidate = target;
+  for (let i = 0; i < 3; i++) {
+    const p = Object.fromEntries(chicagoClock.formatToParts(new Date(candidate))
+      .map(part => [part.type, part.value]));
+    const local = Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!, +p.second!);
+    const difference = target - local;
+    if (!difference) return new Date(candidate).toISOString();
+    candidate += difference;
+  }
+  throw new ProviderError(422);
+}
 
 export type MinistryProduct = "giving" | "groups" | "serving";
 // Deliberately exclude names, notes, contacts, payment details and demographics.
@@ -164,6 +183,13 @@ export function ministryPagePath(page: Page, product: MinistryProduct) {
       else {
         query.set("filter", "after");
         query.set("after", `${page.since}T00:00:00Z`);
+        if (page.until) {
+          query.set("filter", "after,before");
+          // PCO filters by plan times, not sort_date. Preserve overlapping
+          // multi-day plans and use actual Chicago midnight/DST boundaries.
+          query.set("after", new Date(Date.parse(chicagoMidnight(page.since)) - 1).toISOString());
+          query.set("before", chicagoMidnight(shiftDate(page.until, 1)));
+        }
       }
     }
   }
@@ -378,7 +404,8 @@ export function parseMinistryPage(
   }
   const nextPages: Page[] = [];
   const scanWindow = page.since
-    ? { since: page.since, ...(page.windowField ? { windowField: page.windowField } : {}) }
+    ? { since: page.since, ...(page.until ? { until: page.until } : {}),
+        ...(page.windowField ? { windowField: page.windowField } : {}) }
     : {};
   const current = new URL(ministryPagePath(page, product), PCO_ORIGIN);
   const next = (value.links as { next?: unknown } | undefined)?.next;
@@ -418,7 +445,7 @@ export function parseMinistryPage(
         ["PlanTime", "plan_times"],
         ["PlanPerson", "team_members"],
       ])
-        nextPages.push({ type, path: `${current.pathname}/${e.id}/${resource}` });
+        nextPages.push({ type, path: `${current.pathname}/${e.id}/${resource}`, ...scanWindow });
     }
   }
   return {

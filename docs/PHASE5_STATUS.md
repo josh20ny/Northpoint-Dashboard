@@ -614,11 +614,45 @@ November 8 source coverage is inferred.
   volunteer-count coverage or start additional identifiable assignment
   imports before the required development-data approval.
 
+### Services assignment import authorized and verified — November 17, 2026
+
+- The owner authorized development Services assignment imports, beginning with
+  the latest completed reporting week before historical backfills. Approved
+  fields are person IDs, team/service links, dates and response statuses;
+  raw assignments stay Admin-only. This does not authorize production
+  publishing or unattended scheduling.
+- Added an optional inclusive ending date to current Services/serving imports
+  in the API and Integration UI, limited to 31 days. The existing cursor
+  mechanism carries both boundaries through service-type discovery, plan
+  pagination and assignment/time requests. Documented PCO `after,before`
+  filters use Chicago midnight boundaries, including clock-change days.
+  Overlapping multi-day plans are not discarded by their sort date.
+- The first explicit, manually advanced import covered November 9–15 and
+  completed 45 pages with no pending pages or source error. Stored 22 service
+  types, 9 plans, 41 plan times and 696 assignments. All records have raw-source
+  lineage; all assignments retain person/team/plan/service-type links and
+  resolve their linked service-time records. There were no assignments with
+  empty service-time linkage.
+- Response statuses are 256 confirmed, 311 unconfirmed and 129 declined.
+  These are assignment records, not attendance, actual participation or
+  deduplicated published volunteer counts. No unrequested name, notes, email
+  or decline-reason fields were present in the assignment raw attributes.
+- Twenty-nine focused source/API checks and both type checks passed; four
+  opt-in database cases were skipped in that run. Actual stored-source
+  readback verified the new assignment linkage and field limits. No Serving
+  mappings or volunteer-count publications have been created yet.
+- Next requires ministry interpretation: active service types include
+  InsideOut, Transit, UpStreet, UpStreet Large Group and Waumba Land, plus
+  shared Kids' Check-in, LU Guest Services Weekly, Safety Team Schedule and
+  Sunday Morning. Do not classify the shared sources from their names alone
+  or treat an assignment response as evidence of participation.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
-   history beyond the owner-requested Admin-only Check-In name/grade fields.
-   This gates additional sensitive scans, not work on existing, already-staged
-   sources.
+   history beyond the owner-requested Admin-only Check-In name/grade fields
+   and the explicitly approved Giving, Groups and Services assignment fields.
+   This gates expansion beyond those approvals, not the already-approved
+   imports or work on existing staged sources.
 2. Map the existing PCO events, rooms, groups and funds to approved ministry
    measures; publish completed scans and accept representative
    source-to-storage-to-screen results. Do not infer a ministry from an

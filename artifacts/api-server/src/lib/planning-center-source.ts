@@ -174,7 +174,7 @@ export function scanRoots(
       ? {
           ...p,
           since,
-          ...(until && product === "check_ins" && p.type === "CheckIn" ? { until } : {}),
+          ...(until && ((product === "check_ins" && p.type === "CheckIn") || product === "serving") ? { until } : {}),
           ...(incrementalField ? { windowField: incrementalField } : {}),
         }
       : p,

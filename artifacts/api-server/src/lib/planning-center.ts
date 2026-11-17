@@ -461,7 +461,7 @@ export async function startSync(
     throw new AccessError(400, "Only a current-window scan accepts an ending date");
   if (
     until != null &&
-    (product !== "check_ins" ||
+    (!["check_ins", "serving"].includes(product) ||
       !since ||
       !validCalendarDate(since) ||
       !validCalendarDate(until) ||
@@ -469,7 +469,7 @@ export async function startSync(
   )
     throw new AccessError(
       400,
-      "A bounded Check-Ins scan requires an inclusive date window of 31 days or less",
+      "A bounded Check-Ins or Services scan requires an inclusive date window of 31 days or less",
     );
   return adminTransaction(p, async (c) => {
     const v = await connection(c);
@@ -621,7 +621,7 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
       ...r.queue.slice(1),
       ...parsed.nextPages.map((next) => ({
         ...next,
-        ...(page.since ? { since: page.since, windowField: page.windowField } : {}),
+        ...(page.since ? { since: page.since, ...(page.until ? { until: page.until } : {}), windowField: page.windowField } : {}),
       })),
     ];
     const unique = new Map<string, Page>();

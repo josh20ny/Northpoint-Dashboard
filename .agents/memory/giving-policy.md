@@ -1,6 +1,6 @@
 ---
 name: Giving definitions and privacy
-description: Owner definitions for giving visibility, first-time givers, lapse and later health integration.
+description: Giving visibility, giver definitions and approved Giving, Groups and Services development imports.
 ---
 
 Everyone can see giving numbers broadly, but anything specific tied to a person
@@ -80,3 +80,16 @@ excluded from that approval.
 Actual PCO consent must still be completed by an authenticated Admin; chat
 approval is not a provider grant or permission to impersonate an app user.
 Leave existing scheduler settings unchanged unless separately authorized.
+
+The owner also approved Services volunteer-assignment imports in development,
+starting with the latest completed reporting week before historical backfills:
+person IDs, team/service links, dates and assignment response statuses.
+
+**Why:** The owner chose “Allow Services imports” after that scope and the
+distinction between scheduled/accepted assignments and participation were
+explained.
+
+**How to apply:** Keep raw assignments Admin-only and publish aggregate counts
+only after source interpretation. This does not authorize production publishing
+or unattended scheduling; do not request the same development-data approval
+again for these fields.
