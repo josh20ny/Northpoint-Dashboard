@@ -290,6 +290,8 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
     it("audits Check-In include decisions and applies them on the next publication without exposing person data", async () => {
       const checkInRunId = randomUUID();
       const checkInId = `test-checkin-${randomUUID()}`;
+      const knownCheckInId = `test-checkin-${randomUUID()}`;
+      const knownPersonId = `test-person-${randomUUID()}`;
       const periodId = `test-period-${randomUUID()}`;
       const timeId = `test-time-${randomUUID()}`;
       const eventId = `test-event-${randomUUID()}`;
@@ -310,6 +312,23 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
             event_times: { data: [{ type: "EventTime", id: timeId }] },
             locations: { data: [{ type: "Location", id: locationId }] },
           },
+        },
+        {
+          type: "CheckIn",
+          id: knownCheckInId,
+          attributes: { kind: "Regular" },
+          relationships: {
+            person: { data: { type: "Person", id: knownPersonId } },
+            event_period: { data: { type: "EventPeriod", id: periodId } },
+            event_times: { data: [{ type: "EventTime", id: timeId }] },
+            locations: { data: [{ type: "Location", id: locationId }] },
+          },
+        },
+        {
+          type: "Person",
+          id: knownPersonId,
+          attributes: { grade: "Kindergarten" },
+          relationships: {},
         },
         {
           type: "EventPeriod",
@@ -374,6 +393,16 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         end: "2026-11-08",
       });
       expect(pending.issues).toContain("unresolved_checkins_pending:1");
+      const partialWorkspace = await repo.readMinistryData(
+        staff,
+        "upstreet",
+        "2026-11-08",
+        "2026-11-08",
+      );
+      expect(
+        partialWorkspace.metrics.find((metric) => metric.measure === "attendance"),
+      ).toMatchObject({ value: 1, quality: "partial" });
+      expect(JSON.stringify(partialWorkspace)).not.toContain(checkInId);
 
       await expect(repo.resolveCheckIn(admin, checkInId, "include")).resolves.toEqual({
         checkInId,
