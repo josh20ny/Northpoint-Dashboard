@@ -182,7 +182,7 @@ const entries: Entry[] = [
     ];
     return [...attendance, ...newGuests, ...volunteers];
   }),
-  ...[
+  ...([
     {
       sheet: "US",
       column: "K",
@@ -232,7 +232,7 @@ const entries: Entry[] = [
       ministry: "insideout",
       scope: "all",
     },
-  ].map((entry) => ({
+  ] as const).map((entry) => ({
     ...entry,
     measure: "volunteer_rally",
     unit: "people",
@@ -255,7 +255,7 @@ const entries: Entry[] = [
     },
   ].map((entry) => ({
     ...entry,
-    ministry: "insideout",
+    ministry: "insideout" as const,
     unit: "count",
     scope: "all",
     semantics:
@@ -314,7 +314,7 @@ const entries: Entry[] = [
   ].map((entry) => ({
     sheet: "Connection",
     ...entry,
-    ministry: "connection",
+    ministry: "connection" as const,
     scope: "all",
   })),
 ];

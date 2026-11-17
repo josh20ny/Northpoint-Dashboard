@@ -456,6 +456,34 @@ November 8 source coverage is inferred.
 
 ## Remaining Phase 5 gates
 
+### November 17 implementation update
+
+- Published 35 additional accepted operating-tab series (service attendance,
+  source-defined new attendees, volunteer categories and Connection measures),
+  with 37 weeks per series through November 1. Missing cached results remain
+  missing. Historical 9:30 AM service labels are no longer displayed as current
+  9:00 AM service times.
+- Published 14 annual Giving workbook series (2013–2026), retaining exact USD
+  minor units, 720 dated rows and 718 usable values. Source-defined historical
+  general giving is not an all-fund cash-flow reconciliation. Fund-category
+  equivalence and monthly/unit-count blocks remain unmapped.
+- Fixed Giving publication coverage: a newer current-window scan no longer
+  blocks publication of retained, completed Giving backfill or marks its first
+  overlap week partial merely because the current scan began midweek. Other
+  products and Giving without a completed backfill keep their coverage guards.
+- No new live PCO scan, schedule change or production deployment was performed.
+  See `PHASE5_WORKBOOK_CROSSWALK.md` for remaining semantic mapping gaps.
+- Verification: API and dashboard TypeScript checks passed. Eleven focused
+  storage/access/overlap/display tests passed using rollback-isolated source
+  organizations, including the newer-current-scan Giving regression.
+- **Blocked on current Giving publication performance:** the attempted
+  2022-01-02–2026-11-15 publication from already-staged data timed out after
+  five minutes. A subsequent read confirmed that no metric rows from that
+  attempt were committed. The older Giving publications still contain zero
+  metric rows. This is a publication/calculation bottleneck, not a reason to
+  repeat the completed PCO backfill. Profile and bound the calculation before
+  attempting the same multi-year range again; Phase 5 is not complete.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields.

@@ -59,12 +59,18 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       const connection = await c.query(
         "SELECT account_ref FROM pco_connections WHERE id='planning_center'",
       );
-      account = connection.rows[0]?.account_ref;
-      if (!account) {
-        account = "9000000000001";
+      account = `publication-fixture-${randomUUID()}`;
+      if (!connection.rows[0]?.account_ref) {
         await c.query(
           "INSERT INTO pco_connections(id,account_ref,account_name,state,scopes,connected_by) VALUES('planning_center',$1,'Synthetic fixture','disconnected','[]',$2)",
           [account, admin.userId],
+        );
+      } else {
+        // The publisher deliberately includes previously observed backfill
+        // facts. Keep this rollback-only fixture outside the real organization.
+        await c.query(
+          "UPDATE pco_connections SET account_ref=$1 WHERE id='planning_center'",
+          [account],
         );
       }
       runId = randomUUID();
@@ -294,7 +300,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         [account, eventId, admin.userId],
       );
 
-      const review = await repo.getCheckInReview(admin, 1);
+      const review = await repo.getCheckInReview(admin, 1, "2026-11-08");
       expect(review).toMatchObject({ unresolved: 1, total: 1 });
       expect(review.items[0]).toMatchObject({
         checkInId,
@@ -327,7 +333,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         target_type: "pco_checkin_resolution",
         target_id: `${account}:${checkInId}`,
       });
-      expect((await repo.getCheckInReview(admin, 1)).items[0].resolution).toBe("include");
+      expect((await repo.getCheckInReview(admin, 1, "2026-11-08")).items[0].resolution).toBe("include");
 
       const published = await repo.publishMinistryData(admin, {
         product: "check_ins",

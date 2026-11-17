@@ -7,14 +7,15 @@ workbook. It uses sheet headings and the existing metric registry; it does not
 inspect individual numeric observations or change the active Giving run.
 Workbook values are accepted by the owner. The Connection total-groups-
 attendance series and the four child/student aggregate attendance series have
-been mapped and published. Other listed series remain candidates. Preserve each
+been mapped and published. The operating-series implementation below records
+which additional candidates are now published. Preserve each
 source's measure, unit, scope, date axis and lineage when applying Imports
 mappings.
 
-`data/legacy_columns.csv` records 2026 operating-tab headers. Its
-`UNREVIEWED` mapping status means those headers have not been mapped to
-canonical measures; it does not reopen the owner's acceptance of the workbook's
-values.
+`data/legacy_columns.csv` is the original 2026 operating-tab header inventory.
+Its `UNREVIEWED` markers predate the imports recorded below; use this crosswalk
+and the persisted Imports mappings for current mapping status. They do not
+reopen the owner's acceptance of the workbook's values.
 
 ## Historical-series candidates
 
@@ -88,6 +89,51 @@ population differs.
   person-linked history.
 - Rally, scheduled, accepted and actual-serving activity are distinct. Do not
   convert a rally count or a PCO schedule response into actual service.
+
+## Operating measures imported — 2026-11-17
+
+Published 35 series through the existing accepted-workbook mapping and staging
+path. All publications passed source-lineage validity checks. Each contains
+37 Sunday observations, February 22–November 1, 2026; later rows are excluded by
+the November 7 snapshot cutoff.
+
+- `WL`: E/F service attendance; H/I/J new children; K/L/M serving volunteers.
+- `US`: E/F service attendance; H/I/J new children; L/N/Q serving volunteers;
+  K/M/O rally volunteers.
+- `Transit`: B/C service attendance; E new students; F/G/H rally volunteers.
+- `IO`: F/G large-/small-group counts; H new students; I rally volunteers.
+- `Connection`: M leaders; N coaches; O group volunteers; P guest-services
+  volunteers; T total church volunteers; U reporting groups.
+
+Missing or unsafe cached formula results stay missing, not zero. In particular,
+Transit new-student/rally, InsideOut rally and Connection reporting-group
+columns have no usable cached values in the imported range. No formulas were
+executed. Child/student all-service attendance continues to use the previously
+imported historical blocks rather than duplicate operating totals.
+
+UpStreet P (`LG`) and R (new-family check-in volunteers), InsideOut J (SGLs in
+groups), and Connection B/C/D/V remain unmapped because activity definitions,
+population equivalence or duplicate-series treatment is not established.
+Historical first-service observations retain the workbook's 9:30 AM label;
+current PCO first-service observations retain 9:00 AM.
+
+## Giving workbook imported — 2026-11-17
+
+The `$$$` sheet B:O contains 2013–2026 historical **general-giving** weekly
+totals. Fourteen annual publications passed lineage validity checks: 720 weekly
+rows, 718 usable values, through November 1, 2026. The 2013 and 2021 unreadable
+cells remain missing. Values use exact USD minor units, ordinal Sundays and
+the accepted snapshot cutoff. Complete PCO values win same-period overlap;
+the sources are never added together.
+
+Important source limitation: the workbook labels this **general giving**, not
+all-fund cash flow, and explicitly notes a PCO gift excluded from its total.
+These are source-defined historical amounts; do not assert that workbook and
+PCO totals have identical inclusion rules. Fund columns Q:V have not been
+mapped to PCO fund identities. X:Z first-time/recurring/lapsed headers have no
+underlying cells in the accepted sheet and cannot supply those historical
+counts. Separate monthly recurring and giving-unit blocks also require their
+own period/unit mappings; they were not treated as weekly amounts.
 
 ## Date, source and overlap rules
 

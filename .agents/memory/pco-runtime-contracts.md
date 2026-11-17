@@ -74,6 +74,17 @@ All PCO backlog processes should process in minutes, not hours.
 
 **How to apply:** Measure actual throughput and prioritize shared batching and rate-limit-aware processing while preserving resumable progress and accurate storage.
 
+Treat ingestion throughput and historical metric-publication throughput as
+separate performance gates. Do not repeat a completed PCO scan to fix a slow
+calculation over data already stored.
+
+**Why:** The optimized Giving scan completed, but publishing several years of
+retained history exceeded five minutes without committing metric rows.
+
+**How to apply:** Profile stored-data loading and per-week calculation costs,
+retain historical context needed by giver-cadence rules, and verify bounded
+publication before claiming the historical dashboard is ready.
+
 Do not assume every PCO association supports bulk includes. Groups Event supports
 including group/location, but not attendance; Services Plan supports plan_times,
 but not team_members. PCO rate limits are dynamic and communicated in response
