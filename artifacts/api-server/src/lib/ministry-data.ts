@@ -552,7 +552,41 @@ export async function publishMinistryData(
   input: MinistryPublicationInput,
 ): Promise<MinistryPublicationResult> {
   dates(input.start, input.end);
-  return adminTransaction(p, (c) => publishMinistryDataInTransaction(c, p, input));
+  return adminTransaction(p, async (c) => {
+    const account = await c.query(
+      "SELECT account_ref FROM pco_connections WHERE id='planning_center'",
+    );
+    const accountRef = account.rows[0]?.account_ref;
+    const previous = accountRef
+      ? await c.query(
+          `SELECT coverage_start::text AS start,coverage_end::text AS "end"
+           FROM ministry_publications WHERE product=$1 AND account_ref=$2 AND source_kind='pco'
+           ORDER BY created_at DESC,id DESC LIMIT 1`,
+          [input.product, accountRef],
+        )
+      : { rows: [] };
+    const result = await publishMinistryDataInTransaction(c, p, input);
+    const prior = previous.rows[0];
+    if (
+      accountRef &&
+      prior &&
+      input.start <= prior.start &&
+      input.end >= prior.end &&
+      result.issues.length === 0
+    ) {
+      // A full, successful Admin publication resolves only the explicit
+      // auto-refresh review marker. Partial publications leave it visible.
+      await c.query(
+        `UPDATE pco_sync_runs SET error=NULL WHERE id=(
+          SELECT id FROM pco_sync_runs
+          WHERE account_ref=$1 AND product=$2 AND status='complete'
+          ORDER BY started_at DESC,id DESC LIMIT 1
+        ) AND error='Source scan completed; ministry publication needs Admin review'`,
+        [accountRef, input.product],
+      );
+    }
+    return result;
+  });
 }
 async function publishMinistryDataInTransaction(
   c: PoolClient,

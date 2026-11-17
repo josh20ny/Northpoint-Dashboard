@@ -64,7 +64,7 @@ const relationships: Record<string, Record<string, string>> = {
   Membership: { group: "Group", person: "Person" },
   Event: { group: "Group", attendance_submitter: "Person" },
   Attendance: { event: "Event", person: "Person" },
-  Plan: { service_type: "ServiceType" },
+  Plan: { service_type: "ServiceType", plan_times: "PlanTime" },
   PlanPerson: {
     person: "Person",
     plan: "Plan",
@@ -139,6 +139,10 @@ export function ministryPagePath(page: Page, product: MinistryProduct) {
     `fields[${type}]`,
     [...attributes[type], ...Object.keys(relationships[type] ?? {})].join(","),
   );
+  if (product === "serving" && page.type === "Plan") {
+    query.set("fields[PlanTime]", attributes.PlanTime.join(","));
+    query.set("include", "plan_times");
+  }
   if (product === "giving" && page.type === "Donation") {
     // Sparse fieldsets filter linkage as well as attributes. Fetch all linked
     // designations with the donation batch instead of one GET per donation.
@@ -231,9 +235,15 @@ export function ministryEntity(value: unknown, expectedType: string): SourceEnti
   const rel: SourceEntity["relationships"] = {};
   const source = v.relationships as Record<string, { data?: unknown }> | undefined;
   for (const [key, type] of Object.entries(relationships[expectedType] ?? {})) {
+    if (expectedType === "Plan" && key === "plan_times" &&
+      (!source || !Object.hasOwn(source, key))) continue;
     if (!source || !Object.hasOwn(source, key)) throw new ProviderError(422);
     const data = source[key]?.data as { type?: unknown; id?: unknown } | null | undefined;
-    if (expectedType === "PlanPerson" && key === "service_times" && Array.isArray(data)) {
+    if (
+      (expectedType === "PlanPerson" && key === "service_times" ||
+        expectedType === "Plan" && key === "plan_times") &&
+      Array.isArray(data)
+    ) {
       if (
         data.length > 1000 ||
         data.some(
@@ -296,9 +306,11 @@ export function parseMinistryPage(
   if (!Array.isArray(raw) || raw.length > 100) throw new ProviderError(422);
   const summaries = product === "giving" && page.type === "DonorSummary";
   const donations = product === "giving" && page.type === "Donation";
+  const servingPlans = product === "serving" && page.type === "Plan";
   if (
     value.included !== undefined &&
-    (!Array.isArray(value.included) || (!summaries && !donations && value.included.length))
+    (!Array.isArray(value.included) ||
+      (!summaries && !donations && !servingPlans && value.included.length))
   )
     throw new ProviderError(422);
   const entities = raw.map((e) => {
@@ -357,6 +369,57 @@ export function parseMinistryPage(
     }
   }
   const sourceCollections: Record<string, string> = {};
+  const plansWithIncludedTimes = new Set<string>();
+  if (servingPlans) {
+    const included = value.included as unknown[] | undefined;
+    if (included && included.length > 10_000) throw new ProviderError(422);
+    const planByTime = new Map<string, string>();
+    for (const resource of raw) {
+      if (!resource || typeof resource !== "object") throw new ProviderError(422);
+      const plan = resource as { id?: unknown; relationships?: Record<string, { data?: unknown }> };
+      if (typeof plan.id !== "string" || !/^[0-9]{1,30}$/.test(plan.id)) throw new ProviderError(422);
+      const relationship = plan.relationships?.plan_times;
+      if (!relationship || !Object.hasOwn(relationship, "data") || relationship.data === null) continue;
+      if (!Array.isArray(relationship.data) || relationship.data.length > 1000)
+        throw new ProviderError(422);
+      for (const ref of relationship.data) {
+        if (!ref || typeof ref !== "object" || ref.type !== "PlanTime" ||
+          typeof ref.id !== "string" || !/^[0-9]{1,30}$/.test(ref.id) ||
+          planByTime.has(ref.id))
+          throw new ProviderError(422);
+        planByTime.set(ref.id, plan.id);
+      }
+    }
+    const normalizedTimes = new Map<string, SourceEntity>();
+    for (const resource of included ?? []) {
+      const time = ministryEntity(resource, "PlanTime");
+      if (!planByTime.has(time.id) || normalizedTimes.has(time.id)) throw new ProviderError(422);
+      normalizedTimes.set(time.id, time);
+    }
+    const byPlan = new Map<string, SourceEntity[]>();
+    for (const [timeId, planId] of planByTime) {
+      const time = normalizedTimes.get(timeId);
+      if (!time) continue;
+      const times = byPlan.get(planId) ?? [];
+      times.push(time);
+      byPlan.set(planId, times);
+    }
+    const currentPath = new URL(ministryPagePath(page, product), PCO_ORIGIN).pathname;
+    for (const entity of entities) {
+      const refs = planByTime.size
+        ? [...planByTime].filter(([, planId]) => planId === entity.id).map(([id]) => id)
+        : [];
+      const includedTimes = byPlan.get(entity.id) ?? [];
+      if (refs.length === includedTimes.length &&
+        Array.isArray(entity.relationships.plan_times?.data)) {
+        plansWithIncludedTimes.add(entity.id);
+        for (const time of includedTimes) {
+          entities.push(time);
+          sourceCollections[`PlanTime:${time.id}`] = `${currentPath}/${entity.id}/plan_times`;
+        }
+      }
+    }
+  }
   const coveredDonations = new Set<string>();
   if (donations) {
     const parents = new Map<string, string>();
@@ -441,16 +504,14 @@ export function parseMinistryPage(
         ...scanWindow,
       });
     if (product === "serving" && e.type === "Plan") {
-      for (const [type, resource] of [
-        ["PlanTime", "plan_times"],
-        ["PlanPerson", "team_members"],
-      ])
-        nextPages.push({ type, path: `${current.pathname}/${e.id}/${resource}`, ...scanWindow });
+      if (!plansWithIncludedTimes.has(e.id))
+        nextPages.push({ type: "PlanTime", path: `${current.pathname}/${e.id}/plan_times`, ...scanWindow });
+      nextPages.push({ type: "PlanPerson", path: `${current.pathname}/${e.id}/team_members`, ...scanWindow });
     }
   }
   return {
     entities,
     nextPages,
-    ...(donations ? { sourceCollections } : {}),
+    ...(Object.keys(sourceCollections).length ? { sourceCollections } : {}),
   };
 }

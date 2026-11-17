@@ -473,6 +473,13 @@ November 8 source coverage is inferred.
   products and Giving without a completed backfill keep their coverage guards.
 - No new live PCO scan, schedule change or production deployment was performed.
   See `PHASE5_WORKBOOK_CROSSWALK.md` for remaining semantic mapping gaps.
+- The latest current Giving scan had completed, but its in-transaction
+  auto-publication had left the explicit Admin-review marker. Re-published the
+  entire previously approved October 7, 2018–November 15, 2026 window through
+  the Admin repository: 6,360 values, no calculation issues. A successful
+  complete-window Admin republish now clears only that specific stale marker;
+  narrower publications cannot clear it. Source scan and scheduler settings
+  were not changed.
 - Verification: API and dashboard TypeScript checks passed. Eleven focused
   storage/access/overlap/display tests passed using rollback-isolated source
   organizations, including the newer-current-scan Giving regression.

@@ -168,6 +168,17 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         start: "2026-11-08",
         end: "2026-11-08",
       });
+    it("clears the auto-refresh review marker only after a complete Admin republish", async () => {
+      await publish();
+      await c.query(
+        "UPDATE pco_sync_runs SET error='Source scan completed; ministry publication needs Admin review' WHERE id=$1",
+        [runId],
+      );
+      const result = await publish();
+      expect(result.reused).toBe(true);
+      const status = await c.query("SELECT error FROM pco_sync_runs WHERE id=$1", [runId]);
+      expect(status.rows[0].error).toBeNull();
+    });
     it("publishes shared serving scopes without child-ministry duplication or person identifiers", async () => {
       await c.query("UPDATE pco_sync_runs SET product='serving' WHERE id=$1", [runId]);
       const rel = (type: string, id: string) => ({ data: { type, id } });
