@@ -150,13 +150,17 @@ export const SCOPES = [
   "for",
 ] as const;
 
-export const scopeLabel = (scope: string) =>
-  ({
-    all: "All services",
-    "service-1": "9:00 AM",
-    "service-2": "11:00 AM",
-    "service-3": "4:30 PM",
-  })[scope as "all" | "service-1" | "service-2" | "service-3"] ?? scope;
+export const scopeLabel = (scope: string, source?: string) => {
+  if (scope === "service-1" && source === "workbook") return "9:30 AM (workbook)";
+  return (
+    {
+      all: "All services",
+      "service-1": "9:00 AM",
+      "service-2": "11:00 AM",
+      "service-3": "4:30 PM",
+    }[scope as "all" | "service-1" | "service-2" | "service-3"] ?? scope
+  );
+};
 
 export type Series = {
   key: string;
@@ -166,6 +170,22 @@ export type Series = {
   unit: string;
   byWeek: Map<string, MinistryMetric>;
 };
+
+export function seriesScopeLabel(series: Series, weeks: string[]) {
+  const sources = new Set(
+    weeks
+      .map((week) => series.byWeek.get(week)?.source)
+      .filter((source): source is string => !!source),
+  );
+  if (
+    series.scope === "service-1" &&
+    sources.has("workbook") &&
+    sources.has("pco")
+  )
+    return "First service · 9:30 AM workbook / 9:00 AM PCO";
+  if (sources.size === 1) return scopeLabel(series.scope, [...sources][0]);
+  return scopeLabel(series.scope);
+}
 
 export function buildSeries(metrics: MinistryMetric[]): Series[] {
   const map = new Map<string, Series>();

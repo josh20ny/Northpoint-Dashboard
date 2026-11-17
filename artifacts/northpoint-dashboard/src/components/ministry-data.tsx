@@ -20,6 +20,7 @@ import {
   currencyOf,
   formatMetricValue,
   scopeLabel,
+  seriesScopeLabel,
   formatMinor,
   ministryPolling,
   previousSunday,
@@ -129,7 +130,7 @@ function SummaryCards({ series, week }: { series: Series[]; week: string }) {
         return (
           <div key={s.key} className="rounded-lg border bg-background/60 p-4" data-testid={`card-metric-${id}`}>
             <p className="text-[12.5px] font-medium">{s.title}</p>
-            <p className="font-mono text-[11px] text-muted-foreground">Scope: {scopeLabel(s.scope)}{currencyOf(s.unit) ? ` · ${currencyOf(s.unit)}` : ""}</p>
+            <p className="font-mono text-[11px] text-muted-foreground">Scope: {scopeLabel(s.scope, cur?.source)}{currencyOf(s.unit) ? ` · ${currencyOf(s.unit)}` : ""}</p>
             <p className="mt-2 font-display text-[26px] font-semibold tabular-nums" data-testid={`text-metric-value-${id}`}>
               {formatMetricValue(cv, s.unit)}
             </p>
@@ -176,7 +177,7 @@ function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: strin
                 <div key={s.key} className="flex items-start justify-between gap-4">
                   <dt className="min-w-0 text-[12px]">
                     {s.measure === "member_attendance" ? "Attendance (workbook)" : s.title}
-                    <span className="block text-[11px] text-muted-foreground">{scopeLabel(s.scope)}</span>
+                    <span className="block text-[11px] text-muted-foreground">{scopeLabel(s.scope, metric?.source)}</span>
                     {metric && <span className="block text-[11px] text-muted-foreground">{metric.source === "workbook" ? "Accepted workbook" : "Planning Center"}</span>}
                   </dt>
                   <dd className="shrink-0 text-right text-[13px] tabular-nums" data-testid={`history-value-${slugId(s.key)}-${week}`}>
@@ -200,7 +201,7 @@ function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: strin
             {series.map((s) => (
               <th key={s.key} scope="col" className="px-4 py-2 text-right font-medium">
                 {s.measure === "member_attendance" ? "Attendance (workbook)" : s.title}
-                <span className="block font-mono text-[10.5px] font-normal text-muted-foreground">{scopeLabel(s.scope)}{currencyOf(s.unit) ? ` · ${currencyOf(s.unit)}` : ""}</span>
+                <span className="block font-mono text-[10.5px] font-normal text-muted-foreground">{seriesScopeLabel(s, weeks)}{currencyOf(s.unit) ? ` · ${currencyOf(s.unit)}` : ""}</span>
               </th>
             ))}
           </tr>
@@ -526,7 +527,7 @@ export function MinistrySummaryCard({ slug, name }: { slug: string; name: string
             const m = s.byWeek.get(ws.latestCompletedWeek)!;
             return (
               <div key={s.key} className="flex items-baseline justify-between gap-3 text-[12.5px]">
-                <dt className="text-muted-foreground">{s.title}{s.scope !== "all" ? ` (${scopeLabel(s.scope)})` : ""}</dt>
+                <dt className="text-muted-foreground">{s.title}{s.scope !== "all" ? ` (${scopeLabel(s.scope, m.source)})` : ""}</dt>
                 <dd className="font-medium tabular-nums" data-testid={`text-summary-value-${slug}-${slugId(s.key)}`}>{formatMetricValue(m.value, m.unit)}</dd>
               </div>
             );

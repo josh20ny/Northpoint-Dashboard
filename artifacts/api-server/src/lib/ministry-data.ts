@@ -489,7 +489,17 @@ async function publishMinistryDataInTransaction(
   const run = runs.rows[0];
   if (!run || run.status !== "complete" || !run.finished_at)
     throw new AccessError(409, "Finish the latest source scan before publication");
-  if (run.coverage_start && input.start < String(run.coverage_start))
+  const hasBackfill = !!(
+    await c.query(
+      `SELECT 1 FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 AND mode='backfill' AND status='complete' LIMIT 1`,
+      [account, input.product],
+    )
+  ).rowCount;
+  if (
+    run.coverage_start &&
+    input.start < String(run.coverage_start) &&
+    !(input.product === "giving" && hasBackfill)
+  )
     throw new AccessError(
       409,
       "The selected range starts before this scan's current-data coverage",
@@ -503,12 +513,6 @@ async function publishMinistryDataInTransaction(
   ).rows;
   if (["serving", "check_ins"].includes(input.product) && !mappings.length)
     throw new AccessError(409, "Map source resources to ministry measures first");
-  const hasBackfill = !!(
-    await c.query(
-      `SELECT 1 FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 AND mode='backfill' AND status='complete' LIMIT 1`,
-      [account, input.product],
-    )
-  ).rowCount;
   let facts: SourceFact[];
   let gradeFacts: SourceFact[] = [];
   if (input.product === "check_ins") {
@@ -690,7 +694,10 @@ async function publishMinistryDataInTransaction(
   }
   // Check-Ins attendance is Sunday-only: a bounded Friday–Sunday scan covers
   // that entire attendance Sunday. Other products still need a full week.
-  const firstCoveredWeek = input.product !== "check_ins" && run.coverage_start
+  const firstCoveredWeek =
+    input.product !== "check_ins" &&
+    run.coverage_start &&
+    !(input.product === "giving" && hasBackfill)
     ? new Date(`${run.coverage_start}T12:00:00Z`).getUTCDay() === 1
       ? null
       : (() => {
@@ -722,7 +729,7 @@ async function publishMinistryDataInTransaction(
       row.flags.push("reporting_week_not_complete");
     }
   }
-  if (run.coverage_start)
+  if (run.coverage_start && !(input.product === "giving" && hasBackfill))
     for (const row of compiled.values)
       if (row.measure === "first_known") {
         row.value = null;

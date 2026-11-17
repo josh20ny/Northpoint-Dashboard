@@ -147,6 +147,83 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       });
       await expect(repo.givingTransactions(staff, 1)).rejects.toMatchObject({ status: 403 });
     });
+    it("publishes complete Giving backfill through a newer current scan's narrower coverage window", async () => {
+      const currentRunId = randomUUID();
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at,coverage_start,coverage_end)
+        VALUES($1,$2,'giving','current','complete','[]',$3,now()+interval '2 seconds',now(),'2026-11-01',NULL)`,
+        [currentRunId, account, admin.userId],
+      );
+      const olderDonation: SourceEntity = {
+        type: "Donation",
+        id: `test-donation-${randomUUID()}`,
+        attributes: {
+          amount_cents: 6000,
+          amount_currency: "USD",
+          received_at: "2026-10-25T15:00:00Z",
+          payment_status: "succeeded",
+          refunded: false,
+        },
+        relationships: {
+          person: { data: null },
+          recurring_donation: { data: null },
+        },
+      };
+      const boundaryDonation: SourceEntity = {
+        ...olderDonation,
+        id: `test-donation-${randomUUID()}`,
+        attributes: {
+          ...olderDonation.attributes,
+          amount_cents: 2500,
+          received_at: "2026-11-01T15:00:00Z",
+        },
+      };
+      for (const donation of [olderDonation, boundaryDonation]) {
+        const rawId = randomUUID();
+        await c.query(
+          `INSERT INTO raw_source_records(id,provider,account_ref,object_type,external_id,payload_json,payload_hash)
+          VALUES($1,'planning_center',$2,'giving:Donation',$3,$4,$5)`,
+          [
+            rawId,
+            account,
+            donation.id,
+            JSON.stringify(donation),
+            digest(JSON.stringify(donation)),
+          ],
+        );
+        await c.query(
+          `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,observed_run_id,normalized)
+          VALUES($1,'giving','Donation',$2,$3,$4,$4,$5)`,
+          [
+            account,
+            donation.id,
+            rawId,
+            runId,
+            JSON.stringify(normalized(donation, "/giving/v2/donations")),
+          ],
+        );
+      }
+
+      const publication = await repo.publishMinistryData(admin, {
+        product: "giving",
+        start: "2026-10-25",
+        end: "2026-11-08",
+      });
+      const publishedTotals = await c.query<{
+        week: string;
+        value: string | null;
+        quality: string;
+      }>(
+        `SELECT week::text,value::text,quality FROM ministry_metric_values
+        WHERE publication_id=$1 AND measure='giving_total' ORDER BY week`,
+        [publication.publicationId],
+      );
+      expect(publishedTotals.rows).toEqual([
+        { week: "2026-10-25", value: "6000", quality: "complete" },
+        { week: "2026-11-01", value: "2500", quality: "complete" },
+        { week: "2026-11-08", value: "12500", quality: "complete" },
+      ]);
+    });
     it("audits Check-In include decisions and applies them on the next publication without exposing person data", async () => {
       const checkInRunId = randomUUID();
       const checkInId = `test-checkin-${randomUUID()}`;
