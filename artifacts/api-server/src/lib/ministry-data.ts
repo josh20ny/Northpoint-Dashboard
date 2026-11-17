@@ -32,7 +32,11 @@ import {
 import { reportingWeekEnding } from "./reporting-calendar";
 
 export { getCheckInReview, resolveCheckIn };
-import { analyzeGivingPatterns, GIVING_PATTERN_VERSION } from "./giving-patterns";
+import {
+  summarizeGivingPatternsByWeeks,
+  GIVING_PATTERN_VERSION,
+  type GivingUnit,
+} from "./giving-patterns";
 import { currentGivingPolicy } from "./giving-policy";
 import { canonical } from "./planning-center-source";
 import {
@@ -119,6 +123,61 @@ function dates(start: string, end: string) {
     +new Date(end) - +new Date(start) > 10 * 366 * 86400000
   )
     throw new AccessError(400, "Choose Sunday dates in order, no more than ten years apart");
+}
+async function loadGivingSourceFacts(
+  c: PoolClient,
+  account: string,
+  runId: string,
+  hasBackfill: boolean,
+): Promise<SourceFact[]> {
+  const pageSize = 5_000;
+  const pageLimit = pageSize + 1;
+  const facts: SourceFact[] = [];
+  let afterType = "";
+  let afterId = "";
+  while (true) {
+    const page = await c.query<{
+      objectType: string;
+      externalId: string;
+      normalized: {
+        sourceType: string;
+        sourceId: string;
+        attributes: SourceFact["attributes"];
+        sourceRelationships: SourceFact["relationships"];
+        sourceCollection: string | null;
+      };
+    }>(
+      `SELECT object_type AS "objectType",external_id AS "externalId",normalized
+       FROM pco_source_entities
+       WHERE account_ref=$1 AND product='giving'
+         AND (observed_run_id=$2 OR ($3 AND observed_run_id IS NOT NULL))
+         AND missing_run_id IS NULL
+         AND (object_type,external_id)>($4,$5)
+       ORDER BY object_type,external_id LIMIT $6`,
+      [account, runId, hasBackfill, afterType, afterId, pageLimit],
+    );
+    if (!page.rows.length) break;
+    if (facts.length + page.rows.length > 500_000)
+      throw new AccessError(
+        409,
+        "Dataset exceeds bounded publisher; partition coverage before continuing",
+      );
+    for (const row of page.rows) {
+      const normalized = row.normalized;
+      facts.push({
+        type: normalized.sourceType,
+        id: normalized.sourceId,
+        attributes: normalized.attributes,
+        relationships: normalized.sourceRelationships,
+        sourceCollection: normalized.sourceCollection,
+      });
+    }
+    const last = page.rows.at(-1)!;
+    afterType = last.objectType;
+    afterId = last.externalId;
+    if (page.rows.length < pageLimit) break;
+  }
+  return facts;
 }
 export async function readMinistryData(
   p: Principal,
@@ -533,24 +592,28 @@ async function publishMinistryDataInTransaction(
       );
     }
   } else {
-    const sources = await c.query(
-      `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
-        AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL))
-        AND missing_run_id IS NULL LIMIT 500001`,
-      [account, input.product, run.id, input.product === "giving" && hasBackfill],
-    );
-    if (sources.rows.length > 500000)
-      throw new AccessError(
-        409,
-        "Dataset exceeds bounded publisher; partition coverage before continuing",
+    if (input.product === "giving") {
+      facts = await loadGivingSourceFacts(c, account, run.id, hasBackfill);
+    } else {
+      const sources = await c.query(
+        `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
+          AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL))
+          AND missing_run_id IS NULL LIMIT 500001`,
+        [account, input.product, run.id, false],
       );
-    facts = sources.rows.map(({ normalized: n }) => ({
-      type: n.sourceType,
-      id: n.sourceId,
-      attributes: n.attributes,
-      relationships: n.sourceRelationships,
-      sourceCollection: n.sourceCollection,
-    }));
+      if (sources.rows.length > 500000)
+        throw new AccessError(
+          409,
+          "Dataset exceeds bounded publisher; partition coverage before continuing",
+        );
+      facts = sources.rows.map(({ normalized: n }) => ({
+        type: n.sourceType,
+        id: n.sourceId,
+        attributes: n.attributes,
+        relationships: n.sourceRelationships,
+        sourceCollection: n.sourceCollection,
+      }));
+    }
   }
   const checkInResolutions =
     input.product === "check_ins"
@@ -630,63 +693,48 @@ async function publishMinistryDataInTransaction(
       (!!run.coverage_start && input.start <= String(run.coverage_start)),
   );
   const givingPolicy = input.product === "giving" ? await currentGivingPolicy(c) : null;
-  let givingUnits;
+  let givingUnits: GivingUnit[] | undefined;
   if (input.product === "giving" && givingPolicy) {
-    givingUnits = analyzeGivingPatterns(
+    const weeks: string[] = [];
+    for (let week = input.start; week <= input.end; week = shiftDate(week, 7))
+      weeks.push(week);
+    const givingAnalysis = summarizeGivingPatternsByWeeks(
       facts,
       new Date(run.finished_at),
       hasBackfill,
       givingPolicy,
+      weeks,
     );
-    const personMetadata = facts.some((f) => f.type === "Person");
-    const linkageComplete = !givingUnits.some(
-      (u) => u.reason === "joint_giver_linkage_unavailable",
-    );
-    for (let week = input.start; week <= input.end; week = shiftDate(week, 7)) {
-      const units = analyzeGivingPatterns(
-        facts,
-        new Date(run.finished_at),
-        hasBackfill,
-        givingPolicy,
-        week,
-      );
+    givingUnits = givingAnalysis.givingUnits;
+    for (const summary of givingAnalysis.weeks) {
       compiled.values.push({
         ministry: "giving",
         measure: "first_time_givers",
         scope: "all",
-        week,
-        value:
-          personMetadata && linkageComplete
-            ? units.filter(
-                (u) =>
-                  u.firstRecordedAt &&
-                  u.firstRecordedAt <= week &&
-                  u.firstRecordedAt >= shiftDate(week, -6),
-              ).length
-            : null,
+        week: summary.week,
+        value: summary.firstTimeGivers,
         unit: "giving_units",
-        quality: personMetadata && linkageComplete ? "complete" : "missing",
+        quality: summary.firstTimeGivers === null ? "missing" : "complete",
         denominator: null,
         flags: [
           "current_pco_joint_giving_units",
-          ...(personMetadata ? [] : ["first_gift_metadata_required"]),
-          ...(linkageComplete ? [] : ["giving_unit_linkage_incomplete"]),
+          ...(summary.personMetadata ? [] : ["first_gift_metadata_required"]),
+          ...(summary.linkageComplete ? [] : ["giving_unit_linkage_incomplete"]),
         ],
       });
-      const eligible = units.filter((u) => u.lapsed !== null),
-        lapsed = eligible.filter((u) => u.lapsed === true).length;
       compiled.values.push({
         ministry: "giving",
         measure: "lapsed_givers",
         scope: "all",
-        week,
-        value: hasBackfill && eligible.length ? lapsed : null,
+        week: summary.week,
+        value: hasBackfill ? summary.lapsedGivers : null,
         unit: "giving_units",
-        quality: hasBackfill && eligible.length ? "complete" : "missing",
-        denominator: eligible.length,
+        quality:
+          hasBackfill && summary.lapsedDenominator > 0 ? "complete" : "missing",
+        denominator: summary.lapsedDenominator,
         flags: !hasBackfill
           ? ["historical_backfill_required"]
-          : !eligible.length
+          : !summary.lapsedDenominator
             ? ["no_units_with_classifiable_history"]
             : ["unclassified_patterns_excluded", "current_pco_joint_giving_units"],
       });

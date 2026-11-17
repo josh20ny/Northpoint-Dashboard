@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   analyzeGivingPatterns,
   DEFAULT_GIVING_POLICY,
+  summarizeGivingPatternsByWeeks,
 } from "../artifacts/api-server/src/lib/giving-patterns";
 import type { SourceFact } from "../artifacts/api-server/src/lib/ministry-calculation";
 const person = (id: string, first: string): SourceFact => ({
@@ -121,6 +122,59 @@ describe("owner-defined, adjustable Giving signals", () => {
       lapsed: true,
       lastGiftDate: "2025-12-10",
     });
+    const timeline = summarizeGivingPatternsByWeeks(
+      facts,
+      new Date("2026-06-01T12:00:00Z"),
+      true,
+      DEFAULT_GIVING_POLICY,
+      ["2026-03-15", "2026-05-10"],
+    );
+    expect(timeline.weeks).toMatchObject([
+      { week: "2026-03-15", lapsedGivers: 1, lapsedDenominator: 1 },
+      { week: "2026-05-10", lapsedGivers: null, lapsedDenominator: 0 },
+    ]);
+    for (const summary of timeline.weeks) {
+      const eligible = analyzeGivingPatterns(
+        facts,
+        new Date("2026-06-01T12:00:00Z"),
+        true,
+        DEFAULT_GIVING_POLICY,
+        summary.week,
+      ).filter((unit) => unit.lapsed !== null);
+      expect(summary.lapsedDenominator).toBe(eligible.length);
+      expect(summary.lapsedGivers).toBe(
+        eligible.length ? eligible.filter((unit) => unit.lapsed).length : null,
+      );
+    }
+  });
+  it("preserves first-time and lapsed counts on closed weekly periods", () => {
+    const facts = [
+      person("1", "2026-01-04"),
+      ...["2026-01-04", "2026-01-11", "2026-01-18", "2026-01-25"].map((date, i) =>
+        gift(String(i), date),
+      ),
+    ];
+    const timeline = summarizeGivingPatternsByWeeks(
+      facts,
+      new Date("2026-03-01T12:00:00Z"),
+      true,
+      DEFAULT_GIVING_POLICY,
+      ["2026-02-15", "2026-02-22"],
+    );
+    expect(timeline.weeks).toMatchObject([
+      {
+        week: "2026-02-15",
+        firstTimeGivers: 0,
+        lapsedGivers: 1,
+        lapsedDenominator: 1,
+      },
+      {
+        week: "2026-02-22",
+        firstTimeGivers: 0,
+        lapsedGivers: 1,
+        lapsedDenominator: 1,
+      },
+    ]);
   });
   it("leaves irregular or insufficient histories unclassified, not healthy", () => {
     const irregular = ["2026-01-01", "2026-01-03", "2026-02-19", "2026-04-20"].map((d, i) =>
