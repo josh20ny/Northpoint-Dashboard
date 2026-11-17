@@ -30,6 +30,10 @@ export const SAFE_SCOPES = [
   "building",
   "care",
   "fuel",
+  "fuel-2023",
+  "fuel-2024",
+  "fuel-2026",
+  "fuel-2027",
   "mosaic",
   "for",
 ] as const;

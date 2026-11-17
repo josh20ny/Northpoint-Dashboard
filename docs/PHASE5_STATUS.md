@@ -556,6 +556,30 @@ November 8 source coverage is inferred.
   typechecking passed. Authenticated browser presentation remains a separate
   acceptance item; these are repository/data-boundary checks.
 
+### Separate Fuel campaigns — November 17, 2026
+
+- The owner chose to keep yearly Fuel campaigns separate. Added fixed aggregate
+  scopes for the four staged PCO funds: Fuel 2023, 2024, 2026 and 2027.
+  A campaign's identity comes from its designated fund, not the calendar year
+  a gift arrived. General Giving and all-fund receipts remain distinct.
+- Admin source mapping and aggregate history now offer readable campaign
+  labels. A new enabled PCO mapping cannot use the undifferentiated `fuel`
+  scope; that scope remains available for campaign-unspecified workbook
+  history. Existing workbook rows were not assigned to a campaign.
+- Created the four owner-approved mappings and republished the existing
+  October 2018–November 2026 Giving window using already-staged sources:
+  4,240 metric rows, no calculation issues, about nine seconds. Readback
+  returned all four distinct campaign scopes and no combined PCO Fuel scope.
+  No additional scan, scheduler change or source import was started.
+- Sixty-one focused calculation, display and rollback-only repository checks
+  passed, including same-week split gifts to different campaigns, a gift
+  received outside the campaign's named year, unchanged General Giving,
+  all-role aggregate reads, identifier exclusion and invalid-scope rejection.
+  API and dashboard type checks passed.
+- Remaining fund categories still require source-interpretation confirmation;
+  the undifferentiated historical workbook Fuel column cannot establish
+  campaign-specific history by itself. Overall Phase 5 acceptance stays open.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields.

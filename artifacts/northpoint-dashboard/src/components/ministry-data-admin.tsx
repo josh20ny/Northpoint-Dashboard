@@ -126,7 +126,9 @@ export function MinistryDataAdminPanel() {
       ? SCOPES.filter((scope) => ["service-1", "service-2", "service-3"].includes(scope))
       : mapping.measure === "student_group_classification"
         ? SCOPES.filter((scope) => scope === "all")
-        : SCOPES;
+        : SCOPES.filter((scope) => mapping.measure === "fund_giving"
+          ? scope !== "fuel"
+          : !scope.startsWith("fuel-"));
   const sourceOptions = (admin?.sources ?? []).filter(
     (s) => s.product === mapping.product && s.objectType === mapping.objectType,
   );

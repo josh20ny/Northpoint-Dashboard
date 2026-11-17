@@ -24,6 +24,11 @@ function metric(week: string, source: string): MinistryMetric {
 }
 
 describe("ministry service scope labels", () => {
+  it("labels Fuel campaigns individually without assigning an unspecified workbook category", () => {
+    for (const year of [2023, 2024, 2026, 2027])
+      expect(scopeLabel(`fuel-${year}`, "pco")).toBe(`Fuel ${year}`);
+    expect(scopeLabel("fuel", "workbook")).toBe("Fuel (campaign unspecified)");
+  });
   it("shows the workbook's 9:30 first service without mislabelling current PCO data", () => {
     expect(scopeLabel("service-1", "workbook")).toBe("9:30 AM (workbook)");
     expect(scopeLabel("service-1", "pco")).toBe("9:00 AM");

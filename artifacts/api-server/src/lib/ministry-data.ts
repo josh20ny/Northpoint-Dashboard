@@ -117,6 +117,8 @@ function validateTarget(ministry: string, measure: string, scope: string) {
     throw new AccessError(400, "Financial measures belong only to Giving");
   if (measure === "giving_total" && scope !== "all")
     throw new AccessError(400, "General Giving must use the all-services scope");
+  if (scope.startsWith("fuel-") && (ministry !== "giving" || measure !== "fund_giving"))
+    throw new AccessError(400, "Fuel campaign scopes belong only to fund giving");
 }
 function dates(start: string, end: string) {
   if (
@@ -379,6 +381,9 @@ export async function ministryDataAdmin(p: Principal): Promise<MinistryDataAdmin
 }
 export async function createMinistryMapping(p: AdminActor, input: MinistrySourceMappingInput) {
   validateTarget(input.ministry, input.measure, input.scope);
+  if (input.enabled && input.product === "giving" &&
+    input.measure === "fund_giving" && input.scope === "fuel")
+    throw new AccessError(400, "Choose a specific Fuel campaign; workbook Fuel has no campaign assignment");
   if (
     !allowedMapping[input.product]?.[input.objectType]?.includes(input.measure) ||
     !validCalendarDate(input.effectiveFrom) ||

@@ -23,6 +23,15 @@ split gift in the main trend, add overlapping sources, or relabel all-fund
 receipts as General Giving. This choice does not change the first-time/lapsed
 giver definitions below, which concern gifts to Northpoint.
 
+Keep yearly Fuel campaigns separate.
+
+**Why:** The owner chose “Keep campaigns separate” rather than combining PCO's
+year-labelled Fuel funds into the workbook's single Fuel category.
+
+**How to apply:** Preserve each campaign's fund identity even when gifts arrive
+in another calendar year. Do not assign undifferentiated workbook Fuel totals
+to a campaign without explicit evidence.
+
 A first-time giver is the first recorded giving event for that person/family at
 Northpoint. A lapsed giver has a consistent giving record/cadence (weekly,
 monthly, etc.) and then misses three consecutive expected gifts. A normally

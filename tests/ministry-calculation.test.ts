@@ -311,6 +311,30 @@ describe("ministry source-to-metric semantics", () => {
       .toMatchObject({ value: 3000, quality: "complete", unit: "USD_minor" });
     expect(result.values.find((row) => row.measure === "all_fund_giving")?.value).toBe(10555);
   });
+  it("keeps Fuel campaigns separate even when gifts are received in the same week", () => {
+    const designation = (id: string, fund: string, amount: number) =>
+      e("Designation", id, { amount_cents: amount, amount_currency: "USD" },
+        { fund: r("Fund", fund) }, "/giving/v2/donations/1/designations");
+    const result = compileMinistryFacts("giving", [
+      giving("1"),
+      designation("11", "8", 7555),
+      designation("12", "9", 1000),
+      designation("13", "10", 2000),
+    ], [
+      mapping("giving", "Fund", "8", "giving_total", "giving"),
+      { ...mapping("giving", "Fund", "9", "fund_giving", "giving"), scope: "fuel-2023" },
+      { ...mapping("giving", "Fund", "10", "fund_giving", "giving"), scope: "fuel-2024" },
+    ], start, end, now);
+    expect(result.issues).toEqual([]);
+    expect(result.values.filter(row => row.measure === "fund_giving"))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ scope: "fuel-2023", value: 1000, quality: "complete" }),
+        expect.objectContaining({ scope: "fuel-2024", value: 2000, quality: "complete" }),
+      ]));
+    expect(result.values.filter(row => row.measure === "fund_giving")).toHaveLength(2);
+    expect(result.values.find(row => row.measure === "giving_total")?.value).toBe(7555);
+    expect(result.values.find(row => row.measure === "all_fund_giving")?.value).toBe(10555);
+  });
   it("reports observed zero General Giving for a fully allocated gift to another fund", () => {
     const result = compileMinistryFacts("giving", [
       giving("1"),

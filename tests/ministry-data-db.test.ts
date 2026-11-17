@@ -168,6 +168,61 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         start: "2026-11-08",
         end: "2026-11-08",
       });
+    it("publishes separate Fuel campaigns without merging General Giving or exposing donor identifiers", async () => {
+      for (const year of [2023, 2024, 2026, 2027]) {
+        await seedGivingSource({
+          type: "Fund", id: String(year), attributes: { name: `Fuel ${year}` }, relationships: {},
+        }, "/giving/v2/funds");
+        await repo.createMinistryMapping(admin, {
+          product: "giving", objectType: "Fund", externalId: String(year),
+          ministry: "giving", measure: "fund_giving", scope: `fuel-${year}`,
+          effectiveFrom: "2013-01-01", effectiveTo: null, enabled: true,
+          note: "Synthetic separate campaign fixture", supersedesId: null,
+        });
+      }
+      const input = {
+        product: "giving" as const, objectType: "Fund", externalId: "2023",
+        ministry: "giving", measure: "fund_giving", scope: "fuel",
+        effectiveFrom: "2013-01-01", effectiveTo: null, enabled: true,
+        note: "Must not merge campaigns", supersedesId: null,
+      };
+      await expect(repo.createMinistryMapping(admin, input)).rejects.toMatchObject({ status: 400 });
+      await expect(repo.createMinistryMapping(admin, {
+        ...input, scope: "fuel-2025",
+      })).rejects.toMatchObject({ status: 400 });
+      await expect(repo.createMinistryMapping(admin, {
+        ...input, scope: "fuel-2023", measure: "refund_total",
+      })).rejects.toMatchObject({ status: 400 });
+      await seedGivingSource({
+        type: "Donation", id: "1019999",
+        attributes: {
+          amount_cents: 3000, amount_currency: "USD",
+          received_at: "2026-11-08T15:00:00Z",
+          payment_status: "succeeded", refunded: false,
+        },
+        relationships: { person: { data: null }, recurring_donation: { data: null } },
+      }, "/giving/v2/donations");
+      for (const [year, amount] of [[2023, 1000], [2027, 2000]]) {
+        await seedGivingSource({
+          type: "Designation", id: `designation-fuel-${year}`,
+          attributes: { amount_cents: amount, amount_currency: "USD" },
+          relationships: { fund: { data: { type: "Fund", id: String(year) } } },
+        }, "/giving/v2/donations/1019999/designations");
+      }
+      await publish();
+      for (const actor of [admin, staff, leadership]) {
+        const workspace = await repo.readMinistryData(actor, "giving", "2026-11-08", "2026-11-08");
+        const campaigns = workspace.metrics.filter(row => row.measure === "fund_giving");
+        expect(campaigns).toEqual(expect.arrayContaining([
+          expect.objectContaining({ scope: "fuel-2023", value: 1000, quality: "complete" }),
+          expect.objectContaining({ scope: "fuel-2027", value: 2000, quality: "complete" }),
+        ]));
+        expect(campaigns.some(row => row.scope === "fuel")).toBe(false);
+        expect(workspace.metrics.find(row => row.measure === "giving_total")?.value).toBe(12500);
+        expect(workspace.metrics.find(row => row.measure === "all_fund_giving")?.value).toBe(15500);
+        expect(JSON.stringify(workspace)).not.toMatch(/1019999|887766554433|personId|recurringId/);
+      }
+    });
     it("publishes exact cents, reuses replay and safely exposes the same totals to every role", async () => {
       const first = await publish(),
         second = await publish();

@@ -147,6 +147,10 @@ export const SCOPES = [
   "building",
   "care",
   "fuel",
+  "fuel-2023",
+  "fuel-2024",
+  "fuel-2026",
+  "fuel-2027",
   "mosaic",
   "for",
 ] as const;
@@ -159,6 +163,11 @@ export const scopeLabel = (scope: string, source?: string) => {
       "service-1": "9:00 AM",
       "service-2": "11:00 AM",
       "service-3": "4:30 PM",
+      fuel: "Fuel (campaign unspecified)",
+      "fuel-2023": "Fuel 2023",
+      "fuel-2024": "Fuel 2024",
+      "fuel-2026": "Fuel 2026",
+      "fuel-2027": "Fuel 2027",
     }[scope as "all" | "service-1" | "service-2" | "service-3"] ?? scope
   );
 };
