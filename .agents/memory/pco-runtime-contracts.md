@@ -27,6 +27,16 @@ lookups to person-filtered collection reads. Explicit null, omitted linkage and
 a missing summary are different evidence. Keep unresolved family patterns
 unclassified; never infer linkage from names or from included resources alone.
 
+PCO Refund `amount_cents` can be negative even though the API documentation's
+example uses a positive integer.
+
+**Why:** Every refund in the observed staged account used negative minor units;
+rejecting negative refunds incorrectly withheld otherwise valid Giving totals.
+
+**How to apply:** Keep signed provider records intact. The separate refunds KPI
+reports magnitude by refund date and currency; never subtract it a second time
+from received giving or apply this sign rule to donations.
+
 ## Backlog performance
 
 Scope date-specific Check-Ins calculations by linked reporting dates in SQL

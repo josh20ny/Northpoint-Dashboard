@@ -228,4 +228,47 @@ describe("owner-defined, adjustable Giving signals", () => {
       ),
     ).toEqual([]);
   });
+  it("matches per-period analysis across joint units, policy changes and incomplete history", () => {
+    const facts = [
+      person("1", "2025-09-10"),
+      person("2", "2026-01-04"),
+      person("3", "2026-01-04"),
+      joint("1", "2"),
+      ...["2025-09-10", "2025-10-10", "2025-11-10", "2025-12-10", "2026-05-10"]
+        .map((date, i) => gift(`monthly-${i}`, date, i % 2 ? "2" : "1")),
+      ...["2026-01-04", "2026-01-11", "2026-01-18", "2026-01-25"]
+        .map((date, i) => gift(`weekly-${i}`, date, "3")),
+    ];
+    const asOf = new Date("2026-04-01T12:00:00Z");
+    const weeks = ["2025-09-14", "2026-01-04", "2026-02-15", "2026-03-15", "2026-05-10"];
+    for (const policy of [
+      DEFAULT_GIVING_POLICY,
+      { ...DEFAULT_GIVING_POLICY, grouping: "person" as const },
+      { ...DEFAULT_GIVING_POLICY, minimumGifts: 3, missedExpected: 2 },
+    ]) {
+      for (const historyComplete of [true, false]) {
+        const result = summarizeGivingPatternsByWeeks(facts, asOf, historyComplete, policy, weeks);
+        expect(result.givingUnits).toEqual(
+          analyzeGivingPatterns(facts, asOf, historyComplete, policy),
+        );
+        for (const summary of result.weeks) {
+          const units = analyzeGivingPatterns(facts, asOf, historyComplete, policy, summary.week);
+          const eligible = units.filter((unit) => unit.lapsed !== null);
+          expect(summary.lapsedDenominator).toBe(eligible.length);
+          expect(summary.lapsedGivers).toBe(
+            historyComplete && eligible.length
+              ? eligible.filter((unit) => unit.lapsed === true).length
+              : null,
+          );
+          const weekStart = new Date(`${summary.week}T12:00:00Z`);
+          weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+          expect(summary.firstTimeGivers).toBe(units.filter(
+            (unit) => unit.firstRecordedAt &&
+              unit.firstRecordedAt <= summary.week &&
+              unit.firstRecordedAt >= weekStart.toISOString().slice(0, 10),
+          ).length);
+        }
+      }
+    }
+  });
 });

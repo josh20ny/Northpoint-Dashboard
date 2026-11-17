@@ -476,13 +476,29 @@ November 8 source coverage is inferred.
 - Verification: API and dashboard TypeScript checks passed. Eleven focused
   storage/access/overlap/display tests passed using rollback-isolated source
   organizations, including the newer-current-scan Giving regression.
-- **Blocked on current Giving publication performance:** the attempted
-  2022-01-02–2026-11-15 publication from already-staged data timed out after
-  five minutes. A subsequent read confirmed that no metric rows from that
-  attempt were committed. The older Giving publications still contain zero
-  metric rows. This is a publication/calculation bottleneck, not a reason to
-  repeat the completed PCO backfill. Profile and bound the calculation before
-  attempting the same multi-year range again; Phase 5 is not complete.
+- **Giving publication performance blocker cleared:** the original multi-year
+  attempt timed out after five minutes. The publisher now indexes Giving
+  identities and gift dates once rather than rebuilding them for each Sunday,
+  and loads stored facts in bounded keyset pages under the existing query
+  timeout. The successful publication processed 110,779 staged facts for
+  October 7, 2018–November 15, 2026 in 18.4 seconds. No new PCO scan was needed.
+- The live validation also exposed signed Refund amounts: all ten staged
+  refunds use negative cents. Refund reporting now uses the absolute magnitude
+  while preserving the original signed source records, refund date and
+  currency; it never subtracts refunds again from received giving. A new
+  calculation version prevents reuse of the earlier withheld publication.
+- Verified the replacement publication with the persisted active Admin
+  context: valid, no calculation issues, 2,120 metric rows, and 424 complete
+  weekly received-giving values. The aggregate dashboard read returns complete
+  PCO Giving for November 8/15 without person-linked fields. Three earliest
+  lapse weeks lack sufficient classifiable history and remain missing.
+  Recurring schedules are scan-time snapshots, not reconstructed weekly
+  history; weeks with no eligible refund observations remain missing.
+- Verification for the performance fix: API TypeScript passed; 64 focused
+  cadence, monetary-calculation and ingestion tests passed, including batched
+  vs single-period cadence equivalence and signed refunds. The rollback-only
+  storage/access suite also passed nine tests. Phase 5's other gates remain
+  open; this is not overall Phase 5 signoff.
 
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child

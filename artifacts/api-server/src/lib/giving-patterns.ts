@@ -278,16 +278,9 @@ export function summarizeGivingPatternsByWeeks(
 ): GivingPatternAnalysis {
   const index = indexGivingUnits(entities, policy);
   const today = chicagoDate(asOf);
-  const asOfIndex = {
-    ...index,
-    units: index.units.map((unit) => ({
-      ...unit,
-      giftDates: unit.giftDates.slice(0, datesThrough(unit.giftDates, today)),
-    })),
-  };
-  const givingUnits = asOfIndex.units
+  const givingUnits = index.units
     .map((unit) =>
-      classifyUnit(unit, today, historyComplete, policy, asOfIndex.cadences),
+      classifyUnit(unit, today, historyComplete, policy, index.cadences),
     )
     .sort((a, b) => a.unitId.localeCompare(b.unitId));
   const summaries = weeks.map((week) => {
@@ -295,10 +288,10 @@ export function summarizeGivingPatternsByWeeks(
     let lapsedGivers = 0;
     let lapsedDenominator = 0;
     const firstTimeWindowStart = shiftDate(week, -6);
-    for (const unit of asOfIndex.units) {
+    for (const unit of index.units) {
       if (
-        asOfIndex.personMetadata &&
-        asOfIndex.linkageComplete &&
+        index.personMetadata &&
+        index.linkageComplete &&
         unit.firstRecordedAt &&
         unit.firstRecordedAt <= week &&
         unit.firstRecordedAt >= firstTimeWindowStart
@@ -308,7 +301,7 @@ export function summarizeGivingPatternsByWeeks(
       const count = datesThrough(unit.giftDates, week);
       if (count < policy.minimumGifts) continue;
       const recent = unit.giftDates.slice(Math.max(0, count - policy.minimumGifts), count);
-      const cadence = cadenceFor(recent, asOfIndex.cadences, policy);
+      const cadence = cadenceFor(recent, index.cadences, policy);
       if (!cadence) continue;
       lapsedDenominator++;
       const missedExpected = Array.from({ length: policy.missedExpected }, (_, index) =>
@@ -319,12 +312,12 @@ export function summarizeGivingPatternsByWeeks(
     return {
       week,
       firstTimeGivers:
-        asOfIndex.personMetadata && asOfIndex.linkageComplete ? firstTimeGivers : null,
+        index.personMetadata && index.linkageComplete ? firstTimeGivers : null,
       lapsedGivers:
         historyComplete && lapsedDenominator > 0 ? lapsedGivers : null,
       lapsedDenominator,
-      personMetadata: asOfIndex.personMetadata,
-      linkageComplete: asOfIndex.linkageComplete,
+      personMetadata: index.personMetadata,
+      linkageComplete: index.linkageComplete,
     };
   });
   return { givingUnits, weeks: summaries };

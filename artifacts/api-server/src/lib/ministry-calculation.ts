@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v3";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v4";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -44,7 +44,7 @@ export const MEASURES: Record<string, { title: string; unit: string; definition:
     title: "Refunds",
     unit: "USD_minor",
     definition:
-      "Refund amount dated by refunded_at in Chicago, not subtracted again from received giving.",
+      "Refund magnitude (absolute source minor units) dated by refunded_at in Chicago, not subtracted again from received giving. Signed PCO source values are retained unchanged.",
   },
   fund_giving: {
     title: "Fund giving",
@@ -391,11 +391,11 @@ export function compileMinistryFacts(
         const d = instant(a.refunded_at),
           n = integer(a.amount_cents),
           c = currency(a.amount_currency);
-        if (!d || n === null || n < 0 || !c) {
+        if (!d || n === null || !c) {
           issues.add("refund_invalid_fields");
           continue;
         }
-        add("giving", "refund_total", "all", d, n, e.id, `${c}_minor`);
+        add("giving", "refund_total", "all", d, Math.abs(n), e.id, `${c}_minor`);
       }
       if (e.type === "Designation") {
         const parent = donations.get(

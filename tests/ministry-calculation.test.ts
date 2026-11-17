@@ -268,6 +268,32 @@ describe("ministry source-to-metric semantics", () => {
     expect(() => exactMinorUnits(1.234)).toThrow();
     expect(() => exactMinorUnits(Number.MAX_SAFE_INTEGER)).toThrow();
   });
+  it("reports signed PCO refunds as magnitudes without hiding or reducing received giving", () => {
+    const refund = e("Refund", "refund-signed", {
+      amount_cents: -500,
+      amount_currency: "USD",
+      refunded_at: "2026-11-02T10:00:00Z",
+    });
+    const result = compileMinistryFacts(
+      "giving",
+      [giving("1"), refund],
+      [],
+      start,
+      end,
+      now,
+    );
+    expect(result.issues).toEqual([]);
+    expect(result.values.find((row) => row.measure === "refund_total")).toMatchObject({
+      value: 500,
+      quality: "complete",
+      unit: "USD_minor",
+    });
+    expect(result.values.find((row) => row.measure === "giving_total")).toMatchObject({
+      value: 10555,
+      quality: "complete",
+    });
+    expect(refund.attributes.amount_cents).toBe(-500);
+  });
   it("does not treat memberships, cancelled meetings or RSVPs as attendance", () => {
     const records = [
       e("Group", "1", { archived_at: null }),
