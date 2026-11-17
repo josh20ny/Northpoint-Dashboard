@@ -32,3 +32,13 @@ Sunday Morning maps to Service Programming (SPD).
 
 **How to apply:** Use this confirmed destination rather than treating Sunday
 Morning as a church-wide volunteer total.
+
+Historical ownership of these Services sources is not confirmed.
+
+**Why:** When asked whether the same routes apply throughout their history,
+the owner answered “I’m not sure”.
+
+**How to apply:** Preserve the approved current routes, but do not silently
+backdate them. Seek dated source evidence for earlier ownership; an old plan's
+existence or a source's current name alone does not establish historical
+volunteer counts or ministry ownership.

@@ -4,6 +4,7 @@ import {
   buildSeries,
   scopeLabel,
   seriesScopeLabel,
+  isGuestServicesSeries,
 } from "../artifacts/northpoint-dashboard/src/lib/ministry-data";
 
 function metric(week: string, source: string): MinistryMetric {
@@ -24,6 +25,15 @@ function metric(week: string, source: string): MinistryMetric {
 }
 
 describe("ministry service scope labels", () => {
+  it("shows only LU weekly and Safety scheduling on Connection, never shared Kids’ Check-In or workbook totals", () => {
+    for (const measure of ["scheduled", "accepted"]) {
+      expect(isGuestServicesSeries({ measure, scope: "guest-services" })).toBe(true);
+      expect(isGuestServicesSeries({ measure, scope: "safety-team" })).toBe(true);
+      expect(isGuestServicesSeries({ measure, scope: "kids-checkin" })).toBe(false);
+      expect(isGuestServicesSeries({ measure, scope: "all" })).toBe(false);
+    }
+    expect(isGuestServicesSeries({ measure: "guest_services_volunteers", scope: "guest-services" })).toBe(false);
+  });
   it("keeps shared Kids’ Check-In and the Guest Services teams distinctly labelled", () => {
     expect(scopeLabel("kids-checkin", "pco")).toBe("Kids’ Check-In · shared team");
     expect(scopeLabel("guest-services", "pco")).toBe("Guest Services · LU weekly team");

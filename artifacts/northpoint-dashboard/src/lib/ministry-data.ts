@@ -192,6 +192,11 @@ export type Series = {
   byWeek: Map<string, MinistryMetric>;
 };
 
+/** Connection's Guest Services figures exclude the shared children's team. */
+export const isGuestServicesSeries = (series: Pick<Series, "measure" | "scope">) =>
+  SERVING_MEASURES.has(series.measure) &&
+  ["guest-services", "safety-team"].includes(series.scope);
+
 export function seriesScopeLabel(series: Series, weeks: string[]) {
   const sources = new Set(
     weeks

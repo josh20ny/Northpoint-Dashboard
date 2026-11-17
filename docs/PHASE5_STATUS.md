@@ -709,6 +709,24 @@ November 8 source coverage is inferred.
 - Historical Services publication still needs era interpretation: current
   routes begin November 9. Do not silently extend those effective dates to
   earlier assignments or treat a backfill's absence as a historical zero.
+- The owner answered “I'm not sure” about applying those routes throughout
+  history. Retain current effective dates; this is an unresolved historical
+  interpretation, not permission to backdate routes.
+- A read-only inventory found 3,232 legacy Services plans, with source dates
+  spanning 2009–2027, and 12,321 plan times, but no legacy assignment records.
+  This does not establish earlier volunteer counts or dated ministry ownership.
+  No additional scan, historical classification or scheduler change was made
+  while investigating that uncertainty.
+- Added the already-published LU weekly and Safety scheduling figures to
+  Connection as separate teams, in addition to the shared-team directory view.
+  They use Connection's selected reporting range and existing freshness path;
+  loading, empty and failed-refresh states remain explicit. Shared Kids'
+  Check-In stays excluded from Connection's Guest Services series. Workbook
+  volunteer observations remain distinctly labelled, not merged into Services
+  responses. Reporting controls remain collapsed at the bottom of the page.
+- Six display checks and the dashboard type check passed for the Connection
+  addition, including the exclusion of shared Kids' Check-In and unrelated
+  workbook measures from the Guest Services series.
 
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child

@@ -22,6 +22,7 @@ import {
   scopeLabel,
   seriesScopeLabel,
   formatMinor,
+  isGuestServicesSeries,
   ministryPolling,
   previousSunday,
   sundaysDesc,
@@ -266,6 +267,18 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       ...ministryPolling,
     },
   });
+  const shared = useGetMinistryData("shared-teams", params, {
+    query: {
+      enabled: !!user && ministry === "connection",
+      queryKey: getGetMinistryDataQueryKey("shared-teams", params),
+      placeholderData: keepPreviousData,
+      ...ministryPolling,
+    },
+  });
+  const guestServing = useMemo(
+    () => buildSeries(shared.data?.metrics ?? []).filter(isGuestServicesSeries),
+    [shared.data],
+  );
   const ws = q.data;
   const all = useMemo(() => buildSeries(ws?.metrics ?? []), [ws]);
   const primary = all.filter((s) => !SERVING_MEASURES.has(s.measure));
@@ -399,6 +412,37 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
           <KpiInventory ws={ws} />
         </div>
       </Panel>
+      {ministry === "connection" && (
+        <Panel title="Guest Services teams" meta={<span className="font-mono text-[11px] text-muted-foreground">Planning Center Services</span>}>
+          <div className="space-y-4 p-5" data-testid="section-connection-guest-services">
+            {servingDefinition}
+            <p className="text-[12px] text-muted-foreground">
+              LU weekly and Safety remain separate teams. Shared Kids’ Check-In is reported in the Ministries directory, not in these figures.
+              These scheduling responses are distinct from the workbook’s historical volunteer counts above.
+            </p>
+            {shared.isError && (
+              <QueryError
+                title={shared.data ? "Guest Services refresh failed; showing the last loaded figures" : "Guest Services data unavailable"}
+                error={shared.error}
+                onRetry={() => void shared.refetch()}
+              />
+            )}
+            {shared.data ? (
+              <div className={shared.isPlaceholderData ? "opacity-60" : undefined} aria-busy={shared.isFetching}>
+                <p className="mb-3 text-[12px] text-muted-foreground">
+                  {formatDate(shared.data.start)} to {formatDate(shared.data.end)} · Updated {formatDate(shared.data.asOf, true)}
+                  {shared.isPlaceholderData ? " · Updating selected dates" : ""}
+                </p>
+                {guestServing.length ? (
+                  <SummaryCards series={guestServing} week={ws.latestCompletedWeek} />
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">No Guest Services scheduling figures are published for this range.</p>
+                )}
+              </div>
+            ) : !shared.isError ? <Skeleton className="h-24 w-full" /> : null}
+          </div>
+        </Panel>
+      )}
       {lead.length > 0 && (
         <Panel title={isGiving ? "General Giving history" : "Attendance history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
           {isGiving && (
@@ -432,6 +476,17 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       {serving.length > 0 && (
         <Panel title="Serving history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
           <HistoryTable series={serving} weeks={weeks} label="Serving history" />
+        </Panel>
+      )}
+      {ministry === "connection" && guestServing.length > 0 && (
+        <Panel title="Guest Services scheduling history" meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          <div className={shared.isPlaceholderData ? "opacity-60" : undefined}>
+            <HistoryTable
+              series={guestServing}
+              weeks={shared.data ? sundaysDesc(shared.data.start, shared.data.end) : []}
+              label="Weekly Guest Services scheduling history"
+            />
+          </div>
         </Panel>
       )}
       <CollapsibleSection
