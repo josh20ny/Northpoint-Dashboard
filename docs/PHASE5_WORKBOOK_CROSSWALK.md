@@ -6,9 +6,10 @@ This crosswalk documents the non-Giving Phase 5 history in the accepted
 workbook. It uses sheet headings and the existing metric registry; it does not
 inspect individual numeric observations or change the active Giving run.
 Workbook values are accepted by the owner. The Connection total-groups-
-attendance series has been mapped and published for 2018–2026; other listed
-series remain candidates. Preserve each source's measure, unit, scope, date axis
-and lineage when applying Imports mappings.
+attendance series and the four child/student aggregate attendance series have
+been mapped and published. Other listed series remain candidates. Preserve each
+source's measure, unit, scope, date axis and lineage when applying Imports
+mappings.
 
 `data/legacy_columns.csv` records 2026 operating-tab headers. Its
 `UNREVIEWED` mapping status means those headers have not been mapped to
@@ -29,6 +30,22 @@ values.
 The identified historical attendance tabs do not expose year-by-year volunteer
 or new-attendee series in their section headings. Do not fill those historical
 gaps from attendance totals or label them as zero.
+
+## Accepted children/student history imported — 2026-11-16
+
+Waumba Land, UpStreet, Transit and InsideOut aggregate attendance were imported
+for 2013–2026 as `attendance_headcount` with `all` scope. Each ministry has 52
+weekly rows in 2013–2025 and 44 rows in 2026, ending November 1 because the
+accepted workbook snapshot is November 7, 2026. All 56 annual publications
+passed validity checks. Each year uses the workbook's ordinal-Sunday alignment;
+the series remain separate from unique PCO Check-In attendance and have no
+historical service, location, classroom or group split. No PCO sync was started
+or changed.
+
+Unreadable or unsafe source cells remain missing rather than being guessed.
+The imported data has these missing-cell counts: Waumba Land, 6; UpStreet, 7;
+Transit, 10; InsideOut, 32. Past literal blank attendance cells follow the
+accepted zero rule, while future 2026 weeks after the snapshot were excluded.
 
 ## Operating-tab candidates
 

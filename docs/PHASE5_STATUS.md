@@ -129,6 +129,16 @@ publications: 52 weekly rows for each year 2018–2025 and 44 for 2026. The
 unsafe source values remain missing. Past literal blank attendance cells are
 handled as zero. The import did not start or modify a PCO sync.
 
+The four accepted children/student historical attendance series were also
+imported: Waumba Land, UpStreet, Transit and InsideOut, each for 2013–2026.
+There are 52 weekly rows per year for 2013–2025 and 44 for 2026, ending
+November 1 at the November 7 workbook snapshot. All 56 annual publications
+passed validity checks. Unreadable/unsafe cells remain missing (6 Waumba Land,
+7 UpStreet, 10 Transit, 32 InsideOut); past literal blank attendance is zero.
+These are aggregate workbook headcounts, not unique PCO attendees, and no
+service/location/classroom/group splits were inferred. The import did not
+start or modify a PCO sync.
+
 ## Staged PCO mapping review — 2026-11-13
 
 The Admin-only source directory contains 34 Check-Ins events and 332 locations,
