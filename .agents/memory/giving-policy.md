@@ -32,6 +32,17 @@ year-labelled Fuel funds into the workbook's single Fuel category.
 in another calendar year. Do not assign undifferentiated workbook Fuel totals
 to a campaign without explicit evidence.
 
+The owner approved these category-to-PCO-fund matches: Strategic → NP Strategic;
+Building → Building Fund - For Austin; Care → Care; Mosaic → MOSAIC; FOR →
+FOR Fund. Care Outreach stays outside Care; Building and FOR stay separate.
+
+**Why:** The owner selected “Use these matches” after reviewing those exact
+matches and the stated exclusions.
+
+**How to apply:** Keep these interpretations across current and historical
+reporting. Other funds still contribute to all-fund receipts; do not broaden
+the Care category or merge Building/FOR based on similar names.
+
 A first-time giver is the first recorded giving event for that person/family at
 Northpoint. A lapsed giver has a consistent giving record/cadence (weekly,
 monthly, etc.) and then misses three consecutive expected gifts. A normally

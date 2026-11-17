@@ -135,8 +135,17 @@ to that same General Giving series, while all-fund received totals are a
 separate KPI. This resolves the fund-scope mismatch; it does not make sources
 additive or remove the workbook's documented exclusions and missing cells.
 These are source-defined historical amounts; do not assert that workbook and
-PCO totals have identical inclusion rules. Fund columns Q:V have not been
-mapped to PCO fund identities. X:Z first-time/recurring/lapsed headers have no
+PCO totals have identical inclusion rules. The owner subsequently approved
+Strategic → NP Strategic, Building → Building Fund - For Austin, Care → Care,
+Mosaic → MOSAIC, and FOR → FOR Fund. Columns Q/R/S/U/V are now accepted as
+fund-category history on their native 2026 Sunday axis: 220 observations through
+November 1, of which 146 have readable amounts. Missing cells stay missing;
+complete PCO values win overlap. Care Outreach stays outside Care; Building and
+FOR remain separate.
+
+Fuel column T remains campaign-unspecified. The owner chose to keep PCO's
+year-labelled Fuel funds separate, so that combined column has not been
+assigned to a campaign. X:Z first-time/recurring/lapsed headers have no
 underlying cells in the accepted sheet and cannot supply those historical
 counts. Separate monthly recurring and giving-unit blocks also require their
 own period/unit mappings; they were not treated as weekly amounts.

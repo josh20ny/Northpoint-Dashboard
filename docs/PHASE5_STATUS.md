@@ -580,6 +580,40 @@ November 8 source coverage is inferred.
   the undifferentiated historical workbook Fuel column cannot establish
   campaign-specific history by itself. Overall Phase 5 acceptance stays open.
 
+### Approved fund breakdowns and observed-zero correction — November 17, 2026
+
+- The owner approved Strategic → NP Strategic, Building → Building Fund -
+  For Austin, Care → Care, Mosaic → MOSAIC, and FOR → FOR Fund. Created those
+  five mappings without changing General Giving or the four Fuel campaigns.
+  Care Outreach is excluded from Care; Building and FOR remain distinct.
+- Published five accepted workbook fund columns (Q/R/S/U/V) using their native
+  2026 Sunday dates, exact USD conversion and existing snapshot cutoff.
+  These cover January 4–November 1: 220 observations, 146 readable amounts;
+  the other 74 remain missing, and future source rows were omitted. These
+  columns do not establish earlier-year fund history. Workbook Fuel (T)
+  remains campaign-unspecified and was not assigned to any Fuel campaign.
+- Live readback exposed fund weeks marked missing despite fully allocated
+  gifts to other funds. Extended General Giving's observed-zero rule to
+  individual mapped funds: only reconciled, eligible gift allocations
+  establish a zero. Absent/incomplete allocations and inactive mappings do
+  not. Versioned the calculation so the old missing-value publication cannot
+  be reused.
+- Republished the already-imported October 2018–November 2026 Giving source:
+  6,360 rows, no calculation issues, about twelve seconds. Compared the new
+  publication with its predecessor: all non-fund Giving values and qualities
+  were unchanged. All five approved categories read back as complete PCO
+  values for all 46 completed 2026 reporting weeks checked; complete PCO
+  takes precedence over workbook overlap instead of adding the sources.
+- Sixty-three focused calculation/display/rollback-storage checks and both
+  app type checks passed. Checks include incomplete-allocation safeguards,
+  observed-zero persistence, campaign isolation and all-role aggregate
+  privacy. No new PCO scan or scheduler change was made.
+- The next Services gate remains open: the older `services` import has
+  service types, plans and times but no PlanPerson assignments; the Phase 5
+  `serving` source has no staged records. Do not describe the older import as
+  volunteer-count coverage or start additional identifiable assignment
+  imports before the required development-data approval.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields.

@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v5";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v6";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -408,19 +408,21 @@ export function compileMinistryFacts(
         }
         if (a.payment_status === "succeeded" && a.refunded === false) {
           add("giving", "all_fund_giving", "all", d, n, e.id, `${c}_minor`);
-          const generalMappings = mappings.filter((m) => m.product === "giving" &&
-            m.objectType === "Fund" && m.measure === "giving_total" &&
-            activeMapping(m, chicagoDate(d)));
-          if (generalMappings.length && reportingWeekEnding(d) >= start &&
+          const giftDay = chicagoDate(d);
+          const fundMappings = mappings.filter((m) => m.product === "giving" &&
+            m.objectType === "Fund" && ["giving_total", "fund_giving"].includes(m.measure) &&
+            activeMapping(m, giftDay));
+          if (fundMappings.length && reportingWeekEnding(d) >= start &&
             reportingWeekEnding(d) <= end) {
             const allocated = [...(allocations.get(e.id)?.values() ?? [])]
               .reduce((sum, amount) => sum + amount, 0);
             if (!allocations.has(e.id) || !Number.isSafeInteger(allocated) || allocated !== n)
               issues.add("designation_coverage_incomplete");
             else
-              // A fully allocated gift to other funds establishes an observed
-              // zero for General Giving, not an assumed missing value.
-              add("giving", "giving_total", "all", d, 0, undefined, `${c}_minor`);
+              // Complete allocations establish an observed zero for mapped
+              // funds receiving none of this gift; unknown allocations do not.
+              for (const m of fundMappings)
+                add("giving", m.measure, m.scope, d, 0, undefined, `${c}_minor`);
           }
         }
       }

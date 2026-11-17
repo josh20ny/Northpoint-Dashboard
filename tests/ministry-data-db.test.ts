@@ -216,6 +216,8 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         expect(campaigns).toEqual(expect.arrayContaining([
           expect.objectContaining({ scope: "fuel-2023", value: 1000, quality: "complete" }),
           expect.objectContaining({ scope: "fuel-2027", value: 2000, quality: "complete" }),
+          expect.objectContaining({ scope: "fuel-2024", value: 0, quality: "complete" }),
+          expect.objectContaining({ scope: "fuel-2026", value: 0, quality: "complete" }),
         ]));
         expect(campaigns.some(row => row.scope === "fuel")).toBe(false);
         expect(workspace.metrics.find(row => row.measure === "giving_total")?.value).toBe(12500);

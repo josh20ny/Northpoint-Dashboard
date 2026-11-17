@@ -242,6 +242,8 @@ describe("ministry source-to-metric semantics", () => {
           { fund: r("Fund", "8") },
           "/giving/v2/donations/1/designations",
         ),
+        e("Designation", "12", { amount_cents: 100, amount_currency: "EUR" },
+          { fund: r("Fund", "9") }, "/giving/v2/donations/2/designations"),
         e("Refund", "11", {
           amount_cents: 500,
           amount_currency: "USD",
@@ -334,6 +336,26 @@ describe("ministry source-to-metric semantics", () => {
     expect(result.values.filter(row => row.measure === "fund_giving")).toHaveLength(2);
     expect(result.values.find(row => row.measure === "giving_total")?.value).toBe(7555);
     expect(result.values.find(row => row.measure === "all_fund_giving")?.value).toBe(10555);
+  });
+  it("reports observed zero for mapped funds only when other-fund allocations are complete", () => {
+    const m = { ...mapping("giving", "Fund", "8", "fund_giving", "giving"), scope: "care" };
+    const designation = (amount: number) =>
+      e("Designation", "11", { amount_cents: amount, amount_currency: "USD" },
+        { fund: r("Fund", "9") }, "/giving/v2/donations/1/designations");
+    const complete = compileMinistryFacts("giving", [giving("1"), designation(10555)],
+      [m], start, end, now);
+    expect(complete.issues).toEqual([]);
+    expect(complete.values.find(row => row.measure === "fund_giving"))
+      .toMatchObject({ scope: "care", value: 0, quality: "complete" });
+    for (const records of [[giving("1")], [giving("1"), designation(1000)]]) {
+      const incomplete = compileMinistryFacts("giving", records, [m], start, end, now);
+      expect(incomplete.issues).toContain("designation_coverage_incomplete");
+      expect(incomplete.values.some(row => row.measure === "fund_giving" && row.value === 0))
+        .toBe(false);
+    }
+    const inactive = compileMinistryFacts("giving", [giving("1"), designation(10555)],
+      [{ ...m, effectiveFrom: "2027-01-01" }], start, end, now);
+    expect(inactive.values.some(row => row.measure === "fund_giving")).toBe(false);
   });
   it("reports observed zero General Giving for a fully allocated gift to another fund", () => {
     const result = compileMinistryFacts("giving", [
