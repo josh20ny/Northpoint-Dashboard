@@ -531,6 +531,31 @@ November 8 source coverage is inferred.
   use insertion time so sequential revisions remain ordered within an outer
   transaction. Signed-in browser presentation is not claimed by these checks.
 
+### Check-In source acceptance and review performance — November 17, 2026
+
+- Verified existing published attendance for November 8/15 and Connection
+  attendance from the already-staged completed source windows. Partial child/
+  student attendance values remain visible while Check-Ins await resolution.
+  November 8 Transit is 70 + 39 = 109, matching the owner's reference; this
+  does not claim full attendance acceptance for every other ministry.
+- The Admin review request timed out while rebuilding its Sunday dropdown.
+  The old query performed repeated period/time lookups for every historical
+  Check-In. It now ranks minimal source identifiers once and resolves dates
+  in batches only for potential exceptions. Relationship ordering is
+  normalized to match the calculator's duplicate detection; valid standalone
+  check-ins, non-Sundays and resolved exceptions do not populate the dropdown.
+- Verified live repository requests after the fix: latest-Sunday default
+  November 15 returned one unresolved record in 1.7 seconds; November 8
+  returned four unresolved records and all seven attendance subtotals in
+  1.9 seconds. No child names/profile IDs were logged, no resolution was
+  recorded, and no source scan, queue, schedule or mapping was changed.
+- Added rollback-only storage checks for visible partial attendance followed
+  by a resolved count change, normalized duplicate linkage, earliest linked
+  service dates, undated exceptions, non-Sunday exclusion, resolved-date
+  removal and organization isolation. Twenty-eight focused checks and API
+  typechecking passed. Authenticated browser presentation remains a separate
+  acceptance item; these are repository/data-boundary checks.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields.

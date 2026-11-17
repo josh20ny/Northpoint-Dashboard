@@ -5,6 +5,7 @@ import type { Principal } from "../artifacts/api-server/src/lib/auth";
 import { digest } from "../artifacts/api-server/src/lib/planning-center-client";
 import { normalized } from "../artifacts/api-server/src/lib/planning-center-source";
 import type { SourceEntity } from "../artifacts/api-server/src/lib/planning-center-source";
+import { loadCheckInReviewDates } from "../artifacts/api-server/src/lib/ministry-checkin-review-dates";
 
 describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
   "ministry storage and non-owner isolation (rollback only)",
@@ -14,19 +15,26 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       repo: typeof import("../artifacts/api-server/src/lib/ministry-data");
     let admin: Principal, staff: Principal, leadership: Principal, account: string, runId: string;
     let observedQueries = 0;
-    async function seedGivingSource(entity: SourceEntity, collection: string) {
+    async function seedSource(
+      entity: SourceEntity,
+      collection: string,
+      product = "giving",
+      sourceRun = runId,
+    ) {
       const rawId = randomUUID();
       await c.query(
         `INSERT INTO raw_source_records(id,provider,account_ref,object_type,external_id,payload_json,payload_hash)
         VALUES($1,'planning_center',$2,$3,$4,$5,$6)`,
-        [rawId, account, `giving:${entity.type}`, entity.id, JSON.stringify(entity), digest(JSON.stringify(entity))],
+        [rawId, account, `${product}:${entity.type}`, entity.id, JSON.stringify(entity), digest(JSON.stringify(entity))],
       );
       await c.query(
         `INSERT INTO pco_source_entities(account_ref,product,object_type,external_id,raw_id,sync_run_id,observed_run_id,normalized)
-        VALUES($1,'giving',$2,$3,$4,$5,$5,$6)`,
-        [account, entity.type, entity.id, rawId, runId, JSON.stringify(normalized(entity, collection))],
+        VALUES($1,$2,$3,$4,$5,$6,$6,$7)`,
+        [account, product, entity.type, entity.id, rawId, sourceRun, JSON.stringify(normalized(entity, collection))],
       );
     }
+    const seedGivingSource = (entity: SourceEntity, collection: string) =>
+      seedSource(entity, collection);
     const seedGeneralDesignation = (donation: SourceEntity) => seedGivingSource({
       type: "Designation",
       id: `designation-${donation.id}`,
@@ -393,6 +401,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         end: "2026-11-08",
       });
       expect(pending.issues).toContain("unresolved_checkins_pending:1");
+      expect(await loadCheckInReviewDates(c, account)).toContain("2026-11-08");
       const partialWorkspace = await repo.readMinistryData(
         staff,
         "upstreet",
@@ -420,6 +429,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         target_id: `${account}:${checkInId}`,
       });
       expect((await repo.getCheckInReview(admin, 1, "2026-11-08")).items[0].resolution).toBe("include");
+      expect(await loadCheckInReviewDates(c, account)).not.toContain("2026-11-08");
 
       const published = await repo.publishMinistryData(admin, {
         product: "check_ins",
@@ -429,9 +439,55 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       expect(published.reused).toBe(false);
       const workspace = await repo.readMinistryData(staff, "upstreet", "2026-11-08", "2026-11-08");
       expect(workspace.metrics.find((metric) => metric.measure === "attendance")).toMatchObject({
-        value: 1,
+        value: 2,
         quality: "complete",
       });
+    });
+    it("discovers Sunday exceptions with sorted linkage, earliest service dates and resolved-record exclusion", async () => {
+      const checkInRun = randomUUID();
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,finished_at)
+         VALUES($1,$2,'check_ins','current','complete','[]',$3,now())`,
+        [checkInRun, account, admin.userId],
+      );
+      const context = (type: string, id: string, starts_at: string): SourceEntity => ({
+        type, id, attributes: { starts_at },
+        relationships: { event: { data: { type: "Event", id: "event" } } },
+      });
+      const linked = (type: string, ids: string[]) => ({
+        data: ids.map((id) => ({ type, id })),
+      });
+      const checkIn = (id: string, person: string | null, period: string, times: string[], rooms: string[]): SourceEntity => ({
+        type: "CheckIn", id, attributes: { kind: "Regular" },
+        relationships: {
+          person: { data: person ? { type: "Person", id: person } : null },
+          event_period: { data: { type: "EventPeriod", id: period } },
+          event_times: linked("EventTime", times),
+          locations: linked("Location", rooms),
+        },
+      });
+      const rows = [
+        context("EventPeriod", "sunday", "2026-11-08T16:00:00Z"),
+        context("EventPeriod", "saturday", "2026-11-07T16:00:00Z"),
+        context("EventTime", "time-now", "2026-11-08T16:00:00Z"),
+        context("EventTime", "time-early", "2026-11-01T16:00:00Z"),
+        checkIn("20", "person-1", "sunday", ["time-now", "time-early"], ["room-a", "room-b"]),
+        checkIn("21", "person-1", "sunday", ["time-early", "time-now"], ["room-b", "room-a"]),
+        checkIn("30", null, "sunday", ["time-now"], []),
+        checkIn("40", null, "saturday", [], []),
+        checkIn("50", null, "missing-period", [], []),
+        checkIn("60", "person-2", "sunday", ["time-now"], []),
+      ];
+      for (const row of rows)
+        await seedSource(row, "/check-ins/v2/test", "check_ins", checkInRun);
+      expect(await loadCheckInReviewDates(c, account)).toEqual([
+        "2026-11-08", "2026-11-01", null,
+      ]);
+      expect(await loadCheckInReviewDates(c, `${account}-other`)).toEqual([]);
+      await repo.resolveCheckIn(admin, "21", "exclude");
+      expect(await loadCheckInReviewDates(c, account)).toEqual(["2026-11-08", null]);
+      await repo.resolveCheckIn(admin, "30", "include");
+      expect(await loadCheckInReviewDates(c, account)).toEqual([null]);
     });
     it("publishes a Friday–Sunday Check-In window with the latest Groups snapshot without publishing group totals", async () => {
       // The bounded loader intentionally includes earlier observed Check-Ins.

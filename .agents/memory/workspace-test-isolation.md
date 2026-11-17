@@ -30,3 +30,15 @@ in a rollback fixture, so UUID tie-breaking sometimes selected the earlier one.
 **How to apply:** Ensure append-event timestamps reflect the actual insertion
 instant where revision order matters. Do not “fix” intermittent assertions by
 rerunning until UUID ordering happens to match the intended chronology.
+
+Do not run live Admin acceptance requests concurrently with rollback-only
+Admin repository suites against this database.
+
+**Why:** The Admin transaction boundary takes a shared advisory lock. An outer
+rollback fixture retains that lock across its operations, causing an unrelated
+live request to hit the query timeout while waiting, even when its data query
+is fast.
+
+**How to apply:** Finish the isolated database suite before measuring live
+Admin request latency. Do not raise production timeouts or weaken the lock to
+compensate for test-induced contention.

@@ -3,6 +3,7 @@ import type { Principal } from "./auth";
 import { AccessError, adminTransaction, type AdminActor } from "./administration";
 import { recordAudit } from "./audit";
 import { completedSunday, sunday } from "./attendance-calculation";
+import { loadCheckInReviewDates } from "./ministry-checkin-review-dates";
 import {
   checkInTemplateIds,
   loadCheckInFactsForWindow,
@@ -51,82 +52,6 @@ async function connectedAccount(c: Pick<PoolClient, "query">) {
   const account = result.rows[0]?.account_ref;
   if (!account) throw new AccessError(409, "No Planning Center organization");
   return String(account);
-}
-
-async function reviewDates(c: Pick<PoolClient, "query">, account: string) {
-  const result = await c.query<{ serviceDate: string | null }>(
-    `WITH source AS MATERIALIZED (
-      SELECT e.external_id,
-        e.normalized->'sourceRelationships'->'person'->'data'->>'id' AS person_id,
-        e.normalized->'sourceRelationships'->'event_period'->'data'->>'id' AS period_id,
-        lower(coalesce(e.normalized->'attributes'->>'kind','')) AS kind,
-        e.normalized->'sourceRelationships'->'event_times'->'data' AS event_times,
-        e.normalized->'sourceRelationships'->'locations'->'data' AS locations,
-        NOT EXISTS (
-          SELECT 1 FROM pco_source_entities p
-          WHERE p.account_ref=e.account_ref AND p.product='check_ins'
-            AND p.object_type='EventPeriod'
-            AND p.external_id=e.normalized->'sourceRelationships'->'event_period'->'data'->>'id'
-            AND p.missing_run_id IS NULL
-        ) AS missing_period,
-        COALESCE(
-          (SELECT MIN(((t.normalized->'attributes'->>'starts_at')::timestamptz
-            AT TIME ZONE 'America/Chicago')::date)
-           FROM jsonb_array_elements(
-             CASE jsonb_typeof(e.normalized->'sourceRelationships'->'event_times'->'data')
-               WHEN 'array' THEN e.normalized->'sourceRelationships'->'event_times'->'data'
-               WHEN 'object' THEN jsonb_build_array(e.normalized->'sourceRelationships'->'event_times'->'data')
-               ELSE '[]'::jsonb
-             END
-           ) AS linked(item)
-           JOIN pco_source_entities t ON t.account_ref=e.account_ref
-             AND t.product='check_ins' AND t.object_type='EventTime'
-             AND t.external_id=linked.item->>'id' AND t.missing_run_id IS NULL),
-          (SELECT ((p.normalized->'attributes'->>'starts_at')::timestamptz
-            AT TIME ZONE 'America/Chicago')::date
-           FROM pco_source_entities p
-           WHERE p.account_ref=e.account_ref AND p.product='check_ins'
-             AND p.object_type='EventPeriod'
-             AND p.external_id=e.normalized->'sourceRelationships'->'event_period'->'data'->>'id'
-             AND p.missing_run_id IS NULL
-           LIMIT 1)
-        ) AS service_date
-      FROM pco_source_entities e
-      WHERE e.account_ref=$1 AND e.product='check_ins'
-        AND e.object_type='CheckIn' AND e.observed_run_id IS NOT NULL
-        AND e.missing_run_id IS NULL
-    ), ranked AS (
-      SELECT source.*,
-        row_number() OVER (
-          PARTITION BY person_id,period_id,kind,event_times,locations
-          ORDER BY external_id
-        ) AS duplicate_rank
-      FROM source
-    )
-    SELECT DISTINCT service_date::text AS "serviceDate"
-    FROM ranked r
-    WHERE (
-      person_id IS NULL OR period_id IS NULL OR missing_period
-      OR service_date IS NULL
-      OR kind NOT IN ('regular','guest','volunteer')
-      OR (person_id IS NOT NULL AND period_id IS NOT NULL AND duplicate_rank > 1)
-    )
-    AND NOT EXISTS (
-      SELECT 1 FROM audit_events a
-      WHERE a.target_type=$2 AND a.target_id=($1 || ':' || r.external_id)
-        AND a.action IN ($3,$4)
-    )
-    AND (service_date IS NULL OR extract(dow FROM service_date)=0)
-    ORDER BY "serviceDate" DESC NULLS LAST
-    LIMIT 520`,
-    [
-      account,
-      RESOLUTION_TARGET,
-      "ministry.checkin_include",
-      "ministry.checkin_exclude",
-    ],
-  );
-  return result.rows.map((row) => row.serviceDate);
 }
 
 async function reviewMappings(
@@ -349,7 +274,7 @@ export async function getCheckInReview(
         });
       }
     }
-    const availableSundays = await reviewDates(c, account);
+    const availableSundays = await loadCheckInReviewDates(c, account);
     const dates = [
       ...new Set([
         defaultDate,
