@@ -646,6 +646,15 @@ November 8 source coverage is inferred.
   shared Kids' Check-in, LU Guest Services Weekly, Safety Team Schedule and
   Sunday Morning. Do not classify the shared sources from their names alone
   or treat an assignment response as evidence of participation.
+- Owner subsequently confirmed the five ministry-specific source routes
+  (UpStreet Large Group also routes to UpStreet). Kids' Check-In serves
+  UpStreet and Waumba Land but remains its own shared team. LU Guest Services
+  Weekly is Guest Services; Safety Team Schedule is a separate team under
+  Guest Services. Sunday Morning's SPD destination remains tentative.
+  The current source-mapping ministry list has no Guest Services or shared
+  Kids' team destination, so reporting must support those distinctions before
+  publishing these shared assignments. No shared counts should be duplicated
+  into both children's ministries merely to fit the existing mapping list.
 
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
