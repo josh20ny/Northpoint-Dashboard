@@ -44,6 +44,7 @@ import {
   MINISTRY_DEFINITION_VERSION,
   MAPPING_ONLY_MEASURES,
   MINISTRY_SLUGS,
+  SHARED_SERVING_SCOPES,
   MEASURES,
   SAFE_SCOPES,
   exactMinorUnits,
@@ -82,6 +83,10 @@ function validateTarget(ministry: string, measure: string, scope: string) {
     !SAFE_SCOPES.some((s) => s === scope)
   )
     throw new AccessError(400, "Choose a supported ministry, measure and fixed aggregate scope");
+  const sharedScope = SHARED_SERVING_SCOPES.some((value) => value === scope);
+  if ((ministry === "shared-teams") !== sharedScope ||
+    (sharedScope && !["scheduled", "accepted"].includes(measure)))
+    throw new AccessError(400, "Shared teams require a separate serving team scope and scheduled or accepted measures");
   if (
     measure === "service_session" &&
     (!["upstreet", "waumba-land", "transit", "insideout"].includes(ministry) ||
@@ -234,7 +239,9 @@ export async function readMinistryData(
       sourceAsOf: new Date(r.sourceAsOf).toISOString(),
     }));
     const expected =
-      ministry === "giving"
+      ministry === "shared-teams"
+        ? ["scheduled", "accepted"]
+        : ministry === "giving"
         ? [
             "giving_total",
             "all_fund_giving",
@@ -284,7 +291,9 @@ export async function readMinistryData(
       reason: MEASURES[key].definition,
     }));
     const later =
-      ministry === "giving"
+      ministry === "shared-teams"
+        ? []
+        : ministry === "giving"
         ? [
             [
               "health_integration",

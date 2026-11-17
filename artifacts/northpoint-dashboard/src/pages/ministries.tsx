@@ -4,6 +4,7 @@ import { ArrowRight, Search, X } from "lucide-react";
 import { useGetFoundation } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, QueryError, RefreshButton, StatusPill, usePageTitle } from "@/components/kit";
+import { MinistryDataView } from "@/components/ministry-data";
 
 export default function Ministries() {
   usePageTitle("Ministries");
@@ -132,6 +133,16 @@ export default function Ministries() {
             ))}
           </ul>
         </>
+      )}
+      {q.data && !q.isError && !term.trim() && (
+        <section className="mt-8" aria-labelledby="shared-teams-title" data-testid="section-shared-serving-teams">
+          <h2 id="shared-teams-title" className="mb-2 text-lg font-semibold">Shared and Guest Services teams</h2>
+          <p className="mb-4 text-[13px] text-muted-foreground">
+            Kids’ Check-In is a separate shared team supporting UpStreet and Waumba Land, not added to either ministry’s totals.
+            Guest Services retains separate LU weekly and Safety team figures.
+          </p>
+          <MinistryDataView ministry="shared-teams" mode="serving" />
+        </section>
       )}
     </>
   );

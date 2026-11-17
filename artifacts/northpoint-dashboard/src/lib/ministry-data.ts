@@ -13,6 +13,7 @@ export const DATA_MINISTRIES = [
 export const MAPPABLE_MINISTRIES = [
   ...DATA_MINISTRIES,
   { slug: "service-programming", name: "Service Programming" },
+  { slug: "shared-teams", name: "Shared and Guest Services teams" },
 ] as const;
 
 export const isDataMinistry = (slug: string) => DATA_MINISTRIES.some((m) => m.slug === slug);
@@ -135,6 +136,7 @@ export function formatMetricValue(value: number | null, unit: string): string {
 export const seriesKey = (m: Pick<MinistryMetric, "measure" | "scope" | "unit">) =>
   `${m.measure}::${m.scope}::${m.unit}`;
 
+export const SHARED_SERVING_SCOPES = ["kids-checkin", "guest-services", "safety-team"] as const;
 export const SCOPES = [
   "all",
   "service-1",
@@ -153,6 +155,7 @@ export const SCOPES = [
   "fuel-2027",
   "mosaic",
   "for",
+  ...SHARED_SERVING_SCOPES,
 ] as const;
 
 export const scopeLabel = (scope: string, source?: string) => {
@@ -173,6 +176,9 @@ export const scopeLabel = (scope: string, source?: string) => {
       "fuel-2024": "Fuel 2024",
       "fuel-2026": "Fuel 2026",
       "fuel-2027": "Fuel 2027",
+      "kids-checkin": "Kids’ Check-In · shared team",
+      "guest-services": "Guest Services · LU weekly team",
+      "safety-team": "Guest Services · Safety team",
     }[scope as "all" | "service-1" | "service-2" | "service-3"] ?? scope
   );
 };

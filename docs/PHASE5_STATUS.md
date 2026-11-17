@@ -663,6 +663,53 @@ November 8 source coverage is inferred.
   been published. The three shared sources remain staged, not silently
   assigned or discarded.
 
+### Services latest-week aggregate publication verified — November 17, 2026
+
+- The owner confirmed Sunday Morning → Service Programming and chose a
+  separate shared-team total for Kids' Check-In, outside both UpStreet and
+  Waumba Land totals. LU Guest Services Weekly and Safety retain separate
+  team scopes within Guest Services.
+- All nine active service types now have scheduled and accepted source
+  interpretations, effective November 9, 2026. A separate reporting bucket
+  supports the shared sources without inventing a new ministry or adding
+  shared volunteers into child-ministry figures.
+- Published sixteen complete figures for the reporting week ending
+  November 15, from the completed 696-assignment scan. Publication
+  `083153cc-b13a-435e-8232-64a1558ae68b` has no calculation issues.
+  Every stored value matched its pre-publication calculation on readback.
+
+  | Reporting area/team | Scheduled people | Accepted people |
+  | --- | ---: | ---: |
+  | Waumba Land | 149 | 61 |
+  | UpStreet, including Large Group | 165 | 53 |
+  | Transit | 98 | 16 |
+  | InsideOut | 103 | 23 |
+  | Service Programming | 22 | 17 |
+  | Shared Kids' Check-In | 5 | 4 |
+  | Guest Services: LU weekly team | 79 | 53 |
+  | Guest Services: Safety team | 3 | 3 |
+
+- These are distinct PCO Services people per reporting area/team/week, not
+  raw assignment counts or actual participation. The existing scheduled
+  definition includes confirmed, unconfirmed and declined assignments;
+  accepted includes confirmed responses only. Team figures can overlap and
+  must not be summed into a church-wide count.
+- Ministry pages show their Services figures among other KPIs; the Ministries
+  directory has a separate shared/Guest Services section using the same
+  summary/history components and collapsed date controls. No person IDs or
+  assignment details are added to aggregate responses.
+- Fully linked assignments can establish zero accepted responses. Empty
+  weeks, missing relationships and unsupported statuses do not establish
+  zeros. Calculation definition is versioned to preserve earlier evidence.
+- Sixty-two calculation/source/display checks and thirteen rollback-only
+  database checks passed, including aggregate reads for all three roles,
+  Admin-only source access and unchanged UpStreet figures when shared
+  teams are published. Both application type checks passed; services
+  restarted cleanly and the health endpoint returned OK.
+- Historical Services publication still needs era interpretation: current
+  routes begin November 9. Do not silently extend those effective dates to
+  earlier assignments or treat a backfill's absence as a historical zero.
+
 1. Complete the privacy review and approve a suitably restricted development
    environment before adding more identifiable donor, group-member or child
    history beyond the owner-requested Admin-only Check-In name/grade fields

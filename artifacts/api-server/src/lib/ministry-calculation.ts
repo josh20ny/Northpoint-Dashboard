@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v6";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v7";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -17,7 +17,10 @@ export const MINISTRY_SLUGS = [
   "transit",
   "insideout",
   "service-programming",
+  // Reporting bucket, not an additional ministry or a component attendance total.
+  "shared-teams",
 ] as const;
+export const SHARED_SERVING_SCOPES = ["kids-checkin", "guest-services", "safety-team"] as const;
 export const SAFE_SCOPES = [
   "all",
   "service-1",
@@ -36,6 +39,7 @@ export const SAFE_SCOPES = [
   "fuel-2027",
   "mosaic",
   "for",
+  ...SHARED_SERVING_SCOPES,
 ] as const;
 export const MEASURES: Record<string, { title: string; unit: string; definition: string }> = {
   giving_total: {
@@ -542,12 +546,18 @@ export function compileMinistryFacts(
         const ms = [
           ...match("Team", ref(e, "team"), d),
           ...match("ServiceType", ref(e, "service_type"), d),
-        ].filter(
-          (m) =>
-            m.measure === "scheduled" || (m.measure === "accepted" && e.attributes.status === "C"),
-        );
+        ].filter((m) => ["scheduled", "accepted"].includes(m.measure));
         if (!ms.length) issues.add("unmapped_serving");
-        apply(ms, d, 1, person);
+        if (!["C", "U", "D"].includes(String(e.attributes.status))) {
+          issues.add("serving_invalid_response_status");
+          continue;
+        }
+        // A fully linked dated assignment establishes coverage for this
+        // mapped team/week, including zero accepted responses. Never invent
+        // zeros for weeks with no assignments or missing source linkage.
+        apply(ms.filter((m) => m.measure === "accepted"), d, 0, "");
+        apply(ms.filter((m) =>
+          m.measure === "scheduled" || e.attributes.status === "C"), d, 1, person);
       }
     }
   }

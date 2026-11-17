@@ -168,6 +168,63 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         start: "2026-11-08",
         end: "2026-11-08",
       });
+    it("publishes shared serving scopes without child-ministry duplication or person identifiers", async () => {
+      await c.query("UPDATE pco_sync_runs SET product='serving' WHERE id=$1", [runId]);
+      const rel = (type: string, id: string) => ({ data: { type, id } });
+      for (const [id, scope, status] of [
+        ["111", "kids-checkin", "C"], ["112", "guest-services", "U"], ["113", "safety-team", "C"],
+      ]) {
+        await seedSource({ type: "ServiceType", id, attributes: { name: scope }, relationships: {} }, "/services/v2/service_types", "serving");
+        await seedSource({
+          type: "Plan", id: `9${id}`, attributes: {}, relationships: {},
+        }, `/services/v2/service_types/${id}/plans`, "serving");
+        await seedSource({
+          type: "PlanTime", id: `8${id}`,
+          attributes: { starts_at: "2026-11-08T15:00:00Z", time_type: "service" }, relationships: {},
+        }, `/services/v2/service_types/${id}/plans/9${id}/plan_times`, "serving");
+        await seedSource({
+          type: "PlanPerson", id: `7${id}`, attributes: { status },
+          relationships: {
+            person: rel("Person", "543219999"), plan: rel("Plan", `9${id}`),
+            team: rel("Team", `6${id}`), service_type: rel("ServiceType", id),
+            service_times: { data: [{ type: "PlanTime", id: `8${id}` }] },
+          },
+        }, `/services/v2/service_types/${id}/plans/9${id}/team_members`, "serving");
+        for (const measure of ["scheduled", "accepted"]) {
+          await repo.createMinistryMapping(admin, {
+            product: "serving", objectType: "ServiceType", externalId: id,
+            ministry: "shared-teams", measure, scope,
+            effectiveFrom: "2026-11-01", effectiveTo: null,
+            note: "Owner-approved separate shared teams fixture",
+          });
+        }
+      }
+      const bad = {
+        product: "serving" as const, objectType: "ServiceType", externalId: "111",
+        ministry: "upstreet", measure: "accepted", scope: "kids-checkin",
+        effectiveFrom: "2026-11-01", effectiveTo: null, note: "Must remain separate",
+      };
+      await expect(repo.createMinistryMapping(admin, bad)).rejects.toMatchObject({ status: 400 });
+      await expect(repo.createMinistryMapping(admin, {
+        ...bad, ministry: "shared-teams", scope: "all",
+      })).rejects.toMatchObject({ status: 400 });
+      await expect(repo.createMinistryMapping(admin, {
+        ...bad, ministry: "shared-teams", measure: "attendance",
+      })).rejects.toMatchObject({ status: 400 });
+      const childBefore = await repo.readMinistryData(admin, "upstreet", "2026-11-08", "2026-11-08");
+      await repo.publishMinistryData(admin, { product: "serving", start: "2026-11-08", end: "2026-11-08" });
+      for (const actor of [admin, staff, leadership]) {
+        const result = await repo.readMinistryData(actor, "shared-teams", "2026-11-08", "2026-11-08");
+        expect(result.metrics).toHaveLength(6);
+        expect(result.metrics.every(row => row.quality === "complete")).toBe(true);
+        expect(result.metrics.find(row => row.scope === "guest-services" && row.measure === "accepted")?.value).toBe(0);
+        expect(result.kpis.map(row => row.key)).toEqual(["scheduled", "accepted"]);
+        expect(JSON.stringify(result)).not.toMatch(/543219999|sourceRelationships|team_members/);
+        expect(JSON.stringify(result.metrics)).not.toMatch(/PlanPerson/);
+        expect((await repo.readMinistryData(actor, "upstreet", "2026-11-08", "2026-11-08")).metrics).toEqual(childBefore.metrics);
+        await expect(repo.ministryDataAdmin(staff)).rejects.toMatchObject({ status: 403 });
+      }
+    });
     it("publishes separate Fuel campaigns without merging General Giving or exposing donor identifiers", async () => {
       for (const year of [2023, 2024, 2026, 2027]) {
         await seedGivingSource({

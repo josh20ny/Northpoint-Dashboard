@@ -31,6 +31,7 @@ import {
   PRODUCT_LABEL,
   PRODUCT_PAIRS,
   SCOPES,
+  SHARED_SERVING_SCOPES,
   invalidateMinistryData,
   isSunday,
   measureLabel,
@@ -120,15 +121,18 @@ export function MinistryDataAdminPanel() {
         )
       : mapping.measure === "student_group_classification"
         ? MAPPABLE_MINISTRIES.filter((m) => ["transit", "insideout"].includes(m.slug))
-        : MAPPABLE_MINISTRIES;
+        : MAPPABLE_MINISTRIES.filter((m) =>
+            m.slug !== "shared-teams" || mapping.product === "serving");
   const mappingScopes =
     mapping.measure === "service_session"
       ? SCOPES.filter((scope) => ["service-1", "service-2", "service-3"].includes(scope))
       : mapping.measure === "student_group_classification"
         ? SCOPES.filter((scope) => scope === "all")
-        : SCOPES.filter((scope) => mapping.measure === "fund_giving"
-          ? scope !== "fuel"
-          : !scope.startsWith("fuel-"));
+        : mapping.ministry === "shared-teams"
+          ? [...SHARED_SERVING_SCOPES]
+          : SCOPES.filter((scope) =>
+            !SHARED_SERVING_SCOPES.some((shared) => shared === scope) &&
+            (mapping.measure === "fund_giving" ? scope !== "fuel" : !scope.startsWith("fuel-")));
   const sourceOptions = (admin?.sources ?? []).filter(
     (s) => s.product === mapping.product && s.objectType === mapping.objectType,
   );
@@ -406,7 +410,15 @@ export function MinistryDataAdminPanel() {
                   name="mapping-ministry"
                   label="Ministry"
                   value={mapping.ministry}
-                  onChange={(v) => setMapping({ ...mapping, ministry: v })}
+                  onChange={(v) => setMapping({
+                    ...mapping,
+                    ministry: v,
+                    scope: v === "shared-teams"
+                      ? SHARED_SERVING_SCOPES.some((scope) => scope === mapping.scope)
+                        ? mapping.scope
+                        : "kids-checkin"
+                      : mapping.ministry === "shared-teams" ? "all" : mapping.scope,
+                  })}
                 >
                   {mappingMinistries.map((m) => (
                     <option key={m.slug} value={m.slug}>

@@ -315,14 +315,23 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
       {ws.issues.map((i) => <li key={i}>{i}</li>)}
     </ul>
   );
+  const servingDefinition = (
+    <p className="text-[12px] text-muted-foreground" data-testid={`text-serving-definition-${id}`}>
+      Each figure counts distinct Planning Center Services people within that team or ministry and reporting week.
+      Scheduled includes confirmed, unconfirmed and declined assignments; accepted includes confirmed responses only.
+      Neither figure proves actual participation. Team figures may overlap and must not be added to calculate a church-wide total.
+    </p>
+  );
 
   if (mode === "serving")
     return (
       <div className={`space-y-5 ${stale ? "opacity-60" : ""}`}>
         {refetchBanner}
         {header}
+        {issues}
         <Panel title="Serving" meta={<span className="font-mono text-[11px] text-muted-foreground">Planning Center Services</span>}>
-          <div className="p-5">
+          <div className="space-y-4 p-5">
+            {servingDefinition}
             {serving.length === 0 ? (
               <p className="rounded-lg border border-dashed p-6 text-center text-[13px] text-muted-foreground" data-testid={`status-serving-empty-${id}`}>
                 No serving facts are published for this ministry yet. An administrator maps service types or teams, then publishes a completed scan.
@@ -378,6 +387,7 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
                 <h3 className="text-[12.5px] font-medium">Serving</h3>
                 <span className="font-mono text-[10.5px] text-muted-foreground">Planning Center Services</span>
               </div>
+              <div className="mb-3">{servingDefinition}</div>
               <SummaryCards series={serving} week={ws.latestCompletedWeek} />
             </div>
           )}

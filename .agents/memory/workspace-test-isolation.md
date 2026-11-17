@@ -20,6 +20,10 @@ and failed its synthetic assertions.
 **How to apply:** Scope synthetic source data and the transaction-local connection
 organization consistently inside the rollback boundary. Never persist a changed
 integration organization or weaken the production loader to accommodate a test.
+Aggregate workspace reads can legitimately include existing publications even
+when a fixture's staged-source organization is isolated. For "unchanged by this
+publication" assertions, compare before and after rather than assuming the
+workspace starts empty.
 
 PostgreSQL `now()` is the outer transaction's start time, including inside
 savepoints; it cannot establish publication order within rollback-only tests.

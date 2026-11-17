@@ -17,6 +17,15 @@ identified the shared sources' meanings.
 Do not automatically duplicate shared Kids' Check-In volunteers into both
 ministries or merge Safety into the other Guest Services team.
 
+Report Kids' Check-In as a separate shared-team total, outside UpStreet and
+Waumba Land ministry totals.
+
+**Why:** The owner chose “Separate shared-team total” when asked explicitly
+how this shared team's volunteers should count.
+
+**How to apply:** Preserve the shared source identity instead of inventing a
+ministry split or adding its full count to each children's ministry.
+
 Sunday Morning maps to Service Programming (SPD).
 
 **Why:** The owner subsequently selected “Confirm Service Programming”.
