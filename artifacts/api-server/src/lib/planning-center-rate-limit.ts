@@ -6,12 +6,19 @@ export class PlanningCenterRateLimit {
   private nextAt = 0;
   private blockedUntil = 0;
   private gate: Promise<void> = Promise.resolve();
+  private latestObservedRequestAt = Number.NEGATIVE_INFINITY;
 
   delay(now = Date.now()) {
     return Math.max(0, this.nextAt - now, this.blockedUntil - now);
   }
 
-  observe(headers: Headers, status: number, retrySeconds: number, now = Date.now()) {
+  observe(
+    headers: Headers,
+    status: number,
+    retrySeconds: number,
+    now = Date.now(),
+    requestStartedAt = now,
+  ) {
     const limit = Number(headers.get("X-PCO-API-Request-Rate-Limit"));
     const count = Number(headers.get("X-PCO-API-Request-Rate-Count"));
     const periodText = headers.get("X-PCO-API-Request-Rate-Period") ?? "";
@@ -25,13 +32,21 @@ export class PlanningCenterRateLimit {
       count >= 0 &&
       seconds > 0 &&
       Number.isFinite(seconds);
-    // Leave headroom for other PCO clients and adapt to endpoint-specific limits.
-    this.spacing = valid ? Math.max(50, Math.ceil(((seconds * 1000) / limit) * 1.25)) : 2000;
-    if (valid && count >= limit * 0.8) this.spacing *= 2;
+    // Ignore stale headers from an earlier concurrent request that completed
+    // late; otherwise an old low count could undo newer, stricter pacing.
+    const isLatestObservation = requestStartedAt >= this.latestObservedRequestAt;
+    if (isLatestObservation) {
+      this.latestObservedRequestAt = requestStartedAt;
+      // Leave headroom for other PCO clients and adapt to endpoint-specific limits.
+      this.spacing = valid
+        ? Math.max(50, Math.ceil(((seconds * 1000) / limit) * 1.25))
+        : 2000;
+      if (valid && count >= limit * 0.8) this.spacing *= 2;
+      this.nextAt = now + this.spacing;
+    }
     if (valid && count >= limit)
       this.blockedUntil = Math.max(this.blockedUntil, now + seconds * 1000);
     if (status === 429) this.blockedUntil = Math.max(this.blockedUntil, now + retrySeconds * 1000);
-    this.nextAt = now + this.spacing;
   }
 
   async wait() {

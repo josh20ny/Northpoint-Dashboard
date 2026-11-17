@@ -116,6 +116,7 @@ export function retrySeconds(header: string | null, now = Date.now()) {
 export async function providerRequest(path: string, init: RequestInit = {}, maxBytes = 2_000_000) {
   if (!path.startsWith("/") || path.startsWith("//")) throw new ProviderError(422);
   let response: Response;
+  const requestStartedAt = Date.now();
   try {
     response = await fetch(`${PCO_ORIGIN}${path}`, {
       ...init,
@@ -141,6 +142,8 @@ export async function providerRequest(path: string, init: RequestInit = {}, maxB
       response.headers,
       response.status,
       retrySeconds(response.headers.get("retry-after")),
+      Date.now(),
+      requestStartedAt,
     );
   if (!response.ok) {
     await response.body?.cancel();

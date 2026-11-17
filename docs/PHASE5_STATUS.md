@@ -447,12 +447,18 @@ mapping was applied without starting a PCO scan, and the existing Groups data
 was republished with a valid publication.
 
 The source run began November 8 and finished November 13, before the November
-15 reporting week closed. Accordingly, November 8 group attendance is marked
-partial and November 15 attendance is marked future; both values are withheld
-as `null`, not displayed as final counts. The aggregate attendance calculation
-is configured, but current Connection meeting attendance still needs a complete
-source window before it can be accepted. No historical period before the
-November 8 source coverage is inferred.
+15 reporting week closed. Its partial/future attendance values were preliminary.
+After the full Groups backfill completed November 16, the completion refresh
+published **7** attended pairs for November 8 and **212** for November 15, both
+complete; November 22 attendance remains future. No period before November 8
+is inferred.
+
+The November 15 group-count, membership and leader snapshots remain 196, 3,780
+and 487 from the November 13 scan. A later publication had inserted
+`no_eligible_observations` placeholders for those snapshot measures on weeks
+other than its own scan week, which hid the earlier dated snapshot. The read
+path now ignores only those off-week snapshot placeholders; current snapshot
+values remain dated to their scan week and expose their `source_as_of` timestamp.
 
 ## Remaining Phase 5 gates
 
@@ -473,6 +479,10 @@ November 8 source coverage is inferred.
   products and Giving without a completed backfill keep their coverage guards.
 - No new live PCO scan, schedule change or production deployment was performed.
   See `PHASE5_WORKBOOK_CROSSWALK.md` for remaining semantic mapping gaps.
+- The completed Groups backfill now provides complete Connection meeting
+  attendance for November 8 (7) and November 15 (212). Off-week missing
+  placeholders no longer hide the separately dated group-count, membership
+  and leader snapshots; a rollback-only database test verifies that behavior.
 - The latest current Giving scan had completed, but its in-transaction
   auto-publication had left the explicit Admin-review marker. Re-published the
   entire previously approved October 7, 2018–November 15, 2026 window through
@@ -721,9 +731,36 @@ November 8 source coverage is inferred.
   interpretation, not permission to backdate routes.
 - A read-only inventory found 3,232 legacy Services plans, with source dates
   spanning 2009–2027, and 12,321 plan times, but no legacy assignment records.
-  This does not establish earlier volunteer counts or dated ministry ownership.
-  No additional scan, historical classification or scheduler change was made
-  while investigating that uncertainty.
+- The bounded November 9–15 Services refresh was repeated after switching plan
+  reads to include linked plan times. The same 768 records were fetched in 36
+  pages rather than 45 (18 seconds rather than 23); 41 PlanTimes retained
+  nested plan provenance, and all 696 PlanPerson records still had person and
+  service-time links. The parser falls back to the separate plan-time request
+  when an included relationship is absent or incomplete.
+- Full historical Serving backfill completed on November 17: **3,727 pages,
+  122,679 source records fetched, 121,911 revisions, zero pages pending, and
+  30 minutes 31 seconds elapsed**. The one-off run had `automatic=false`; no
+  scheduled-processing setting was changed.
+- The run observed 22 ServiceTypes, 3,234 Plans, 12,325 PlanTimes and 107,098
+  PlanPerson assignments. All assignment records had person, team, plan and
+  ServiceType links; all linked PlanTimes were present and retained provenance
+  to their parent plan. **191 assignments have no PCO service-time link**. Their
+  plans date from 2017–2026, with none in the November 9–22 current reporting
+  window. They remain staged as source facts; a Plan's `sort_date` is not used
+  to invent a serving instant or count.
+- The scan's normal completion refresh initially let old, unmapped assignments
+  and those missing service-time links invalidate current-week measures. Scoped
+  these integrity issues to the requested reporting window, bumped the
+  calculation definition, and republished the already-approved November 15–22
+  window. The new 32-row publication has no calculation issues: 16 complete
+  values for November 15 match the previous complete publication, and the
+  November 22 window has 14 complete and two missing values. No week before
+  November 15 was published.
+- This completes the raw historical Serving import, not historical volunteer
+  reporting. Existing ministry routes are effective November 9 only, and the
+  owner has not confirmed earlier source ownership. Historical metrics remain
+  unpublished until those dates are resolved. One PlanPerson request per plan
+  remains necessary for the documented API.
 - Added the already-published LU weekly and Safety scheduling figures to
   Connection as separate teams, in addition to the shared-team directory view.
   They use Connection's selected reporting range and existing freshness path;
@@ -754,32 +791,27 @@ November 8 source coverage is inferred.
 5. Keep production deployment and unattended scheduling separate from this
    development gate.
 
-## Deferred follow-ups: Integrations usability and PCO speed
-
-These items are recorded for later work; they do not require changing, pausing,
-restarting or cancelling active imports. Do not alter live sync queues or
-schedule settings as part of this follow-up plan.
+## Integrations usability and PCO processing
 
 ### Integrations page: collapse provider sections
 
-The Integrations page currently renders the Planning Center controls and
-connection history as one long section, followed by other providers. Add
-accessible, keyboard-operable provider sections so the page can show a concise
-**Planning Center** heading and reveal its controls, syncs and history when
-expanded. Keep connection status visible in the heading, preserve the existing
-Admin restrictions and all controls, and leave unrelated provider behavior
-unchanged. This is a small admin usability improvement that can be implemented
-independently of sync processing; defer it until the owner wants that UI work
-started.
+The Integrations page now presents Planning Center and Other providers as
+keyboard-operable, collapsed-by-default sections. Planning Center's connection
+state remains visible in its heading; its controls mount only while expanded,
+and status polling runs only while open. Admin restrictions and all existing
+controls remain in place. The dashboard type check passed and the preview
+retains its sign-in gate; the screenshot browser was not signed in, so the
+authenticated contents still need an owner-side visual check.
 
 ### PCO processing: page efficiency improved; durable deltas remain
 
-The shared worker now adapts its request spacing to Planning Center rate-limit
-headers and `Retry-After`; source pages are written in set-based batches while
-keeping each page and its cursor durable and replayable. Giving and Groups also
-fetch supported linked records in batches instead of issuing one relationship
-request per record. Workers remain serialized; no unbounded parallelism or
-scheduler setting was added.
+The shared worker adapts request spacing to Planning Center rate-limit headers
+and `Retry-After`. Each advance can fetch up to eight consecutive queued pages
+of the same resource type concurrently;
+the shared limiter still paces requests from live provider headers, and the
+page records and cursors commit together. If any page fails, the batch is rolled
+back and safely retried. This is bounded concurrency, not an unbounded request
+fan-out. Existing run serialization and scheduler settings are unchanged.
 
 The Giving backfill processed 41,875 pages over the run period. This is a
 completed-history result, not evidence that every future sync finishes in
@@ -788,12 +820,39 @@ completed backfill/incremental run with a three-day overlap; the cutoff is
 stored on the run so retries resume the same window. Filter parameters are
 preserved across pagination and service-plan child discovery.
 
+Serving plan pages now request linked PlanTimes in the same paged response,
+with strict linkage checks and the separate plan-time request as a fallback.
+The bounded November 9–15 refresh dropped from 45 pages (23 seconds) to 36
+pages (18 seconds) for the same 768 records. The full historical Serving source
+backfill finished in 30 minutes 31 seconds across 3,727 pages and 122,679 source
+records. It was a one-off manual job (`automatic=false`) and did not enable or
+alter scheduled processing. Historical publication remains limited to the
+confirmed routes.
+
+The Groups historical backfill completed 13,044 pages, including 12,823
+event-specific Attendance requests, and took 3 hours 52 minutes. Planning
+Center documents Attendance as an event-scoped collection without a bulk
+include, so batching independent page requests is the supported optimization.
+The new bounded page batching also applies to future People, Check-Ins, Giving,
+Groups, Services and Serving syncs. No live scan was repeated to benchmark the
+change; future authorized runs will establish actual elapsed times.
+
 Verified update filters are used for People, Check-Ins, Giving donations, and
 Services plans. Other small product roots may still be re-read. Groups keeps
 a full reconciliation because the supported API filters do not safely capture
 membership edits or changed attendance on older events. This is a product-level
 date checkpoint, not a per-resource watermark; Groups and Services assignment
 relationship coverage still need a bounded reconciliation/late-change policy.
+
+The current Planning Center references confirm the limit: Groups Membership
+records do not expose `updated_at`; Attendance records have no update timestamp
+and are listed under individual Events. Services exposes a service-type-wide
+PlanPersonTime collection, but it points to PlanPerson IDs and does not provide
+the person/team assignment details needed by the accepted metrics. PlanPerson
+itself is listed by person; the verified plan-level `team_members` request
+remains necessary unless a supported bulk inclusion is confirmed. Keep these
+full-reconciliation/relationship boundaries explicit rather than silently
+claiming the backlog is now a delta-only scan.
 
 Next, verify those relationship-change boundaries and add periodic
 reconciliation for resources without reliable delta filters. Test

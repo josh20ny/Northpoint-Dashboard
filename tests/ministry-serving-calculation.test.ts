@@ -90,6 +90,40 @@ describe("Services weekly people and shared teams", () => {
     });
   });
 
+  it("keeps out-of-window historical linkage gaps from invalidating current totals", () => {
+    const oldPlan: SourceFact = {
+      type: "Plan", id: "old-plan", attributes: { sort_date: "2026-11-01" },
+      relationships: {}, sourceCollection: null,
+    };
+    const oldTime: SourceFact = {
+      type: "PlanTime", id: "old-time",
+      attributes: { starts_at: "2026-11-01T15:00:00Z", time_type: "service" },
+      relationships: {},
+      sourceCollection: "/services/v2/service_types/9/plans/old-plan/plan_times",
+    };
+    const oldUnmapped = assignment("old-unmapped", "9", "C");
+    oldUnmapped.relationships.plan = relationship("Plan", "old-plan");
+    oldUnmapped.relationships.service_times = {
+      data: [{ type: "PlanTime", id: "old-time" }],
+    };
+    const oldMissingTime = assignment("old-missing-time", "9", "C");
+    oldMissingTime.relationships.plan = relationship("Plan", "old-plan");
+    oldMissingTime.relationships.service_times = { data: [] };
+
+    const result = compileMinistryFacts(
+      "serving",
+      [plan, time, oldPlan, oldTime, assignment("current", "8", "C"), oldUnmapped, oldMissingTime],
+      [mapping("8", "all")],
+      start,
+      start,
+      now,
+    );
+    expect(result.issues).toEqual([]);
+    expect(result.values).toEqual([
+      expect.objectContaining({ ministry: "shared-teams", value: 1, quality: "complete" }),
+    ]);
+  });
+
   it("does not apply a current source interpretation to earlier historical service dates", () => {
     const route = { ...mapping("8", "kids-checkin"), effectiveFrom: "2026-11-09" };
     expect(compile([assignment("10", "8", "C")], [route]).values).toEqual([]);

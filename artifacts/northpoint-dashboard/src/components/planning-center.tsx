@@ -16,7 +16,7 @@ import {
   type PlanningCenterSyncInputProduct,
   type PlanningCenterWorkspace,
 } from "@workspace/api-client-react";
-import { Link2, RefreshCcw, Settings2 } from "lucide-react";
+import { ChevronDown, Link2, RefreshCcw, Settings2 } from "lucide-react";
 import { Panel, QueryError, RefreshButton, StatusPill } from "@/components/kit";
 import { EmptyRecord, FormError, SectionHeading } from "@/components/admin-controls";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -706,50 +706,76 @@ function Syncs({ ws }: { ws: PlanningCenterWorkspace }) {
 }
 
 export function PlanningCenterAdmin() {
+  const [expanded, setExpanded] = useState(false);
   const q = useGetPlanningCenter({
     query: {
       enabled: true,
       staleTime: 10000,
-      refetchInterval: 15000,
+      refetchInterval: expanded ? 15000 : false,
       queryKey: getGetPlanningCenterQueryKey(),
     },
   });
   const ws = q.data;
+  const status = ws
+    ? ws.connection?.state ?? "not_connected"
+    : q.isError
+      ? "unavailable"
+      : "loading";
   return (
-    <section className="space-y-5" data-testid="section-planning-center">
-      <div className="flex items-center justify-between gap-3">
+    <details
+      className="rounded-xl border bg-card"
+      data-testid="section-planning-center"
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3.5 [&::-webkit-details-marker]:hidden">
         <div>
-          <h2 className="font-display text-[17px] font-semibold">Planning Center</h2>
+          <h2 className="font-display text-[16px] font-semibold">Planning Center</h2>
           <p className="text-[12px] text-muted-foreground">
-            {ws ? `As of ${fmt(ws.asOf)}` : "Loading status"}
+            {ws ? `As of ${fmt(ws.asOf)}` : "Source connection and sync controls"}
           </p>
         </div>
-        <RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />
-      </div>
-      {q.isError && !ws ? (
-        <QueryError
-          title="Planning Center status unavailable"
-          error={q.error}
-          onRetry={() => void q.refetch()}
-        />
-      ) : !ws ? (
-        <div className="space-y-4">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      ) : (
-        <>
-          {q.isRefetchError && <Note tone="warn">Refresh failed. Showing last loaded status.</Note>}
-          <Setup ws={ws} />
-          <Connection
-            key={`${ws.connection?.accountRef ?? "none"}:${ws.connection?.state ?? "none"}`}
-            ws={ws}
+        <div className="flex items-center gap-2">
+          <StatusPill status={status} />
+          <ChevronDown
+            aria-hidden
+            className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
           />
-          <RefreshSchedule ws={ws} />
-          <Syncs ws={ws} />
-          <SourceLifecycle ws={ws} />
-        </>
+        </div>
+      </summary>
+      {expanded && (
+        <div className="space-y-5 border-t px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[12px] text-muted-foreground">
+              {ws ? `Status last checked ${fmt(ws.asOf)}` : "Planning Center status"}
+            </p>
+            <RefreshButton busy={q.isFetching} onClick={() => void q.refetch()} />
+          </div>
+          {q.isError && !ws ? (
+            <QueryError
+              title="Planning Center status unavailable"
+              error={q.error}
+              onRetry={() => void q.refetch()}
+            />
+          ) : !ws ? (
+            <div className="space-y-4">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : (
+            <>
+              {q.isRefetchError && <Note tone="warn">Refresh failed. Showing last loaded status.</Note>}
+              <Setup ws={ws} />
+              <Connection
+                key={`${ws.connection?.accountRef ?? "none"}:${ws.connection?.state ?? "none"}`}
+                ws={ws}
+              />
+              <RefreshSchedule ws={ws} />
+              <Syncs ws={ws} />
+              <SourceLifecycle ws={ws} />
+            </>
+          )}
+        </div>
       )}
-    </section>
+    </details>
   );
 }

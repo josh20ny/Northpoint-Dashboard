@@ -35,6 +35,7 @@ const run = () => ({
   last_automatic_at: null,
   lifecycle_version: 1,
 });
+let current = run();
 const person = { type: "Person", id: "42", attributes: { status: "inactive" } };
 const sqlCalls = () => query.mock.calls.map(([sql]) => String(sql));
 const assessments = () => sqlCalls().filter((s) => s.startsWith("UPDATE pco_source_entities e"));
@@ -47,7 +48,7 @@ beforeEach(() => {
   vi.stubEnv("PCO_CLIENT_ID", "synthetic-client");
   vi.stubEnv("PCO_CLIENT_SECRET", "synthetic-secret");
   vi.stubEnv("PCO_TOKEN_ENCRYPTION_KEY", "1".repeat(64));
-  const current = run();
+  current = run();
   query.mockImplementation(async (sql: string, args?: unknown[]) => {
     if (sql.startsWith("SELECT * FROM pco_connections"))
       return {
@@ -82,6 +83,9 @@ beforeEach(() => {
             ...current,
             queue: JSON.parse(args![1] as string),
             status: args![5],
+            fetched: current.fetched + Number(args![3]),
+            revised: current.revised + Number(args![4]),
+            pages: current.pages + Number(args![6] ?? 1),
             finished_at: args![5] === "complete" ? new Date() : null,
           },
         ],
@@ -115,6 +119,57 @@ describe("Planning Center lifecycle evidence", () => {
     const args = query.mock.calls[projection + 1][1];
     expect(args.slice(0, 3)).toEqual(["synthetic", "people", id]);
     expect(JSON.parse(args[3])[0]).toMatchObject({ object_type: "Person", external_id: "42" });
+  });
+  it("fetches a bounded batch of independent pages concurrently and commits all cursors together", async () => {
+    current.queue = Array.from({ length: 10 }, (_, index) => ({
+      path: `/people/v2/people?offset=${index * 100}`,
+      type: "Person",
+    }));
+    let active = 0;
+    let maxActive = 0;
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      const offset = new URL(String(input)).searchParams.get("offset") ?? "0";
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      active--;
+      return new Response(
+        JSON.stringify({
+          data: [{ ...person, id: offset || "0" }],
+        }),
+      );
+    });
+
+    const result = await advancePage(c, actor, id, false);
+    const update = query.mock.calls.find(([sql]) =>
+      String(sql).startsWith("UPDATE pco_sync_runs SET queue"),
+    );
+    expect(maxActive).toBe(8);
+    expect(fetch).toHaveBeenCalledTimes(8);
+    expect(result).toMatchObject({ status: "running", pages: 8, fetched: 8 });
+    expect(JSON.parse(update![1]![1] as string)).toHaveLength(2);
+    expect(JSON.parse(update![1]![2] as string)).toHaveLength(8);
+  });
+  it("retries the whole batch without staging partial results when one request fails", async () => {
+    current.queue = [
+      { path: "/people/v2/people", type: "Person" },
+      { path: "/people/v2/people?offset=100", type: "Person" },
+      { path: "/people/v2/people?offset=200", type: "Person" },
+    ];
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      if (new URL(String(input)).searchParams.get("offset") === "100")
+        return new Response("private", { status: 429 });
+      return new Response(JSON.stringify({ data: [person] }));
+    });
+
+    const result = await advancePage(c, actor, id, false);
+    expect(result).toMatchObject({ status: "retry", pages: 0, fetched: 0 });
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(sqlCalls()).toContain("ROLLBACK TO SAVEPOINT pco_page");
+    expect(sqlCalls().some((sql) => sql.startsWith("INSERT INTO pco_source_entities"))).toBe(
+      false,
+    );
   });
   it("assesses absence only after completion, within the page savepoint", async () => {
     await advancePage(c, actor, id, false);

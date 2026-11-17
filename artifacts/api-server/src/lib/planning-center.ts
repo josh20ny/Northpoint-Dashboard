@@ -54,6 +54,9 @@ interface Run {
   last_automatic_at: Date | null;
 }
 const iso = (v: Date | null) => v?.toISOString() ?? null;
+// PCO GETs are paced by the shared limiter; the small batch bounds memory and
+// the amount replayed if one page fails. Pages and cursors commit atomically.
+const MAX_PAGES_PER_ADVANCE = 8;
 const civilDate = (value: Date | string | null | undefined) => {
   if (!value) return null;
   if (typeof value === "string") return value;
@@ -600,29 +603,56 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
     const t = await tokens(c, v); // Persist any rotation even when a later page fails.
     await c.query("SAVEPOINT pco_page");
     pageStarted = true;
-    const page = r.queue[0];
-    if (!page || r.pages >= 100_000) throw new provider.ProviderError(422);
-    const path = pagePath(page, r.product);
     const visitedPaths = new Set(r.visited);
-    if (visitedPaths.has(path)) throw new provider.ProviderError(422);
-    const payload = await provider.apiGet(path, t.accessToken, r.product);
-    const parsed = parsePage(payload, page, r.product);
-    const revised = await stageSourcePage(
-      c,
-      v.account_ref,
-      r.product,
-      r.id,
-      parsed,
-      new URL(path, provider.PCO_ORIGIN).pathname,
+    const pages: Page[] = [];
+    const paths: string[] = [];
+    const selectedPaths = new Set<string>();
+    let batchType: string | undefined;
+    for (const page of r.queue) {
+      if (batchType && page.type !== batchType) break;
+      const path = pagePath(page, r.product);
+      if (visitedPaths.has(path) || selectedPaths.has(path)) continue;
+      batchType = page.type;
+      pages.push(page);
+      paths.push(path);
+      selectedPaths.add(path);
+      if (pages.length === MAX_PAGES_PER_ADVANCE) break;
+    }
+    if (r.pages + pages.length > 100_000) throw new provider.ProviderError(422);
+    const results = await Promise.allSettled(
+      pages.map(async (page, index) => {
+        const payload = await provider.apiGet(paths[index]!, t.accessToken, r.product);
+        return parsePage(payload, page, r.product);
+      }),
     );
-    const visited = [...r.visited, path];
-    visitedPaths.add(path);
+    const failed = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failed) throw failed.reason;
+    const parsedPages = results.map((result) => {
+      if (result.status !== "fulfilled") throw new provider.ProviderError(422);
+      return result.value;
+    });
+    const visited = [...r.visited, ...paths];
+    for (const path of paths) visitedPaths.add(path);
     const queue = [
-      ...r.queue.slice(1),
-      ...parsed.nextPages.map((next) => ({
-        ...next,
-        ...(page.since ? { since: page.since, ...(page.until ? { until: page.until } : {}), windowField: page.windowField } : {}),
-      })),
+      ...r.queue.filter((page) => !visitedPaths.has(pagePath(page, r.product))),
+      ...parsedPages.flatMap((parsed, index) =>
+        parsed.nextPages.map((next) => ({
+          ...next,
+          ...(pages[index]!.since
+            ? {
+                since: pages[index]!.since,
+                ...(pages[index]!.until
+                  ? {
+                      until: pages[index]!.until,
+                      windowField: pages[index]!.windowField,
+                    }
+                  : {}),
+              }
+            : {}),
+        })),
+      ),
     ];
     const unique = new Map<string, Page>();
     for (const q of queue) {
@@ -630,19 +660,34 @@ export async function advancePage(c: PoolClient, p: AdminActor, id: string, auto
       if (!visitedPaths.has(k)) unique.set(k, q);
     }
     if (unique.size > 100_000) throw new provider.ProviderError(422);
+    let fetched = 0;
+    let revised = 0;
+    for (let index = 0; index < parsedPages.length; index++) {
+      const parsed = parsedPages[index]!;
+      fetched += parsed.entities.length;
+      revised += await stageSourcePage(
+        c,
+        v.account_ref,
+        r.product,
+        r.id,
+        parsed,
+        new URL(paths[index]!, provider.PCO_ORIGIN).pathname,
+      );
+    }
     const updated = (
       await c.query<Run>(
         `UPDATE pco_sync_runs SET queue=$2,visited=$3,fetched=fetched+$4,
-        revised=revised+$5,pages=pages+1,status=$6,error=NULL,retry_at=NULL,
+        revised=revised+$5,pages=pages+$7,status=$6,error=NULL,retry_at=NULL,
         automatic=automatic AND $6 IN ('running','retry'),
         finished_at=CASE WHEN $6='complete' THEN now() ELSE NULL END WHERE id=$1 RETURNING *`,
         [
           id,
           JSON.stringify([...unique.values()]),
           JSON.stringify(visited),
-          parsed.entities.length,
+          fetched,
           revised,
           unique.size ? "running" : "complete",
+          pages.length,
         ],
       )
     ).rows[0]!;

@@ -168,6 +168,80 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
         start: "2026-11-08",
         end: "2026-11-08",
       });
+    it("preserves a dated Groups snapshot when a later scan has no snapshot that week", async () => {
+      const earlierRun = randomUUID();
+      const laterRun = randomUUID();
+      const earlierGroup = `snapshot-group-${randomUUID()}`;
+      const laterGroup = `snapshot-group-${randomUUID()}`;
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at)
+         VALUES($1,$2,'groups','backfill','complete','[]',$3,'2026-11-13T22:00:00Z','2026-11-13T22:09:00Z')`,
+        [earlierRun, account, admin.userId],
+      );
+      await seedSource(
+        {
+          type: "Group",
+          id: earlierGroup,
+          attributes: { archived_at: null },
+          relationships: {},
+        },
+        "/groups/v2/groups",
+        "groups",
+        earlierRun,
+      );
+      await repo.publishMinistryData(admin, {
+        product: "groups",
+        start: "2026-11-08",
+        end: "2026-11-15",
+      });
+
+      await c.query(
+        `INSERT INTO pco_sync_runs(id,account_ref,product,mode,status,queue,started_by,started_at,finished_at,coverage_start,coverage_end)
+         VALUES($1,$2,'groups','current','complete','[]',$3,'2026-11-16T22:00:00Z','2026-11-16T22:46:00Z','2026-11-08','2026-11-22')`,
+        [laterRun, account, admin.userId],
+      );
+      await seedSource(
+        {
+          type: "Group",
+          id: laterGroup,
+          attributes: { archived_at: null },
+          relationships: {},
+        },
+        "/groups/v2/groups",
+        "groups",
+        laterRun,
+      );
+      await repo.publishMinistryData(admin, {
+        product: "groups",
+        start: "2026-11-08",
+        end: "2026-11-22",
+      });
+
+      const currentPlaceholder = await c.query(
+        `SELECT v.quality FROM ministry_metric_values v
+         JOIN ministry_publications p ON p.id=v.publication_id
+         WHERE p.product='groups' AND p.account_ref=$1 AND p.source_as_of='2026-11-16T22:46:00Z'
+           AND v.measure='group_count' AND v.week='2026-11-15'`,
+        [account],
+      );
+      expect(currentPlaceholder.rows[0]?.quality).toBe("missing");
+      const history = await repo.readMinistryData(
+        admin,
+        "connection",
+        "2026-11-08",
+        "2026-11-22",
+      );
+      expect(
+        history.metrics.find(
+          (metric) => metric.measure === "group_count" && metric.week === "2026-11-15",
+        ),
+      ).toMatchObject({ value: 1, quality: "complete", sourceAsOf: "2026-11-13T22:09:00.000Z" });
+      expect(
+        history.metrics.find(
+          (metric) => metric.measure === "group_count" && metric.week === "2026-11-22",
+        ),
+      ).toMatchObject({ value: 1, quality: "complete" });
+    });
     it("clears the auto-refresh review marker only after a complete Admin republish", async () => {
       await publish();
       await c.query(

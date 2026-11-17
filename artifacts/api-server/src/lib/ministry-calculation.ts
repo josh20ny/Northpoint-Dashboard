@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v7";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v8";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -346,6 +346,25 @@ export function compileMinistryFacts(
         activeMapping(m, chicagoDate(date)) &&
         (!measure || m.measure === measure),
     );
+  const inReportingWindow = (date: Date) => {
+    const week = reportingWeekEnding(date);
+    return week >= start && week <= end;
+  };
+  // Plan.sort_date is a civil date, not a service-time instant. Use it only to
+  // keep an undated historical assignment from invalidating an unrelated
+  // reporting window; never use it to count or date a serving metric.
+  const planReportingWeek = (plan: SourceFact | undefined) => {
+    const value = plan?.attributes.sort_date;
+    if (typeof value !== "string" || !/^\d{4}-\d\d-\d\d(?:$|T)/.test(value)) return null;
+    const day = value.slice(0, 10);
+    const date = new Date(`${day}T18:00:00Z`);
+    if (!Number.isFinite(date.getTime()) || chicagoDate(date) !== day) return null;
+    return reportingWeekEnding(date);
+  };
+  const planCouldAffectWindow = (plan: SourceFact | undefined) => {
+    const week = planReportingWeek(plan);
+    return week === null || (week >= start && week <= end);
+  };
   const eventTimeTemplates = new Map(
     entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]),
   );
@@ -534,15 +553,17 @@ export function compileMinistryFacts(
           v.attributes.time_type === "service",
       );
       if (!plan || !person || !t.length) {
-        issues.add("serving_plan_person_or_service_time_missing");
+        if (planCouldAffectWindow(plan))
+          issues.add("serving_plan_person_or_service_time_missing");
         continue;
       }
       for (const time of t) {
         const d = instant(time.attributes.starts_at);
         if (!d) {
-          issues.add("serving_invalid_service_time");
+          if (planCouldAffectWindow(plan)) issues.add("serving_invalid_service_time");
           continue;
         }
+        if (!inReportingWindow(d)) continue;
         const ms = [
           ...match("Team", ref(e, "team"), d),
           ...match("ServiceType", ref(e, "service_type"), d),

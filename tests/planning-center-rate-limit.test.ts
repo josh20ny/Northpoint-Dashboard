@@ -32,6 +32,12 @@ describe("shared PCO request pacing", () => {
     gate.observe(headers(), 200, 30, 1000);
     expect(gate.delay(1000)).toBe(46000);
   });
+  it("does not let late headers from an older request loosen newer pacing", () => {
+    const gate = new PlanningCenterRateLimit();
+    gate.observe(headers(100, 90), 200, 30, 1000, 1000);
+    gate.observe(headers(100, 10), 200, 30, 1200, 900);
+    expect(gate.delay(1200)).toBe(300);
+  });
   it("retains conservative pacing when headers are missing or malformed", () => {
     for (const h of [new Headers(), headers(0), headers(100, -1), headers(100, 1, "bad")]) {
       const gate = new PlanningCenterRateLimit();

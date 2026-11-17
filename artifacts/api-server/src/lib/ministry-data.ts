@@ -203,9 +203,10 @@ export async function readMinistryData(
     from = start ?? shiftDate(to, -84);
   dates(from, to);
   return attendanceTransaction(p, false, false, async (c) => {
-    // First select the newest revision from each source, THEN choose between
-    // independent PCO/workbook sources. Never fall back to stale earlier PCO
-    // data just because the newest revision marks that value missing.
+    // First select the newest meaningful revision from each source, THEN
+    // choose between independent PCO/workbook sources. Missing placeholders
+    // for snapshot measures outside their scan's report week are not revisions
+    // for that week; preserve the last actual snapshot instead.
     // Validate each selected publication once, not once per metric/week:
     // evidence is shared across a publication and can span years of records.
     const result = await c.query(
@@ -215,6 +216,13 @@ export async function readMinistryData(
             ORDER BY p.created_at DESC,p.id DESC) AS revision
         FROM ministry_metric_values v JOIN ministry_publications p ON p.id=v.publication_id
         WHERE v.ministry=$1 AND v.week BETWEEN $2::date AND $3::date
+          AND NOT (
+            p.product='groups'
+            AND v.measure IN ('group_count','group_memberships','group_leaders')
+            AND v.quality='missing'
+            AND v.flags @> '[\"no_eligible_observations\"]'::jsonb
+            AND v.week <> (date_trunc('week',p.source_as_of AT TIME ZONE 'America/Chicago')::date + 6)
+          )
       ), current_rows AS MATERIALIZED (
         SELECT * FROM revisions WHERE revision=1
       ), validity AS MATERIALIZED (
