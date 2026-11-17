@@ -17,10 +17,9 @@ identified the shared sources' meanings.
 Do not automatically duplicate shared Kids' Check-In volunteers into both
 ministries or merge Safety into the other Guest Services team.
 
-The owner described Sunday Morning as “I think is part of SPD”; this is
-tentative, not a confirmed source interpretation.
+Sunday Morning maps to Service Programming (SPD).
 
-**Why:** The owner's uncertainty must not become a definitive classification.
+**Why:** The owner subsequently selected “Confirm Service Programming”.
 
-**How to apply:** Confirm the Service Programming destination before publishing
-Sunday Morning assignments under it.
+**How to apply:** Use this confirmed destination rather than treating Sunday
+Morning as a church-wide volunteer total.

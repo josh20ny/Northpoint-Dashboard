@@ -9,4 +9,4 @@
 - [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday overview across all ministries; each ministry needs attendance and all documented KPIs.
 - [Giving policy and source approvals](giving-policy.md) — Giving visibility and giver definitions; recorded Giving, Groups and Services development-import approvals.
 - [PCO runtime contracts](pco-runtime-contracts.md) — pg DATE decoding needs civil serialization; resolve joint-giver linkage through collection reads.
-- [Services ministry routing](services-ministry-routing.md) — confirmed ministry routes; Kids' Check-In shared, Safety separate under Guest Services; Sunday Morning tentative.
+- [Services ministry routing](services-ministry-routing.md) — Kids' Check-In shared, Safety separate under Guest Services, Sunday Morning → Service Programming.
