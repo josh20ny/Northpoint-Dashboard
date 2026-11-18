@@ -993,8 +993,14 @@ sync state were not changed.
 The owner reviewed the signed-in Giving week/month history and confirmed its
 values and period labels look correct. The owner also reviewed the Admin
 Check-In resolver and confirmed the screen looks correct. These reviews accept
-those specific displays only; Connection/Serving and Giving fund/campaign
-breakdowns, the privacy gate and overall Phase 5 signoff remain open.
+those specific displays only.
+
+The owner also reviewed the signed-in Connection and Serving figures and
+confirmed they look correct. This accepts the reviewed separation of group
+meeting attendance from membership snapshots and scheduled/accepted service
+assignments from actual participation. Giving fund/campaign breakdowns,
+remaining ministry displays, the privacy gate and overall Phase 5 signoff
+remain open.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.
