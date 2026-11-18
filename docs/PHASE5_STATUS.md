@@ -841,8 +841,10 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
    Connection/Serving, child-ministry and home-overview displays and confirmed
    they look correct. This is representative source-to-screen acceptance, not
    granular review of every PCO record.
-4. **Open:** Obtain the owner's development signoff for Phase 5 after this
-   status review.
+4. **Complete:** The owner approved Phase 5 development closeout on
+   2026-11-18. This closes the development implementation and review gates
+   only; it does not authorize production deployment, unattended processing,
+   additional sensitive data collection or broader provider access.
 5. Production deployment, unattended scheduling, numeric small-cell
    suppression and production privacy/retention approval remain outside this
    development closeout.

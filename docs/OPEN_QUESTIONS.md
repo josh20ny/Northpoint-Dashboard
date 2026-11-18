@@ -6,13 +6,14 @@ definitions and historical mappings are recorded in `DECISIONS.md`,
 below should not be treated as unresolved when those records already answer
 them.
 
-## Still open for Phase 5
+## Phase 5 closeout
 
-1. Record owner development signoff. The owner approved the current minimized
-   development data boundary on November 18, 2026; this does not approve
-   additional sensitive fields or provider scopes. Production deployment,
-   unattended scheduling and production privacy/retention approval remain
-   separate.
+The owner approved Phase 5 development closeout on November 18, 2026. This
+covers the current minimized development data boundary, accepted source
+mappings and backfills, and the reviewed signed-in dashboard screens. It does
+not approve additional sensitive fields or provider scopes. Production
+deployment, unattended scheduling and production privacy/retention approval
+remain separate.
 
 No additional metric definition is currently needed to publish the approved
 Phase 5 measures. Actual source gaps, unresolved Check-Ins, partial coverage
