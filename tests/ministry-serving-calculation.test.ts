@@ -9,7 +9,7 @@ const start = "2026-11-08";
 const now = new Date("2026-11-17T18:00:00Z");
 const relationship = (type: string, id: string) => ({ data: { type, id } });
 const plan: SourceFact = {
-  type: "Plan", id: "1", attributes: {}, relationships: {}, sourceCollection: null,
+  type: "Plan", id: "1", attributes: { sort_date: "2026-11-08" }, relationships: {}, sourceCollection: null,
 };
 const time: SourceFact = {
   type: "PlanTime", id: "2", attributes: { starts_at: "2026-11-08T15:00:00Z", time_type: "service" },
@@ -79,15 +79,93 @@ describe("Services weekly people and shared teams", () => {
     expect(result.values.some(row => row.measure === "volunteers")).toBe(false);
   });
 
-  it("does not fabricate an accepted zero from a missing service relationship or unknown status", () => {
+  it("shows an unknown count when a mapped assignment has no service-time link", () => {
     const missing = assignment("10", "8", "C");
     missing.relationships.service_times = { data: [] };
-    expect(compile([missing], [mapping("8", "kids-checkin", "accepted")])).toEqual({
-      values: [], issues: ["serving_plan_person_or_service_time_missing"],
+    expect(compile([missing], [mapping("8", "kids-checkin", "accepted")])).toMatchObject({
+      issues: ["serving_plan_person_or_service_time_missing"],
+      values: [
+        expect.objectContaining({
+          measure: "accepted",
+          value: null,
+          quality: "partial",
+          flags: ["incomplete_source_linkage"],
+        }),
+      ],
     });
     expect(compile([assignment("10", "8", "unexpected")], [mapping("8", "kids-checkin")])).toEqual({
-      values: [], issues: ["serving_invalid_response_status"],
+      values: [
+        expect.objectContaining({
+          measure: "scheduled",
+          value: null,
+          quality: "partial",
+          flags: ["incomplete_source_linkage"],
+        }),
+      ],
+      issues: ["serving_invalid_response_status"],
     });
+  });
+
+  it("keeps linked Serving totals visible as partial when other assignments lack service times", () => {
+    const missing = assignment("11", "8", "C");
+    missing.relationships.service_times = { data: [] };
+    const result = compile(
+      [assignment("10", "8", "C"), missing],
+      [mapping("8", "all"), mapping("8", "all", "accepted")],
+    );
+    expect(result.issues).toEqual(["serving_plan_person_or_service_time_missing"]);
+    expect(result.values).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        measure: "scheduled",
+        value: 1,
+        quality: "partial",
+        flags: expect.arrayContaining(["incomplete_source_linkage"]),
+      }),
+      expect.objectContaining({
+        measure: "accepted",
+        value: 1,
+        quality: "partial",
+        flags: expect.arrayContaining(["incomplete_source_linkage"]),
+      }),
+    ]));
+  });
+
+  it("limits missing-link partial quality to the affected reporting week", () => {
+    const nextPlan: SourceFact = {
+      type: "Plan", id: "2", attributes: { sort_date: "2026-11-15" },
+      relationships: {}, sourceCollection: null,
+    };
+    const nextTime: SourceFact = {
+      type: "PlanTime", id: "next-time",
+      attributes: { starts_at: "2026-11-15T15:00:00Z", time_type: "service" },
+      relationships: {},
+      sourceCollection: "/services/v2/service_types/8/plans/2/plan_times",
+    };
+    const nextAssignment = assignment("next-assignment", "8", "C");
+    nextAssignment.relationships.plan = relationship("Plan", "2");
+    nextAssignment.relationships.service_times = {
+      data: [{ type: "PlanTime", id: "next-time" }],
+    };
+    nextAssignment.sourceCollection =
+      "/services/v2/service_types/8/plans/2/team_members";
+    const missing = assignment("missing", "8", "C");
+    missing.relationships.service_times = { data: [] };
+
+    const result = compileMinistryFacts(
+      "serving",
+      [plan, time, nextPlan, nextTime, assignment("valid", "8", "C"), nextAssignment, missing],
+      [mapping("8", "all"), mapping("8", "all", "accepted")],
+      "2026-11-08",
+      "2026-11-15",
+      now,
+    );
+    expect(result.issues).toEqual(["serving_plan_person_or_service_time_missing"]);
+    expect(result.values).toEqual(expect.arrayContaining([
+      expect.objectContaining({ measure: "scheduled", week: "2026-11-08", value: 1, quality: "partial" }),
+      expect.objectContaining({ measure: "accepted", week: "2026-11-08", value: 1, quality: "partial" }),
+      expect.objectContaining({ measure: "scheduled", week: "2026-11-15", value: 1, quality: "complete" }),
+      expect.objectContaining({ measure: "accepted", week: "2026-11-15", value: 1, quality: "complete" }),
+    ]));
   });
 
   it("keeps out-of-window historical linkage gaps from invalidating current totals", () => {

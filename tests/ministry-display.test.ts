@@ -67,4 +67,25 @@ describe("ministry service scope labels", () => {
       "First service · 9:30 AM workbook / 9:00 AM PCO",
     );
   });
+
+  it("keeps source-labeled workbook metrics as separate titled series", () => {
+    const measures = [
+      ["workbook_total_group_attendance", "Total group attendance · workbook"],
+      ["workbook_group_member_attendance", "Group member attendance · workbook"],
+      ["workbook_group_count_2025", "Group count · 2025 workbook"],
+      ["workbook_group_count_2026", "Group count · 2026 workbook"],
+    ] as const;
+    const series = buildSeries(
+      measures.map(([measure, title]) => ({
+        ...metric("2026-11-01", "workbook"),
+        measure,
+        title,
+      })),
+    );
+
+    expect(series.map(({ measure, title }) => [measure, title])).toEqual(
+      expect.arrayContaining(measures.map(([measure, title]) => [measure, title])),
+    );
+    expect(series).toHaveLength(measures.length);
+  });
 });

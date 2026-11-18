@@ -47,6 +47,17 @@ IDs/names, individual giving signals and transactions remain Admin-only.
 No numeric small-cell threshold, arbitrary donor filter or person-level
 financial cross-domain join is approved by this clarification.
 
+### Groups synchronization policy — 2026-11-17
+
+**APPROVED**, owner: product owner. Keep full-history Groups reconciliation
+so changes to older memberships and event attendance are not silently missed.
+Planning Center does not expose reliable update timestamps or a bulk Attendance
+collection; the completed Groups backfill took 3 hours 52 minutes. Continue to
+use bounded, rate-limit-aware page batching, resumable progress and accurate
+freshness reporting, but do not replace full reconciliation with a recent-only
+sync merely to make routine runs faster. No new scan, schedule change or
+production deployment is authorized by this decision.
+
 ### Shared ministry-page hierarchy — 2026-11-12
 
 **APPROVED**, owner: product owner. Keep ministry detail pages consistent:

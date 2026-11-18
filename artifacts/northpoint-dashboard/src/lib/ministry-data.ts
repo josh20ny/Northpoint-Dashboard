@@ -55,6 +55,16 @@ export const MEASURES: { key: string; label: string }[] = [
   { key: "total_volunteers", label: "Total volunteers" },
   { key: "groups_reported", label: "Groups reported" },
   { key: "member_attendance", label: "Member attendance" },
+  { key: "workbook_group_count_2025", label: "Group count · 2025 workbook" },
+  { key: "workbook_group_count_2026", label: "Group count · 2026 workbook" },
+  { key: "workbook_total_group_attendance", label: "Total group attendance · workbook" },
+  { key: "workbook_group_member_attendance", label: "Group member attendance · workbook" },
+  { key: "upstreet_volunteers_lg", label: "UpStreet volunteers · LG workbook count" },
+  {
+    key: "upstreet_new_family_checkin_volunteers",
+    label: "UpStreet new-family Check-In volunteers · workbook",
+  },
+  { key: "insideout_sgls_in_groups", label: "InsideOut SGLs in groups · workbook" },
 ];
 const MAPPING_ONLY_MEASURES: { key: string; label: string }[] = [
   { key: "service_session", label: "Service session (mapping only)" },

@@ -87,6 +87,7 @@ export function checkInSourceDetails(fact: SourceFact, facts: SourceFact[]): Che
 export function findCheckInReviewCandidates(
   facts: SourceFact[],
   gradeFacts: SourceFact[] = [],
+  includeDetails = true,
 ): CheckInReviewCandidate[] {
   const checkIns = facts.filter((fact) => fact.type === "CheckIn");
   const people = new Map(facts.filter((fact) => fact.type === "Person").map((fact) => [fact.id, fact]));
@@ -139,6 +140,22 @@ export function findCheckInReviewCandidates(
       reasons.push("unknown_checkin_kind");
     if (duplicateIds.has(fact.id)) reasons.push("possible_duplicate_checkin");
     if (!reasons.length) continue;
+    if (!includeDetails) {
+      candidates.push({
+        checkInId: fact.id,
+        serviceDate: details.serviceDate,
+        eventId: null,
+        eventName: null,
+        locationIds: [],
+        locationNames: [],
+        childName: null,
+        gradeLabel: null,
+        assumedMinistry: null,
+        issueReasons: reasons,
+        canInclude: details.canInclude,
+      });
+      continue;
+    }
     const eventName =
       (details.eventId && events.get(details.eventId)?.attributes.name) || null;
     const locationNames = details.locationIds
@@ -167,6 +184,7 @@ export function findCheckInReviewCandidates(
       canInclude: details.canInclude,
     });
   }
+  if (!includeDetails) return candidates;
   return candidates.sort((a, b) => {
     const dateOrder = (b.serviceDate ?? "").localeCompare(a.serviceDate ?? "");
     return dateOrder || a.checkInId.localeCompare(b.checkInId);

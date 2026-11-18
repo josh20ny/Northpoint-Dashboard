@@ -36,6 +36,8 @@ const ATTENDANCE_MEASURES = new Set([
   "attendance_headcount",
   "group_attendance",
   "member_attendance",
+  "workbook_total_group_attendance",
+  "workbook_group_member_attendance",
 ]);
 
 function RangeControl({

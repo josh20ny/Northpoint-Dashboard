@@ -42,6 +42,7 @@ type Entry = {
   unit: string;
   scope: string;
   semantics: string;
+  year?: number | null;
 };
 type Plan = Entry & {
   status: "create" | "approve" | "stage" | "reuse";
@@ -317,6 +318,91 @@ const entries: Entry[] = [
     ministry: "connection" as const,
     scope: "all",
   })),
+  {
+    sheet: "US",
+    column: "P",
+    label: "UpStreet volunteers LG",
+    ministry: "upstreet",
+    measure: "upstreet_volunteers_lg",
+    unit: "source_count",
+    scope: "all",
+    semantics:
+      "Accepted UpStreet volunteer count under the workbook's literal LG label. " +
+      "LG is preserved without expanding its meaning; separate from service and rally counts.",
+  },
+  {
+    sheet: "US",
+    column: "R",
+    label: "UpStreet new-family Check-In volunteers",
+    ministry: "upstreet",
+    measure: "upstreet_new_family_checkin_volunteers",
+    unit: "source_count",
+    scope: "all",
+    semantics:
+      "Accepted source-labeled UpStreet new-family Check-In volunteer count; " +
+      "distinct from service, rally and total serving counts.",
+  },
+  {
+    sheet: "IO",
+    column: "J",
+    label: "InsideOut SGLs in groups",
+    ministry: "insideout",
+    measure: "insideout_sgls_in_groups",
+    unit: "source_count",
+    scope: "all",
+    semantics:
+      "Accepted source-labeled InsideOut SGL count in groups; separate from " +
+      "rally counts and Planning Center serving records.",
+  },
+  {
+    sheet: "Connection",
+    column: "B",
+    label: "Connection number of groups 2025",
+    ministry: "connection",
+    measure: "workbook_group_count_2025",
+    unit: "groups",
+    scope: "all",
+    year: 2025,
+    semantics:
+      "Accepted source-labeled 2025 Connection group-count series aligned to " +
+      "the workbook's matching weekly axis. Separate from PCO active-group snapshots.",
+  },
+  {
+    sheet: "Connection",
+    column: "C",
+    label: "Connection number of groups 2026",
+    ministry: "connection",
+    measure: "workbook_group_count_2026",
+    unit: "groups",
+    scope: "all",
+    semantics:
+      "Accepted source-labeled 2026 Connection group-count series. Separate " +
+      "from PCO active-group snapshots.",
+  },
+  {
+    sheet: "Connection",
+    column: "D",
+    label: "Connection total groups attendance",
+    ministry: "connection",
+    measure: "workbook_total_group_attendance",
+    unit: "attendances",
+    scope: "all",
+    semantics:
+      "Accepted source-labeled Connection total-groups-attendance series. " +
+      "Separate from PCO event/person attendance and workbook member attendance.",
+  },
+  {
+    sheet: "Connection",
+    column: "V",
+    label: "Connection group member attendance",
+    ministry: "connection",
+    measure: "workbook_group_member_attendance",
+    unit: "attendances",
+    scope: "all",
+    semantics:
+      "Accepted source-labeled Connection group-member attendance series. " +
+      "Separate from workbook total-groups-attendance and PCO event/person attendance.",
+  },
 ];
 
 function expectedDefinition(entry: Entry): MappingInput {
@@ -536,10 +622,8 @@ async function main() {
           })),
           excludedAsAmbiguousOrOverlapping: [
             "All-service child/student attendance totals already covered by accepted history",
-            "UpStreet volunteer LG category",
-            "UpStreet new-family check-in volunteers",
-            "Connection group-count columns and duplicate/definition-dependent attendance columns",
             "Digital metrics and later-phase scorecards",
+            "Giving monthly recurring/giving-unit series with unresolved period or unit definitions",
           ],
           applyRange: rangeArgument
             ? rangeArgument.slice("--range=".length)
@@ -586,7 +670,7 @@ async function main() {
       ministry: item.ministry,
       measure: item.measure,
       scope: item.scope,
-      year: null,
+      year: item.year ?? null,
     });
     publications.push({
       label: item.label,

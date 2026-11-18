@@ -7,7 +7,7 @@ import {
 import { gradeLabelFor, ministryForGradeLabel } from "./ministry-grade-classification";
 import { reportingWeekEnding } from "./reporting-calendar";
 
-export const MINISTRY_DEFINITION_VERSION = "source-native-v8";
+export const MINISTRY_DEFINITION_VERSION = "source-native-v9";
 export const MAPPING_ONLY_MEASURES = new Set(["service_session", "student_group_classification"]);
 export const MINISTRY_SLUGS = [
   "giving",
@@ -225,6 +225,48 @@ export const MEASURES: Record<string, { title: string; unit: string; definition:
     unit: "attendances",
     definition: "Accepted workbook-defined attendance; not active memberships.",
   },
+  workbook_group_count_2025: {
+    title: "Group count · 2025 workbook",
+    unit: "groups",
+    definition:
+      "Accepted source-labeled 2025 Connection group-count series aligned to the workbook's matching weekly axis. Kept separate from PCO active-group snapshots.",
+  },
+  workbook_group_count_2026: {
+    title: "Group count · 2026 workbook",
+    unit: "groups",
+    definition:
+      "Accepted source-labeled 2026 Connection group-count series. Kept separate from PCO active-group snapshots.",
+  },
+  workbook_total_group_attendance: {
+    title: "Total group attendance · workbook",
+    unit: "attendances",
+    definition:
+      "Accepted source-labeled Connection total-groups-attendance series. Kept separate from PCO event/person attendance and from the workbook member-attendance column.",
+  },
+  workbook_group_member_attendance: {
+    title: "Group member attendance · workbook",
+    unit: "attendances",
+    definition:
+      "Accepted source-labeled Connection group-member attendance series. Kept separate from the workbook total-groups-attendance column and PCO event/person attendance.",
+  },
+  upstreet_volunteers_lg: {
+    title: "UpStreet volunteers · LG workbook count",
+    unit: "source_count",
+    definition:
+      "Accepted UpStreet volunteer count under the workbook's literal LG label. LG is preserved without expanding its meaning; this is separate from service and rally counts.",
+  },
+  upstreet_new_family_checkin_volunteers: {
+    title: "UpStreet new-family Check-In volunteers · workbook",
+    unit: "source_count",
+    definition:
+      "Accepted source-labeled UpStreet new-family Check-In volunteer count; distinct from service, rally and total serving counts.",
+  },
+  insideout_sgls_in_groups: {
+    title: "InsideOut SGLs in groups · workbook",
+    unit: "source_count",
+    definition:
+      "Accepted source-labeled InsideOut SGL count in groups; separate from rally counts and Planning Center serving records.",
+  },
 };
 export interface SourceFact extends SourceEntity {
   sourceCollection: string | null;
@@ -303,6 +345,8 @@ export function compileMinistryFacts(
 ) {
   if (!sunday(start) || !sunday(end) || end < start) throw new Error("Invalid Sunday range");
   const issues = new Set<string>();
+  const partialServingKeys = new Set<string>();
+  const unscopedServingIssues = new Set<string>();
   const output = new Map<string, MetricFact>();
   const identities = new Map<string, Set<string>>();
   const add = (
@@ -336,16 +380,24 @@ export function compileMinistryFacts(
     identities.set(key, seen);
     output.set(key, row);
   };
-  const match = (type: string, id: string | null, date: Date, measure?: string) =>
-    mappings.filter(
+  const matchCache = new Map<string, SourceMapping[]>();
+  const match = (type: string, id: string | null, date: Date, measure?: string) => {
+    const day = chicagoDate(date);
+    const cacheKey = [type, id ?? "\u0001", day, measure ?? "\u0001"].join("\u0000");
+    const cached = matchCache.get(cacheKey);
+    if (cached) return cached;
+    const matched = mappings.filter(
       (m) =>
         m.product === product &&
         !MAPPING_ONLY_MEASURES.has(m.measure) &&
         m.objectType === type &&
         m.externalId === id &&
-        activeMapping(m, chicagoDate(date)) &&
+        activeMapping(m, day) &&
         (!measure || m.measure === measure),
     );
+    matchCache.set(cacheKey, matched);
+    return matched;
+  };
   const inReportingWindow = (date: Date) => {
     const week = reportingWeekEnding(date);
     return week >= start && week <= end;
@@ -353,17 +405,74 @@ export function compileMinistryFacts(
   // Plan.sort_date is a civil date, not a service-time instant. Use it only to
   // keep an undated historical assignment from invalidating an unrelated
   // reporting window; never use it to count or date a serving metric.
-  const planReportingWeek = (plan: SourceFact | undefined) => {
+  const planReportingDate = (plan: SourceFact | undefined) => {
     const value = plan?.attributes.sort_date;
     if (typeof value !== "string" || !/^\d{4}-\d\d-\d\d(?:$|T)/.test(value)) return null;
     const day = value.slice(0, 10);
     const date = new Date(`${day}T18:00:00Z`);
     if (!Number.isFinite(date.getTime()) || chicagoDate(date) !== day) return null;
-    return reportingWeekEnding(date);
+    return date;
+  };
+  const planReportingWeek = (plan: SourceFact | undefined) => {
+    const date = planReportingDate(plan);
+    return date ? reportingWeekEnding(date) : null;
   };
   const planCouldAffectWindow = (plan: SourceFact | undefined) => {
     const week = planReportingWeek(plan);
     return week === null || (week >= start && week <= end);
+  };
+  const markServingRowsPartial = (matches: SourceMapping[], date: Date) => {
+    const week = reportingWeekEnding(date);
+    if (week < start || week > end) return;
+    for (const mapping of matches) {
+      if (mapping.measure !== "accepted" && mapping.measure !== "scheduled") continue;
+      partialServingKeys.add(
+        [
+          mapping.ministry,
+          mapping.measure,
+          mapping.scope,
+          week,
+          MEASURES[mapping.measure].unit,
+        ].join("|"),
+      );
+    }
+  };
+  const markServingIssue = (
+    issue: string,
+    plan: SourceFact | undefined,
+    serviceTypeId: string | null,
+    teamId: string | null,
+  ) => {
+    issues.add(issue);
+    if (!serviceTypeId && !teamId) {
+      unscopedServingIssues.add(issue);
+      return;
+    }
+    const hasAnyRoute = mappings.some(
+      (mapping) =>
+        mapping.product === product &&
+        ((mapping.objectType === "ServiceType" && mapping.externalId === serviceTypeId) ||
+          (mapping.objectType === "Team" && mapping.externalId === teamId)) &&
+        (mapping.measure === "accepted" || mapping.measure === "scheduled"),
+    );
+    if (!hasAnyRoute) {
+      issues.add("unmapped_serving");
+      return;
+    }
+    const date = planReportingDate(plan);
+    if (!date) {
+      unscopedServingIssues.add(issue);
+      return;
+    }
+    const routed = [
+      ...match("ServiceType", serviceTypeId, date),
+      ...match("Team", teamId, date),
+    ].filter((mapping) => mapping.measure === "accepted" || mapping.measure === "scheduled");
+    if (!routed.length) {
+      issues.add("unmapped_serving");
+      return;
+    }
+    markServingRowsPartial(routed, date);
   };
   const eventTimeTemplates = new Map(
     entities.filter((e) => e.type === "EventTime").map((e) => [e.id, e]),
@@ -374,12 +483,17 @@ export function compileMinistryFacts(
       m.objectType === "EventTime" &&
       m.measure === "service_session",
   );
+  const serviceSessionsCache = new Map<string, SourceMapping[]>();
   const serviceSessions = (time: SourceFact, date: Date) => {
+    const day = chicagoDate(date);
+    const cacheKey = `${time.id}\u0000${day}`;
+    const cached = serviceSessionsCache.get(cacheKey);
+    if (cached) return cached;
     const eventId = ref(time, "event");
     if (!eventId) return [];
     const timeOfDay = chicagoTime(date);
-    return serviceMappings.filter((m) => {
-      if (!activeMapping(m, chicagoDate(date))) return false;
+    const sessions = serviceMappings.filter((m) => {
+      if (!activeMapping(m, day)) return false;
       const template = eventTimeTemplates.get(m.externalId);
       if (!template) {
         issues.add("service_time_template_missing");
@@ -392,6 +506,22 @@ export function compileMinistryFacts(
         chicagoTime(templateDate) === timeOfDay
       );
     });
+    serviceSessionsCache.set(cacheKey, sessions);
+    return sessions;
+  };
+  const configuredServiceRouteCache = new Map<string, boolean>();
+  const hasConfiguredServiceRoute = (eventId: string | null, date: Date) => {
+    const day = chicagoDate(date);
+    const cacheKey = `${eventId ?? "\u0001"}\u0000${day}`;
+    const cached = configuredServiceRouteCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    const configured = serviceMappings.some((mapping) => {
+      if (!activeMapping(mapping, day)) return false;
+      const template = eventTimeTemplates.get(mapping.externalId);
+      return !!template && ref(template, "event") === eventId;
+    });
+    configuredServiceRouteCache.set(cacheKey, configured);
+    return configured;
   };
   const apply = (matches: SourceMapping[], date: Date, count: number, id: string) => {
     const unique = new Map<string, SourceMapping>();
@@ -540,27 +670,41 @@ export function compileMinistryFacts(
   if (product === "serving") {
     const plans = new Map(entities.filter((e) => e.type === "Plan").map((e) => [e.id, e]));
     const times = entities.filter((e) => e.type === "PlanTime");
+    const timesById = new Map(times.map((time) => [time.id, time]));
     for (const e of entities.filter((e) => e.type === "PlanPerson")) {
       const planId = ref(e, "plan"),
         person = ref(e, "person"),
         plan = plans.get(planId ?? "");
       // Do not invent a service instant from plan sort_date (a local date).
       const scheduledTimes = refs(e, "service_times");
-      const t = times.filter(
-        (v) =>
-          scheduledTimes.includes(v.id) &&
-          v.sourceCollection?.match(/\/plans\/(\d+)\/plan_times$/)?.[1] === planId &&
-          v.attributes.time_type === "service",
-      );
+      const t = scheduledTimes
+        .map((timeId) => timesById.get(timeId))
+        .filter(
+          (v): v is SourceFact =>
+            !!v &&
+            v.sourceCollection?.match(/\/plans\/(\d+)\/plan_times$/)?.[1] === planId &&
+            v.attributes.time_type === "service",
+        );
       if (!plan || !person || !t.length) {
         if (planCouldAffectWindow(plan))
-          issues.add("serving_plan_person_or_service_time_missing");
+          markServingIssue(
+            "serving_plan_person_or_service_time_missing",
+            plan,
+            ref(e, "service_type"),
+            ref(e, "team"),
+          );
         continue;
       }
       for (const time of t) {
         const d = instant(time.attributes.starts_at);
         if (!d) {
-          if (planCouldAffectWindow(plan)) issues.add("serving_invalid_service_time");
+          if (planCouldAffectWindow(plan))
+            markServingIssue(
+              "serving_invalid_service_time",
+              plan,
+              ref(e, "service_type"),
+              ref(e, "team"),
+            );
           continue;
         }
         if (!inReportingWindow(d)) continue;
@@ -571,6 +715,7 @@ export function compileMinistryFacts(
         if (!ms.length) issues.add("unmapped_serving");
         if (!["C", "U", "D"].includes(String(e.attributes.status))) {
           issues.add("serving_invalid_response_status");
+          markServingRowsPartial(ms, d);
           continue;
         }
         // A fully linked dated assignment establishes coverage for this
@@ -583,7 +728,7 @@ export function compileMinistryFacts(
     }
   }
   if (product === "check_ins") {
-    const reviewItems = findCheckInReviewCandidates(entities).filter(
+    const reviewItems = findCheckInReviewCandidates(entities, [], false).filter(
       (item) => !item.serviceDate || sunday(item.serviceDate),
     );
     const reviewById = new Map(reviewItems.map((item) => [item.checkInId, item]));
@@ -684,11 +829,7 @@ export function compileMinistryFacts(
         for (const session of serviceSessions(time, date))
           routed.set(`${session.ministry}|${session.scope}`, session);
       let sessions = [...routed.values()];
-      const routeConfigured = serviceMappings.some((mapping) => {
-        if (!activeMapping(mapping, chicagoDate(d))) return false;
-        const template = eventTimeTemplates.get(mapping.externalId);
-        return !!template && ref(template, "event") === eventId;
-      });
+      const routeConfigured = hasConfiguredServiceRoute(eventId, d);
       const rawMatches = [
         ...match("Event", eventId, d),
         ...refs(e, "locations").flatMap((id) => match("Location", id, d)),
@@ -895,12 +1036,22 @@ export function compileMinistryFacts(
   }
   // Any bad/incomplete source linkage must not silently produce a complete
   // partial number. Source absence is not an automatic zero.
-  const incomplete = [...issues].some(
-    (x) =>
-      !x.startsWith("unmapped_") &&
-      x !== "group_event_not_eligible" &&
-      x !== "non_sunday_checkins_excluded",
-  );
+  const scopedServingIssueCodes = new Set([
+    "serving_plan_person_or_service_time_missing",
+    "serving_invalid_service_time",
+    "serving_invalid_response_status",
+  ]);
+  const incomplete = [...issues].some((x) => {
+    if (x.startsWith("unmapped_") || x === "group_event_not_eligible" || x === "non_sunday_checkins_excluded")
+      return false;
+    if (
+      product === "serving" &&
+      scopedServingIssueCodes.has(x) &&
+      !unscopedServingIssues.has(x)
+    )
+      return false;
+    return true;
+  });
   if (incomplete)
     for (const r of output.values()) {
       // Fund linkage cannot change an independently valid all-fund total or
@@ -908,8 +1059,35 @@ export function compileMinistryFacts(
       if (product === "giving" && [...issues].every((issue) => issue.startsWith("designation_")) &&
         !["giving_total", "fund_giving"].includes(r.measure)) continue;
       r.quality = "partial";
-      r.flags.push("incomplete_source_linkage");
-      if (product !== "check_ins") r.value = null;
+      if (!r.flags.includes("incomplete_source_linkage"))
+        r.flags.push("incomplete_source_linkage");
+      // Serving can still show the lower bound from fully linked assignments.
+      // Its partial quality and incomplete-linkage flag make excluded records
+      // visible without withholding otherwise usable ministry totals.
+      if (product !== "check_ins" && product !== "serving") r.value = null;
     }
+  if (product === "serving") {
+    for (const key of partialServingKeys) {
+      const row = output.get(key);
+      if (row) {
+        row.quality = "partial";
+        if (!row.flags.includes("incomplete_source_linkage"))
+          row.flags.push("incomplete_source_linkage");
+        continue;
+      }
+      const [ministry, measure, scope, week, unit] = key.split("|");
+      output.set(key, {
+        ministry,
+        measure,
+        scope,
+        week,
+        value: null,
+        unit,
+        quality: "partial",
+        denominator: null,
+        flags: ["incomplete_source_linkage"],
+      });
+    }
+  }
   return { values: [...output.values()], issues: [...issues].sort() };
 }

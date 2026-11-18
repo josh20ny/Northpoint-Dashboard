@@ -21,6 +21,11 @@ proof that new provider permissions or live datasets have been accepted.
   Lapse is three missed expected gifts after an established cadence.
 - The initial consistency rule is four gifts/three matching intervals with up
   to two days' date variation. **Admins can adjust the formula later.**
+- Groups sync must retain full-history reconciliation to capture older
+  membership and event-attendance changes. The completed history scan took
+  3 hours 52 minutes; optimize within supported rate limits and keep progress
+  resumable, but do not silently trade accuracy for recent-only sync. This
+  decision does not authorize another scan or change scheduling.
 
 ## Implemented surfaces
 
@@ -517,6 +522,31 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   storage/access suite also passed nine tests. Phase 5's other gates remain
   open; this is not overall Phase 5 signoff.
 
+### Historical Check-Ins routed and published — November 17, 2026
+
+- The owner approved the 41 historical mappings: 27 locations, four student
+  GroupType classifications, and ten service-time routes. Existing current
+  mappings remain effective from November 8; no historical/current overlap was
+  introduced.
+- Historical routes follow the confirmed `Normal Service Times` eras: 9:30 AM
+  service 1 from March 20, 2022 through April 19, 2026; 9:00 AM service 1 from
+  April 26 through November 7, 2026; 11:00 AM service 2 from March 27, 2022;
+  and 4:30 PM service 3 from April 3, 2022. Other observed time labels remain
+  unmapped.
+- Published 1,715 values for March 20, 2022–November 22, 2026 from the already
+  staged PCO history; the run started no new source scan. The publication
+  validator passed in under two minutes after caching repeated service-time and
+  mapping lookups. This is publication time, not a new PCO sync benchmark. Of
+  the stored values, 1,493 are partial and 222 are missing. The run reports
+  1,050 unresolved Check-Ins, and leaves unresolved, incomplete-linkage and
+  unmapped-source conditions explicit.
+- November 8's partial PCO values include Transit 70 at service 1 and 39 at
+  service 2 (109 total), matching the owner's Transit reference. Other
+  ministry/service values remain partial and are not claimed as fully accepted
+  source-to-display totals.
+- Historical workbook headcounts remain separate from PCO linked-person
+  attendance; do not combine or substitute one source for the other.
+
 ### General Giving trend decision and publication — November 17, 2026
 
 - Owner chose **General Giving throughout**, not an all-fund series spliced
@@ -593,9 +623,10 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   received outside the campaign's named year, unchanged General Giving,
   all-role aggregate reads, identifier exclusion and invalid-scope rejection.
   API and dashboard type checks passed.
-- Remaining fund categories still require source-interpretation confirmation;
-  the undifferentiated historical workbook Fuel column cannot establish
-  campaign-specific history by itself. Overall Phase 5 acceptance stays open.
+- The five fund-category mappings were approved and published in the later
+  November 17 update below. Workbook Fuel (T) remains campaign-unspecified, and
+  monthly recurring/giving-unit blocks still need period and unit definitions.
+  Overall Phase 5 acceptance stays open.
 
 ### Approved fund breakdowns and observed-zero correction — November 17, 2026
 
@@ -723,12 +754,17 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   Admin-only source access and unchanged UpStreet figures when shared
   teams are published. Both application type checks passed; services
   restarted cleanly and the health endpoint returned OK.
-- Historical Services publication still needs era interpretation: current
-  routes begin November 9. Do not silently extend those effective dates to
-  earlier assignments or treat a backfill's absence as a historical zero.
-- The owner answered “I'm not sure” about applying those routes throughout
-  history. Retain current effective dates; this is an unresolved historical
-  interpretation, not permission to backdate routes.
+- The owner later chose era-specific historical routes and approved applying
+  the proposed dates. The nine historical source routes end November 8, 2026;
+  the separately confirmed current routes begin November 9, with no overlap.
+  First local PCO plan dates anchor the historical starts: Sunday Morning →
+  Service Programming (2009-05-17), InsideOut (2011-04-02), Transit
+  (2014-01-12), UpStreet Large Group → UpStreet (2020-01-05), Waumba Land
+  (2022-01-08), Kids' Check-In → separate shared-team total (2022-04-10),
+  UpStreet (2023-04-16), Safety Team Schedule → separate Guest Services team
+  (2026-02-01), and LU Guest Services Weekly → separate Guest Services team
+  (2026-05-10). These are auditable historical mappings, not claims about
+  person-level participation.
 - A read-only inventory found 3,232 legacy Services plans, with source dates
   spanning 2009–2027, and 12,321 plan times, but no legacy assignment records.
 - The bounded November 9–15 Services refresh was repeated after switching plan
@@ -748,19 +784,25 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   plans date from 2017–2026, with none in the November 9–22 current reporting
   window. They remain staged as source facts; a Plan's `sort_date` is not used
   to invent a serving instant or count.
-- The scan's normal completion refresh initially let old, unmapped assignments
-  and those missing service-time links invalidate current-week measures. Scoped
-  these integrity issues to the requested reporting window, bumped the
-  calculation definition, and republished the already-approved November 15–22
-  window. The new 32-row publication has no calculation issues: 16 complete
-  values for November 15 match the previous complete publication, and the
-  November 22 window has 14 complete and two missing values. No week before
-  November 15 was published.
-- This completes the raw historical Serving import, not historical volunteer
-  reporting. Existing ministry routes are effective November 9 only, and the
-  owner has not confirmed earlier source ownership. Historical metrics remain
-  unpublished until those dates are resolved. One PlanPerson request per plan
-  remains necessary for the documented API.
+- The historical Serving publication used the completed backfill without
+  starting a new PCO scan. Because a publication is limited to ten years,
+  history was split into adjacent windows, May 17, 2009–May 6, 2018 and
+  May 13, 2018–January 24, 2027. Both publications passed validity and coverage
+  readback; together they store 14,784 weekly measure rows. The November 15,
+  2026 figures remain 16 complete values and match the earlier publication.
+- Of 107,098 PlanPerson records, 191 lack a service-time link. The compiler
+  never counts those assignments or invents their service instant. It uses the
+  Plan's civil date only to flag the affected mapped ministry/week as partial:
+  38 ministry-week periods are affected, while other weeks remain complete.
+  The 114 records under approved weekly sources account for those partial
+  periods. The remaining 77 are under event-specific/unmapped source types and
+  do not enter weekly ministry totals. Weeks without usable source observations
+  remain missing, not zero.
+- Transit Weekend remains intentionally unmapped pending a separate
+  interpretation: its history contains 24 plans and 236 PlanPerson records
+  from February 2018 through February 2026. Do not assume that this source
+  belongs in the regular Transit metric. One PlanPerson request per plan remains
+  necessary for the documented API.
 - Added the already-published LU weekly and Safety scheduling figures to
   Connection as separate teams, in addition to the shared-team directory view.
   They use Connection's selected reporting range and existing freshness path;
@@ -826,8 +868,11 @@ The bounded November 9–15 refresh dropped from 45 pages (23 seconds) to 36
 pages (18 seconds) for the same 768 records. The full historical Serving source
 backfill finished in 30 minutes 31 seconds across 3,727 pages and 122,679 source
 records. It was a one-off manual job (`automatic=false`) and did not enable or
-alter scheduled processing. Historical publication remains limited to the
-confirmed routes.
+alter scheduled processing. The approved era-specific historical routes now
+publish the retained assignments without another source scan. The publisher
+reads stored entities in indexed 2,000-row keyset batches and splits long
+history into two windows; both publications validated in about 14 seconds.
+This is database publication time, not a new PCO sync benchmark.
 
 The Groups historical backfill completed 13,044 pages, including 12,823
 event-specific Attendance requests, and took 3 hours 52 minutes. Planning
@@ -843,6 +888,16 @@ a full reconciliation because the supported API filters do not safely capture
 membership edits or changed attendance on older events. This is a product-level
 date checkpoint, not a per-resource watermark; Groups and Services assignment
 relationship coverage still need a bounded reconciliation/late-change policy.
+
+The owner chose **full-history accuracy** for Groups synchronization rather
+than faster periodic reconciliation. Keep the full scan and bounded,
+rate-limit-aware batching; expose its actual run status and freshness, and
+resume from durable page progress after interruptions. PCO's Groups API does
+not provide the timestamps or bulk Attendance endpoint needed to guarantee
+that a short recent-only scan would detect older corrections. The completed
+history scan took 3 hours 52 minutes, so a minutes-long full scan is not
+currently promised by the supported API. No new source run or scheduler change
+was made for this decision.
 
 The current Planning Center references confirm the limit: Groups Membership
 records do not expose `updated_at`; Attendance records have no update timestamp
@@ -860,6 +915,36 @@ restart/resume, duplicate replay, late updates, relationship changes, partial
 page failure, cancellation and rate limiting against isolated fixtures. Do not
 start new sensitive scans to benchmark this work before the privacy gate is
 cleared.
+
+## Remaining source-labeled workbook KPIs published — 2026-11-17
+
+Following the owner's approval to keep remaining workbook measures separate
+and source-labeled, imported seven additional KPI series from the accepted
+2026-11-07 workbook: UpStreet's literal `LG` volunteer count and new-family
+Check-In volunteers; InsideOut SGLs in groups; Connection's 2025 and 2026 group
+counts; and its total-groups-attendance and group-member-attendance columns.
+Each series has its own measure key, preserving distinct source labels and
+preventing accidental overlap with PCO snapshots or similar workbook totals.
+The 2025 Connection group-count column was aligned to matching ordinal Sundays.
+All seven publications passed lineage validity checks, and the import did not
+touch a PCO sync.
+
+The Giving monthly recurring and giving-unit history remains unpublished
+because the available workbook blocks still do not establish their reporting
+period and/or unit. `LG` remains literal rather than guessed as an abbreviation.
+
+### Connection values restored from completed Groups history
+
+The post-calculation-version Groups publication was rebuilt from the completed
+November 16 backfill without starting a PCO scan. Connection meeting attendance
+is complete at 7 for November 8 and 212 for November 15. The November 16 group
+and membership snapshot is separately published as of its actual source time:
+196 active groups, 3,780 memberships and 487 leaders, assigned to the reporting
+week ending November 22. It is not backdated into November 15. No eligible
+current-run records remain to reconstruct the prior November 15 snapshot, so
+those three snapshot measures remain missing for that week rather than showing
+stale or invented values. The publication is valid; source mappings and PCO
+sync state were not changed.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.

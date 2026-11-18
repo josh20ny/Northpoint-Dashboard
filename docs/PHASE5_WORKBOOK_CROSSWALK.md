@@ -111,11 +111,42 @@ columns have no usable cached values in the imported range. No formulas were
 executed. Child/student all-service attendance continues to use the previously
 imported historical blocks rather than duplicate operating totals.
 
-UpStreet P (`LG`) and R (new-family check-in volunteers), InsideOut J (SGLs in
-groups), and Connection B/C/D/V remain unmapped because activity definitions,
-population equivalence or duplicate-series treatment is not established.
 Historical first-service observations retain the workbook's 9:30 AM label;
 current PCO first-service observations retain 9:00 AM.
+
+## Remaining source-labeled operating measures — approved 2026-11-17
+
+The owner approved publishing the remaining eligible measures as separate,
+source-labeled workbook KPIs. The seven mappings below were imported from the
+accepted workbook and all seven publications passed lineage validity checks.
+They remain independent of PCO values and of similarly named workbook series:
+
+- `US!P`: UpStreet volunteers under the literal `LG` label. The abbreviation is
+  intentionally not expanded.
+- `US!R`: UpStreet new-family Check-In volunteers, separate from serving and
+  rally counts.
+- `IO!J`: InsideOut SGLs in groups, separate from rally and Services records.
+- `Connection!B`: 2025 group-count series, aligned to the corresponding
+  ordinal Sundays in 2025.
+- `Connection!C`: 2026 group-count series.
+- `Connection!D`: Total groups attendance.
+- `Connection!V`: Group member attendance.
+
+The two Connection attendance columns stay separate rather than being treated
+as duplicates or added. Workbook group-count series do not replace or merge
+with the PCO current group snapshot. Unreadable and future-at-snapshot cells
+remain missing or excluded. Usable-value counts are: UpStreet LG volunteers,
+6 of 37; UpStreet new-family Check-In volunteers, 7 of 37; InsideOut SGLs in
+groups, 0 of 37; 2025 Connection group counts, 44 of 45; 2026 Connection group
+counts, 37 of 37; Connection total group attendance, 33 of 37; and Connection
+group-member attendance, 0 of 37. The last two all-missing or partially missing
+series remain visibly missing, not zero. The 2025 Connection group-count
+alignment contains 45 ordinal rows. The 2026-11-07 workbook snapshot remains
+the cutoff.
+
+The Giving monthly recurring and giving-unit blocks remain unpublished: their
+period and/or unit definitions are not yet established. Other digital and
+scorecard measures remain outside Phase 5.
 
 ## Giving workbook imported — 2026-11-17
 

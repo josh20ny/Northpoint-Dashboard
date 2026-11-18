@@ -58,6 +58,8 @@ import { acceptedBlankAttendanceIsZero } from "./workbook";
 const mappingSelect = `SELECT id,product,object_type AS "objectType",external_id AS "externalId",supersedes_id AS "supersedesId",enabled,
  ministry,measure,scope,effective_from::text AS "effectiveFrom",effective_to::text AS "effectiveTo",note
  FROM ministry_source_mappings`;
+const SOURCE_FACT_BATCH_SIZE = 2_000;
+const SOURCE_FACT_LIMIT = 500_000;
 const allowedMapping: Record<string, Record<string, string[]>> = {
   check_ins: {
     Event: ["attendance", "volunteers", "first_known"],
@@ -273,6 +275,10 @@ export async function readMinistryData(
               "total_volunteers",
               "groups_reported",
               "member_attendance",
+              "workbook_group_count_2025",
+              "workbook_group_count_2026",
+              "workbook_total_group_attendance",
+              "workbook_group_member_attendance",
               "scheduled",
               "accepted",
             ]
@@ -287,6 +293,9 @@ export async function readMinistryData(
               "volunteer_rally",
               "large_group",
               "small_group",
+              "upstreet_volunteers_lg",
+              "upstreet_new_family_checkin_volunteers",
+              "insideout_sgls_in_groups",
               "scheduled",
               "accepted",
             ];
@@ -608,7 +617,9 @@ async function publishMinistryDataInTransaction(
   const account = connection.rows[0]?.account_ref;
   if (!account) throw new AccessError(409, "No Planning Center organization");
   const runs = await c.query(
-    `SELECT id,status,finished_at,coverage_start::text AS coverage_start FROM pco_sync_runs WHERE account_ref=$1 AND product=$2 ORDER BY started_at DESC,id DESC LIMIT 1`,
+    `SELECT id,status,finished_at,coverage_start::text AS coverage_start
+     FROM pco_sync_runs WHERE account_ref=$1 AND product=$2
+     ORDER BY started_at DESC,id DESC LIMIT 1`,
     [account, input.product],
   );
   const run = runs.rows[0];
@@ -620,10 +631,46 @@ async function publishMinistryDataInTransaction(
       [account, input.product],
     )
   ).rowCount;
+  const startsBeforeCoverage =
+    !!run.coverage_start && input.start < String(run.coverage_start);
+  let hasTrackedCheckInHistory = false;
+  if (input.product === "check_ins" && startsBeforeCoverage && hasBackfill) {
+    const history = await c.query<{ available: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1
+         FROM pco_source_entities period
+         JOIN pco_source_entities checkin
+           ON checkin.account_ref=period.account_ref
+          AND checkin.product='check_ins'
+          AND checkin.object_type='CheckIn'
+          AND checkin.observed_run_id IS NOT NULL
+          AND checkin.missing_run_id IS NULL
+          AND (checkin.normalized->'sourceRelationships') @> jsonb_build_object(
+            'event_period',jsonb_build_object('data',jsonb_build_object('id',period.external_id)))
+         JOIN pco_sync_runs observed
+           ON observed.id=checkin.observed_run_id
+          AND observed.account_ref=checkin.account_ref
+          AND observed.product='check_ins'
+          AND observed.status='complete'
+          AND observed.lifecycle_version>=1
+         WHERE period.account_ref=$1
+           AND period.product='check_ins'
+           AND period.object_type='EventPeriod'
+           AND period.missing_run_id IS NULL
+           AND ((period.normalized->'attributes'->>'starts_at')::timestamptz
+                AT TIME ZONE 'America/Chicago')::date <= $2::date
+         LIMIT 1
+       ) AS available`,
+      [account, input.start],
+    );
+    hasTrackedCheckInHistory = history.rows[0]?.available === true;
+  }
+  const historicalBackfillAvailable =
+    (input.product === "giving" && hasBackfill) ||
+    (input.product === "check_ins" && hasBackfill && hasTrackedCheckInHistory);
   if (
-    run.coverage_start &&
-    input.start < String(run.coverage_start) &&
-    !(input.product === "giving" && hasBackfill)
+    startsBeforeCoverage &&
+    !historicalBackfillAvailable
   )
     throw new AccessError(
       409,
@@ -661,24 +708,62 @@ async function publishMinistryDataInTransaction(
     if (input.product === "giving") {
       facts = await loadGivingSourceFacts(c, account, run.id, hasBackfill);
     } else {
-      const sources = await c.query(
-        `SELECT normalized FROM pco_source_entities WHERE account_ref=$1 AND product=$2
-          AND (observed_run_id=$3 OR ($4 AND observed_run_id IS NOT NULL))
-          AND missing_run_id IS NULL LIMIT 500001`,
-        [account, input.product, run.id, false],
-      );
-      if (sources.rows.length > 500000)
-        throw new AccessError(
-          409,
-          "Dataset exceeds bounded publisher; partition coverage before continuing",
+      facts = [];
+      let cursor: { objectType: string; externalId: string } | null = null;
+      while (true) {
+        type PersistedSourceRow = {
+          object_type: string;
+          external_id: string;
+          normalized: {
+            sourceType: string;
+            sourceId: string;
+            attributes: SourceFact["attributes"];
+            sourceRelationships: SourceFact["relationships"];
+            sourceCollection: string | null;
+          };
+        };
+        const sources: { rows: PersistedSourceRow[] } = cursor
+          ? await c.query<PersistedSourceRow>(
+              `SELECT object_type,external_id,normalized FROM pco_source_entities
+               WHERE account_ref=$1 AND product=$2 AND observed_run_id=$3
+                 AND missing_run_id IS NULL
+                 AND (object_type,external_id)>($4::text,$5::text)
+               ORDER BY object_type,external_id LIMIT $6`,
+              [
+                account,
+                input.product,
+                run.id,
+                cursor.objectType,
+                cursor.externalId,
+                SOURCE_FACT_BATCH_SIZE,
+              ],
+            )
+          : await c.query<PersistedSourceRow>(
+              `SELECT object_type,external_id,normalized FROM pco_source_entities
+               WHERE account_ref=$1 AND product=$2 AND observed_run_id=$3
+                 AND missing_run_id IS NULL
+               ORDER BY object_type,external_id LIMIT $4`,
+              [account, input.product, run.id, SOURCE_FACT_BATCH_SIZE],
+            );
+        if (!sources.rows.length) break;
+        if (facts.length + sources.rows.length > SOURCE_FACT_LIMIT)
+          throw new AccessError(
+            409,
+            "Dataset exceeds bounded publisher; partition coverage before continuing",
+          );
+        facts.push(
+          ...sources.rows.map(({ normalized: n }) => ({
+            type: n.sourceType,
+            id: n.sourceId,
+            attributes: n.attributes,
+            relationships: n.sourceRelationships,
+            sourceCollection: n.sourceCollection,
+          })),
         );
-      facts = sources.rows.map(({ normalized: n }) => ({
-        type: n.sourceType,
-        id: n.sourceId,
-        attributes: n.attributes,
-        relationships: n.sourceRelationships,
-        sourceCollection: n.sourceCollection,
-      }));
+        if (sources.rows.length < SOURCE_FACT_BATCH_SIZE) break;
+        const last = sources.rows[sources.rows.length - 1];
+        cursor = { objectType: last.object_type, externalId: last.external_id };
+      }
     }
   }
   const checkInResolutions =
@@ -843,7 +928,7 @@ async function publishMinistryDataInTransaction(
       row.flags.push("reporting_week_not_complete");
     }
   }
-  if (run.coverage_start && !(input.product === "giving" && hasBackfill))
+  if (run.coverage_start && !historicalBackfillAvailable)
     for (const row of compiled.values)
       if (row.measure === "first_known") {
         row.value = null;

@@ -19,6 +19,15 @@ function factFromRow(row: { normalized: NormalizedFact }): SourceFact {
   };
 }
 
+const CHECK_IN_SOURCE_WINDOW_DAYS = 56;
+const CHECK_IN_SOURCE_FACT_LIMIT = 500_000;
+
+function shiftDate(value: string, days: number): string {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 export async function loadCheckInFactsForWindow(
   c: Pick<PoolClient, "query">,
   account: string,
@@ -26,6 +35,51 @@ export async function loadCheckInFactsForWindow(
   end: string | null,
   templateIds: string[] = [],
   includeUndated = false,
+): Promise<SourceFact[]> {
+  if (includeUndated || !start || !end)
+    return loadCheckInFactsSingleWindow(c, account, start, end, templateIds, includeUndated);
+
+  // Keep each relationship-index lookup below the database's short per-query
+  // timeout, then merge the bounded slices into one compiler input.
+  const combined = new Map<string, SourceFact>();
+  let windowStart = start;
+  while (windowStart <= end) {
+    const candidateEnd = shiftDate(windowStart, CHECK_IN_SOURCE_WINDOW_DAYS - 1);
+    const windowEnd = candidateEnd < end ? candidateEnd : end;
+    const facts = await loadCheckInFactsSingleWindow(
+      c,
+      account,
+      windowStart,
+      windowEnd,
+      templateIds,
+      false,
+    );
+    if (process.env.NP_CHECKIN_SOURCE_PROGRESS === "1")
+      console.info(
+        JSON.stringify({
+          event: "checkin_source_window_loaded",
+          start: windowStart,
+          end: windowEnd,
+          facts: facts.length,
+        }),
+      );
+    for (const fact of facts) {
+      combined.set(`${fact.type}\u0000${fact.id}`, fact);
+      if (combined.size > CHECK_IN_SOURCE_FACT_LIMIT)
+        throw new Error("Check-In publication window exceeds the safe source limit");
+    }
+    windowStart = shiftDate(windowEnd, 1);
+  }
+  return [...combined.values()];
+}
+
+async function loadCheckInFactsSingleWindow(
+  c: Pick<PoolClient, "query">,
+  account: string,
+  start: string | null,
+  end: string | null,
+  templateIds: string[],
+  includeUndated: boolean,
 ): Promise<SourceFact[]> {
   // Match the partial relationship index before expanding linkage. Keep the final
   // MIN/fallback date check: a candidate may link to times outside this window too.
@@ -38,9 +92,12 @@ export async function loadCheckInFactsForWindow(
       FROM pco_source_entities
       WHERE account_ref=$1 AND product='check_ins'
         AND object_type IN ('EventTime','EventPeriod') AND missing_run_id IS NULL
+    ), candidate_dates AS MATERIALIZED (
+      SELECT * FROM context_dates
+      WHERE NOT $4::boolean AND service_date BETWEEN $2::date AND $3::date
     ), candidate_ids AS MATERIALIZED (
       SELECT c.external_id
-      FROM context_dates d
+      FROM candidate_dates d
       JOIN pco_source_entities c ON c.account_ref=$1
         AND c.product='check_ins' AND c.object_type='CheckIn'
         AND c.observed_run_id IS NOT NULL AND c.missing_run_id IS NULL
@@ -52,7 +109,6 @@ export async function loadCheckInFactsForWindow(
             (c.normalized->'sourceRelationships') @> jsonb_build_object('event_times',
               jsonb_build_object('data', jsonb_build_array(jsonb_build_object('id', d.external_id)))))
         )
-      WHERE NOT $4::boolean AND d.service_date BETWEEN $2::date AND $3::date
       UNION
       SELECT external_id FROM pco_source_entities
       WHERE $4::boolean AND account_ref=$1 AND product='check_ins' AND object_type='CheckIn'

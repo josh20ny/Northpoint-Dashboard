@@ -131,9 +131,12 @@ async function main() {
       "SELECT np_ministry_publication_valid($1) AS valid", [result.publicationId],
     );
     await verify.query("COMMIT");
+    const storedSnapshot = stored.rows.filter((row) =>
+      snapshotMeasures.has(row.measure),
+    );
     const expected = totals.filter((row) => row.value !== null);
     const verified = validity.rows[0]?.valid === true &&
-      stored.rows.length === expected.length &&
+      storedSnapshot.length === expected.length &&
       expected.every((row) => stored.rows.some((value) =>
         value.ministry === row.ministry && value.measure === row.measure &&
         value.value === String(row.value) && value.quality === row.quality));
@@ -145,6 +148,7 @@ async function main() {
       snapshot: stored.rows,
       groupAttendanceAvailable: compiled.values.some((row) => row.measure === "group_attendance"),
       issues: compiled.issues,
+      publicationValid: validity.rows[0]?.valid === true,
       verified,
       metricsPublished: true,
     }));

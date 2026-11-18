@@ -839,6 +839,114 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")(
       expect(JSON.stringify(workspace)).not.toContain(checkInId);
       expect(JSON.stringify(workspace)).not.toContain(groupId);
     });
+    it("publishes historical Check-Ins only when a completed tracked history is staged", async () => {
+      account = `publication-fixture-${randomUUID()}`;
+      await c.query(
+        "UPDATE pco_connections SET account_ref=$1 WHERE id='planning_center'",
+        [account],
+      );
+      const backfillRunId = randomUUID();
+      const historyRunId = randomUUID();
+      const eventId = `test-event-${randomUUID()}`;
+      const eventTimeId = `test-event-time-${randomUUID()}`;
+      const periodId = `test-period-${randomUUID()}`;
+      const checkInId = `test-checkin-${randomUUID()}`;
+      const personId = `test-person-${randomUUID()}`;
+      await c.query(
+        `INSERT INTO pco_sync_runs
+         (id,account_ref,product,mode,status,queue,started_by,started_at,finished_at,lifecycle_version)
+         VALUES($1,$2,'check_ins','backfill','complete','[]',$3,now()-interval '4 seconds',
+           now()-interval '3 seconds',0)`,
+        [backfillRunId, account, admin.userId],
+      );
+      await c.query(
+        `INSERT INTO pco_sync_runs
+         (id,account_ref,product,mode,status,queue,started_by,started_at,finished_at,
+          coverage_start,coverage_end,lifecycle_version)
+         VALUES($1,$2,'check_ins','incremental','complete','[]',$3,now()+interval '1 second',
+           now()+interval '2 seconds','2026-11-06','2026-11-08',1)`,
+        [historyRunId, account, admin.userId],
+      );
+
+      const eventTime = "2022-04-03T21:30:00Z";
+      const sources: { entity: SourceEntity; path: string }[] = [
+        {
+          entity: {
+            type: "Event",
+            id: eventId,
+            attributes: { name: "Synthetic historical service" },
+          },
+          path: "/check-ins/v2/events",
+        },
+        {
+          entity: {
+            type: "EventPeriod",
+            id: periodId,
+            attributes: { starts_at: eventTime },
+            relationships: { event: { data: { type: "Event", id: eventId } } },
+          },
+          path: "/check-ins/v2/event_periods",
+        },
+        {
+          entity: {
+            type: "EventTime",
+            id: eventTimeId,
+            attributes: { starts_at: eventTime },
+            relationships: { event: { data: { type: "Event", id: eventId } } },
+          },
+          path: "/check-ins/v2/event_times",
+        },
+        {
+          entity: {
+            type: "Person",
+            id: personId,
+            attributes: { first_name: "Test", last_name: "Student" },
+          },
+          path: `/check-ins/v2/people/${personId}`,
+        },
+        {
+          entity: {
+            type: "CheckIn",
+            id: checkInId,
+            attributes: { kind: "Regular" },
+            relationships: {
+              person: { data: { type: "Person", id: personId } },
+              event_period: { data: { type: "EventPeriod", id: periodId } },
+              event_times: { data: [{ type: "EventTime", id: eventTimeId }] },
+              locations: { data: [] },
+            },
+          },
+          path: "/check-ins/v2/check_ins",
+        },
+      ];
+      for (const { entity, path } of sources)
+        await seedSource(entity, path, "check_ins", historyRunId);
+      await c.query(
+        `INSERT INTO ministry_source_mappings
+         (account_ref,product,object_type,external_id,ministry,measure,scope,effective_from,note,created_by)
+         VALUES($1,'check_ins','EventTime',$2,'insideout','service_session','service-3',
+           '2022-04-03','Synthetic historical service-time route',$3)`,
+        [account, eventTimeId, admin.userId],
+      );
+
+      const publication = await repo.publishMinistryData(admin, {
+        product: "check_ins",
+        start: "2022-04-03",
+        end: "2022-04-03",
+      });
+      const workspace = await repo.readMinistryData(
+        admin,
+        "insideout",
+        "2022-04-03",
+        "2022-04-03",
+      );
+      expect(publication.reused).toBe(false);
+      expect(
+        workspace.metrics.find(
+          (metric) => metric.measure === "attendance" && metric.scope === "service-3",
+        ),
+      ).toMatchObject({ value: 1 });
+    });
     it("invalidates a prior publication after mapping interpretation changes without rewriting it", async () => {
       const publication = await publish();
       await c.query("SELECT set_config('np.role','admin',true)");
