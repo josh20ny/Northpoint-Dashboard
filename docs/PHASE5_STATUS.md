@@ -1000,8 +1000,9 @@ confirmed they look correct. This accepts the reviewed separation of group
 meeting attendance from membership snapshots and scheduled/accepted service
 assignments from actual participation. Giving fund/campaign breakdowns,
 General Giving and separate Fuel campaigns were also reviewed and confirmed
-correct. Child/student ministry displays, the privacy gate and overall Phase 5
-signoff remain open.
+correct. The owner reviewed Waumba Land, UpStreet, Transit and InsideOut and
+confirmed the child/student ministry pages look correct. The home overview,
+privacy gate and overall Phase 5 signoff remain open.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.
