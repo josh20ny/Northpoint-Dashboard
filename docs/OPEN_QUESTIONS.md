@@ -13,9 +13,10 @@ them.
    beyond the fields and sources already approved. This does not block use of
    existing staged data, aggregate display or approved current/history work.
 2. Complete representative authenticated owner review of the remaining
-   source-to-screen surfaces, especially Check-In exceptions, Connection and
-   Serving. Do not treat an implementation check or a single page review as
-   approval of every ministry or every source value.
+   source-to-screen surfaces, especially Connection, Serving and Giving fund
+   breakdowns. The owner has reviewed the Giving week/month history and Admin
+   Check-In resolver; those specific displays are accepted, not every ministry
+   or every source value.
 3. Record owner development signoff after the remaining reviews and privacy
    gate. This is separate from production deployment, unattended scheduling
    and production privacy/retention approval.
