@@ -19,6 +19,8 @@ import {
   buildSeries,
   currencyOf,
   formatMetricValue,
+  formatMonthLabel,
+  monthsDesc,
   scopeLabel,
   seriesScopeLabel,
   formatMinor,
@@ -167,12 +169,15 @@ function SummaryCards({ series, week }: { series: Series[]; week: string }) {
 }
 
 function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: string[]; label: string }) {
+  const isMonthly = series[0]?.period === "month";
+  const periodName = isMonthly ? "Month" : "Sunday";
+  const periodLabel = (date: string) => isMonthly ? formatMonthLabel(date) : date;
   return (
     <>
     <div className="sm:hidden" data-testid={`history-mobile-${slugId(label)}`}>
       {weeks.map((week) => (
-        <section key={week} className="border-b px-4 py-3 last:border-0" aria-label={`Week of ${week}`}>
-          <h3 className="mb-2 font-mono text-[12px] font-medium">{week}</h3>
+        <section key={week} className="border-b px-4 py-3 last:border-0" aria-label={isMonthly ? periodLabel(week) : `Week of ${week}`}>
+          <h3 className="mb-2 font-mono text-[12px] font-medium">{periodLabel(week)}</h3>
           <dl className="space-y-3">
             {series.map((s) => {
               const metric = s.byWeek.get(week);
@@ -200,7 +205,7 @@ function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: strin
       <table className="w-full min-w-[480px] text-[12.5px]" aria-label={label}>
         <thead>
           <tr className="border-b bg-muted/40 text-left">
-            <th scope="col" className="px-4 py-2 font-medium">Sunday</th>
+            <th scope="col" className="px-4 py-2 font-medium">{periodName}</th>
             {series.map((s) => (
               <th key={s.key} scope="col" className="px-4 py-2 text-right font-medium">
                 {s.measure === "member_attendance" ? "Attendance (workbook)" : s.title}
@@ -212,7 +217,7 @@ function HistoryTable({ series, weeks, label }: { series: Series[]; weeks: strin
         <tbody>
           {weeks.map((w) => (
             <tr key={w} className="border-b last:border-0" data-testid={`row-week-${w}`}>
-              <th scope="row" className="px-4 py-2 text-left font-mono text-[12px] font-normal">{w}</th>
+              <th scope="row" className="px-4 py-2 text-left font-mono text-[12px] font-normal">{periodLabel(w)}</th>
               {series.map((s) => {
                 const m = s.byWeek.get(w);
                 const v = m?.value ?? null;
@@ -285,11 +290,14 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
   const all = useMemo(() => buildSeries(ws?.metrics ?? []), [ws]);
   const primary = all.filter((s) => !SERVING_MEASURES.has(s.measure));
   const serving = all.filter((s) => SERVING_MEASURES.has(s.measure));
+  const monthly = all.filter((s) => s.period === "month");
+  const monthlyPeriods = useMemo(() => monthsDesc(monthly), [monthly]);
+  const weeklyPrimary = primary.filter((s) => s.period === "week");
   const isGiving = ministry === "giving";
-  const lead = primary.filter((s) =>
+  const lead = weeklyPrimary.filter((s) =>
     isGiving ? s.measure === "giving_total" : ATTENDANCE_MEASURES.has(s.measure),
   );
-  const other = primary.filter((s) =>
+  const other = weeklyPrimary.filter((s) =>
     isGiving ? s.measure !== "giving_total" : !ATTENDANCE_MEASURES.has(s.measure),
   );
   const weeks = useMemo(() => (ws ? sundaysDesc(ws.start, ws.end) : []), [ws]);
@@ -406,7 +414,7 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
               <SummaryCards series={serving} week={ws.latestCompletedWeek} />
             </div>
           )}
-          {other.length === 0 && serving.length === 0 && (
+          {other.length === 0 && serving.length === 0 && monthly.length === 0 && (
             <p className="text-[13px] text-muted-foreground">No other KPI figures are published yet.</p>
           )}
         </div>
@@ -473,6 +481,16 @@ export function MinistryDataView({ ministry, mode = "full" }: { ministry: string
             </p>
           )}
           <HistoryTable series={other} weeks={weeks} label="Other KPI history" />
+        </Panel>
+      )}
+      {monthly.length > 0 && (
+        <Panel title={isGiving ? "Monthly Giving history" : "Monthly KPI history"} meta={<span className="text-[11px] text-muted-foreground">Newest first</span>}>
+          {isGiving && (
+            <p className="border-b px-4 py-3 text-[12px] text-muted-foreground" data-testid="text-monthly-giving-history-sources">
+              Monthly recurring gifts are a separate dollar subtotal, not an addition to General Giving. Giving people are workbook counts and remain separate from current PCO giving units. Blank source cells remain missing. Monthly rows are included when a month intersects the selected date range.
+            </p>
+          )}
+          <HistoryTable series={monthly} weeks={monthlyPeriods} label={isGiving ? "Monthly Giving history" : "Monthly KPI history"} />
         </Panel>
       )}
       {serving.length > 0 && (

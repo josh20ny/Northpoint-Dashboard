@@ -623,7 +623,7 @@ async function main() {
           excludedAsAmbiguousOrOverlapping: [
             "All-service child/student attendance totals already covered by accepted history",
             "Digital metrics and later-phase scorecards",
-            "Giving monthly recurring/giving-unit series with unresolved period or unit definitions",
+            "Giving month/week series handled by the separate period-aware history import",
           ],
           applyRange: rangeArgument
             ? rangeArgument.slice("--range=".length)

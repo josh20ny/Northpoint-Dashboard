@@ -109,6 +109,7 @@ export * from './ministryHistoryInput';
 export * from './ministryInput';
 export * from './ministryKpi';
 export * from './ministryMetric';
+export * from './ministryMetricPeriod';
 export * from './ministryPlaceholder';
 export * from './ministryPublicationInput';
 export * from './ministryPublicationInputProduct';

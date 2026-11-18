@@ -112,11 +112,20 @@ export interface PlanningCenterAuthorizationInput {
   acknowledgeSensitiveData: boolean;
 }
 
+export type MinistryMetricPeriod = typeof MinistryMetricPeriod[keyof typeof MinistryMetricPeriod];
+
+
+export const MinistryMetricPeriod = {
+  week: 'week',
+  month: 'month',
+} as const;
+
 export interface MinistryMetric {
   measure: string;
   title: string;
   scope: string;
   week: string;
+  period: MinistryMetricPeriod;
   /** @nullable */
   value: number | null;
   unit: string;

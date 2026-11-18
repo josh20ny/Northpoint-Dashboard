@@ -405,3 +405,17 @@ leaving admission unconfigured; no domain is inferred from public websites.
 Migration impact: user/invitation/session tables; no automatic user provisioning
 on startup. Tests: invitation expiry/revocation/replay, provider-subject collision,
 role spoofing, session revocation and last-active-Admin protection.
+
+## Historical Giving period measures — 2026-11-18
+
+**APPROVED**, owner: product owner. Publish the workbook’s Monthly Recurring
+Gifts values and Giving Units per week/month as separate source-labeled
+historical measures. The owner clarified the core measures as dollar giving
+totals and counts of people who give.
+
+The monthly recurring amount is a subtotal and must not be added to General
+Giving. Historical workbook giving-unit counts are people counts; do not merge
+them into current PCO giving units that may group explicit joint givers.
+Preserve blank workbook cells as missing. Store and display monthly periods as
+months rather than Sundays. No new PCO sync or production publication is
+authorized by this decision.

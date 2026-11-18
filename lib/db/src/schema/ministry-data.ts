@@ -93,6 +93,7 @@ export const ministryMetricValues = pgTable(
     measure: text("measure").notNull(),
     scope: text("scope").notNull(),
     week: date("week", { mode: "string" }).notNull(),
+    period: text("period").notNull().default("week"),
     value: bigint("value", { mode: "number" }),
     unit: text("unit").notNull(),
     quality: text("quality").notNull(),
@@ -113,6 +114,7 @@ export const ministryMetricValues = pgTable(
       t.ministry,
       t.measure,
       t.scope,
+      t.period,
       t.week,
       t.unit,
     ),
@@ -120,7 +122,11 @@ export const ministryMetricValues = pgTable(
       "ministry_metric_safe_number",
       sql`${t.value} BETWEEN -9007199254740991 AND 9007199254740991`,
     ),
-    check("ministry_metric_sunday", sql`extract(dow FROM ${t.week})=0`),
+    check("ministry_metric_period", sql`${t.period} IN ('week','month')`),
+    check(
+      "ministry_metric_period_date",
+      sql`(${t.period}='week' AND extract(dow FROM ${t.week})=0) OR (${t.period}='month' AND extract(day FROM ${t.week})=1)`,
+    ),
   ],
 ).enableRLS();
 

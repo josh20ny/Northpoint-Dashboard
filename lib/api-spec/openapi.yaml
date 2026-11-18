@@ -827,12 +827,13 @@ components:
         acknowledgeSensitiveData: { type: boolean }
     MinistryMetric:
       type: object
-      required: [measure, title, scope, week, value, unit, quality, denominator, flags, source, sourceAsOf, definitionVersion]
+      required: [measure, title, scope, week, period, value, unit, quality, denominator, flags, source, sourceAsOf, definitionVersion]
       properties:
         measure: { type: string }
         title: { type: string }
         scope: { type: string }
         week: { type: string }
+        period: { type: string, enum: [week, month] }
         value: { type: [integer, "null"] }
         unit: { type: string }
         quality: { type: string }

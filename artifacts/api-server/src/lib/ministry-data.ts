@@ -214,10 +214,13 @@ export async function readMinistryData(
     const result = await c.query(
       `WITH revisions AS (
         SELECT v.*,p.source_kind,p.source_as_of,p.definition_version,p.created_at,
-          row_number() OVER (PARTITION BY v.measure,v.scope,v.week,v.unit,p.product,p.source_kind
+          row_number() OVER (PARTITION BY v.measure,v.scope,v.period,v.week,v.unit,p.product,p.source_kind
             ORDER BY p.created_at DESC,p.id DESC) AS revision
         FROM ministry_metric_values v JOIN ministry_publications p ON p.id=v.publication_id
-        WHERE v.ministry=$1 AND v.week BETWEEN $2::date AND $3::date
+        WHERE v.ministry=$1 AND (
+          (v.period='week' AND v.week BETWEEN $2::date AND $3::date)
+          OR (v.period='month' AND v.week BETWEEN date_trunc('month',$2::date)::date AND date_trunc('month',$3::date)::date)
+        )
           AND NOT (
             p.product='groups'
             AND v.measure IN ('group_count','group_memberships','group_leaders')
@@ -231,12 +234,12 @@ export async function readMinistryData(
         SELECT id,np_ministry_publication_valid(id) AS source_valid
         FROM (SELECT DISTINCT publication_id AS id FROM current_rows) ids
       ), chosen AS (
-        SELECT r.*,source_valid,row_number() OVER (PARTITION BY measure,scope,week,unit ORDER BY
+        SELECT r.*,source_valid,row_number() OVER (PARTITION BY measure,scope,period,week,unit ORDER BY
           CASE WHEN NOT source_valid THEN 3 WHEN quality='complete' THEN 0 WHEN quality='partial' THEN 1 ELSE 2 END,
           CASE source_kind WHEN 'pco' THEN 0 ELSE 1 END,created_at DESC) AS preference
         FROM current_rows r JOIN validity s ON s.id=r.publication_id
       )
-      SELECT measure,scope,week::text,CASE WHEN source_valid THEN value::float8 ELSE NULL END AS value,unit,
+      SELECT measure,scope,week::text,period,CASE WHEN source_valid THEN value::float8 ELSE NULL END AS value,unit,
         CASE WHEN source_valid THEN quality ELSE 'invalidated' END AS quality,denominator::float8 AS denominator,
         CASE WHEN source_valid THEN flags ELSE '["source_configuration_changed"]'::jsonb END AS flags,
         source_kind AS source,source_as_of AS "sourceAsOf",definition_version AS "definitionVersion"
@@ -263,6 +266,8 @@ export async function readMinistryData(
             "legacy_first_time_givers",
             "legacy_recurring_givers",
             "legacy_lapsed_givers",
+            "legacy_monthly_recurring_giving",
+            "legacy_giving_people",
           ]
         : ministry === "connection"
           ? [
@@ -299,13 +304,43 @@ export async function readMinistryData(
               "scheduled",
               "accepted",
             ];
+    const historicalGivingMeasures =
+      ministry === "giving"
+        ? await c.query<{ measure: string }>(
+            `WITH eligible_publications AS (
+              SELECT DISTINCT p.id
+              FROM ministry_metric_values v
+              JOIN ministry_publications p ON p.id=v.publication_id
+              WHERE v.ministry='giving'
+                AND v.measure=ANY($1::text[])
+                AND v.value IS NOT NULL
+                AND p.source_kind='workbook'
+            ), publication_validity AS (
+              SELECT id,np_ministry_publication_valid(id) AS valid
+              FROM eligible_publications
+            )
+            SELECT DISTINCT v.measure
+            FROM ministry_metric_values v
+            JOIN publication_validity p ON p.id=v.publication_id
+            WHERE v.ministry='giving' AND p.valid`,
+            [["legacy_monthly_recurring_giving", "legacy_giving_people"]],
+          )
+        : { rows: [] as { measure: string }[] };
+    const historicallyAvailable = new Set(historicalGivingMeasures.rows.map((row) => row.measure));
     const kpis = expected.map((key) => ({
       key,
       title: MEASURES[key].title,
       status: metrics.some((m) => m.measure === key && m.value !== null)
         ? "available"
-        : "not_published",
-      reason: MEASURES[key].definition,
+        : metrics.some((m) => m.measure === key)
+          ? "missing_in_range"
+          : historicallyAvailable.has(key)
+            ? "available_outside_range"
+            : "not_published",
+      reason:
+        historicallyAvailable.has(key) && !metrics.some((m) => m.measure === key)
+          ? `${MEASURES[key].definition} Historical values exist outside the selected date range.`
+          : MEASURES[key].definition,
     }));
     const later =
       ministry === "shared-teams"
@@ -552,8 +587,8 @@ async function publish(
   );
   const id = r.rows[0].id;
   await c.query(
-    `INSERT INTO ministry_metric_values(publication_id,ministry,measure,scope,week,value,unit,quality,denominator,flags)
-    SELECT $1,x->>'ministry',x->>'measure',x->>'scope',(x->>'week')::date,(x->>'value')::bigint,x->>'unit',x->>'quality',
+    `INSERT INTO ministry_metric_values(publication_id,ministry,measure,scope,week,period,value,unit,quality,denominator,flags)
+    SELECT $1,x->>'ministry',x->>'measure',x->>'scope',(x->>'week')::date,coalesce(x->>'period','week'),(x->>'value')::bigint,x->>'unit',x->>'quality',
       (x->>'denominator')::bigint,x->'flags' FROM jsonb_array_elements($2::jsonb) AS x`,
     [id, JSON.stringify(input.values)],
   );

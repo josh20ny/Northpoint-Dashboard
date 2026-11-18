@@ -25,6 +25,8 @@ export const SERVING_MEASURES = new Set(["scheduled", "accepted"]);
 /** Measure keys accepted by the backend registry. Titles are plain labels only. */
 export const MEASURES: { key: string; label: string }[] = [
   { key: "giving_total", label: "General Giving" },
+  { key: "legacy_monthly_recurring_giving", label: "Monthly Recurring Gifts (workbook)" },
+  { key: "legacy_giving_people", label: "Giving people (workbook)" },
   { key: "all_fund_giving", label: "Received giving (all funds)" },
   { key: "refund_total", label: "Refunds" },
   { key: "recurring_schedules", label: "Recurring schedules snapshot" },
@@ -142,9 +144,10 @@ export function formatMetricValue(value: number | null, unit: string): string {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
-/** Unit is part of the key so USD and EUR (or any units) never merge for the same week. */
-export const seriesKey = (m: Pick<MinistryMetric, "measure" | "scope" | "unit">) =>
-  `${m.measure}::${m.scope}::${m.unit}`;
+/** Period and unit are part of the key; calendar months never merge with weeks. */
+export const seriesKey = (
+  m: Pick<MinistryMetric, "measure" | "scope" | "unit" | "period">,
+) => `${m.measure}::${m.scope}::${m.period}::${m.unit}`;
 
 export const SHARED_SERVING_SCOPES = ["kids-checkin", "guest-services", "safety-team"] as const;
 export const SCOPES = [
@@ -199,6 +202,7 @@ export type Series = {
   key: string;
   measure: string;
   scope: string;
+  period: "week" | "month";
   title: string;
   unit: string;
   byWeek: Map<string, MinistryMetric>;
@@ -235,6 +239,7 @@ export function buildSeries(metrics: MinistryMetric[]): Series[] {
         key: k,
         measure: m.measure,
         scope: m.scope,
+        period: m.period,
         title: m.title,
         unit: m.unit,
         byWeek: new Map(),
@@ -266,6 +271,23 @@ export function sundaysDesc(start: string, end: string): string[] {
     t -= 7 * DAY;
   }
   return out;
+}
+export function monthsDesc(series: Series[]): string[] {
+  return [
+    ...new Set(
+      series
+        .filter((item) => item.period === "month")
+        .flatMap((item) => [...item.byWeek.keys()]),
+    ),
+  ].sort((a, b) => b.localeCompare(a));
+}
+export function formatMonthLabel(date: string): string {
+  const [year, month] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year!, month! - 1, 1, 12)));
 }
 export const previousSunday = (week: string) => toISODate(parseISODate(week) - 7 * DAY);
 

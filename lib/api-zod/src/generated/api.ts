@@ -143,6 +143,7 @@ export const GetMinistryDataResponse = zod.object({
   "title": zod.string(),
   "scope": zod.string(),
   "week": zod.string(),
+  "period": zod.enum(['week', 'month']),
   "value": zod.number().int().nullable(),
   "unit": zod.string(),
   "quality": zod.string(),

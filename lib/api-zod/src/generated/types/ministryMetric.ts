@@ -5,12 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MinistryMetricPeriod } from './ministryMetricPeriod';
 
 export interface MinistryMetric {
   measure: string;
   title: string;
   scope: string;
   week: string;
+  period: MinistryMetricPeriod;
   /** @nullable */
   value: number | null;
   unit: string;

@@ -144,8 +144,12 @@ series remain visibly missing, not zero. The 2025 Connection group-count
 alignment contains 45 ordinal rows. The 2026-11-07 workbook snapshot remains
 the cutoff.
 
-The Giving monthly recurring and giving-unit blocks remain unpublished: their
-period and/or unit definitions are not yet established. Other digital and
+The owner confirmed that the Giving monthly recurring block contains monthly
+dollar subtotals and that workbook giving units count people who gave. The
+separate monthly and weekly series were imported with explicit period metadata:
+monthly dates are month starts; weekly people counts follow the reviewed
+ordinal-Sunday alignment. They remain separate from General Giving totals and
+current PCO family-grouped units. Blank cells remain missing. Other digital and
 scorecard measures remain outside Phase 5.
 
 ## Giving workbook imported — 2026-11-17
@@ -178,8 +182,11 @@ Fuel column T remains campaign-unspecified. The owner chose to keep PCO's
 year-labelled Fuel funds separate, so that combined column has not been
 assigned to a campaign. X:Z first-time/recurring/lapsed headers have no
 underlying cells in the accepted sheet and cannot supply those historical
-counts. Separate monthly recurring and giving-unit blocks also require their
-own period/unit mappings; they were not treated as weekly amounts.
+counts. The workbook also has a Monthly Recurring Gifts table and Giving Units
+per week/month tables. These are source-labeled separate measures: monthly
+recurring dollars are a subtotal, not additive to General Giving; giving-unit
+counts represent people and do not automatically match current PCO joint-giver
+units. Their period metadata keeps monthly data distinct from Sundays.
 
 ## Date, source and overlap rules
 

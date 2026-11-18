@@ -169,6 +169,13 @@
       "when": 1794839120894,
       "tag": "0023_tired_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795010128558,
+      "tag": "0024_neat_pestilence",
+      "breakpoints": true
     }
   ]
 }

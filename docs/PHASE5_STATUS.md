@@ -942,9 +942,30 @@ The 2025 Connection group-count column was aligned to matching ordinal Sundays.
 All seven publications passed lineage validity checks, and the import did not
 touch a PCO sync.
 
-The Giving monthly recurring and giving-unit history remains unpublished
-because the available workbook blocks still do not establish their reporting
-period and/or unit. `LG` remains literal rather than guessed as an abbreviation.
+`LG` remains literal rather than guessed as an abbreviation.
+
+### Giving month/week history imported — 2026-11-18
+
+The owner confirmed that recurring-gift history is a separate monthly dollar
+subtotal and that giving units represent people who gave, then approved
+publishing both as separate measures. Added explicit `week`/`month` period
+metadata so monthly values use month-start dates and display with month labels,
+not as Sundays.
+
+Three source-labeled workbook publications were imported from the accepted
+2026-11-07 workbook without reading person-linked records or touching a PCO sync:
+
+- Monthly recurring gifts: 48 months from January 2022 through December 2025;
+  27 readable dollar values and 21 missing cells. The recurring subtotal stays
+  separate from, and is never added to, General Giving.
+- Giving people per week: 304 aligned weekly values from January 2021 through
+  November 1, 2026; 289 readable counts and 15 missing cells.
+- Giving people per month: 71 months from January 2021 through November 2026;
+  55 readable counts and 16 missing cells. The count remains distinct from
+  current PCO giving units that may group explicit joint givers.
+
+Missing source cells remain missing, not zero. Monthly values are shown in a
+separate history table; the weekly General Giving trend is unchanged.
 
 ### Connection values restored from completed Groups history
 

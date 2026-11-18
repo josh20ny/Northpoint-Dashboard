@@ -49,6 +49,18 @@ export const MEASURES: Record<string, { title: string; unit: string; definition:
     definition:
       "Received designations to the explicitly mapped General Giving fund, dated by the parent gift's received_at in Chicago. Succeeded, non-refunded gifts only; not all-fund totals. Accepted workbook General Giving fills historical gaps; sources are never added together.",
   },
+  legacy_monthly_recurring_giving: {
+    title: "Monthly Recurring Gifts (workbook)",
+    unit: "USD_minor",
+    definition:
+      "Accepted workbook monthly subtotal for recurring gifts, stored as calendar-month USD. It is separate from, and never added to, General Giving totals.",
+  },
+  legacy_giving_people: {
+    title: "Giving people (workbook)",
+    unit: "people",
+    definition:
+      "Accepted workbook count of people who gave. Weekly and monthly periods remain separate, and historical person counts are not blended with current PCO units that may group joint givers.",
+  },
   all_fund_giving: {
     title: "Received giving (all funds)",
     unit: "USD_minor",
@@ -288,6 +300,7 @@ export interface MetricFact {
   measure: string;
   scope: string;
   week: string;
+  period?: "week" | "month";
   value: number | null;
   unit: string;
   quality: string;
