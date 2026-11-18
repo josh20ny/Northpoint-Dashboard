@@ -12,12 +12,7 @@ them.
    environment before adding identifiable donor, group-member or child history
    beyond the fields and sources already approved. This does not block use of
    existing staged data, aggregate display or approved current/history work.
-2. Complete representative authenticated owner review of the remaining
-   source-to-screen surfaces, including the home overview. Connection and
-   Serving, Giving, the four child/student ministry pages, and the Admin
-   Check-In resolver have been reviewed; those specific displays are accepted,
-   not every screen or every source value.
-3. Record owner development signoff after the remaining reviews and privacy
+2. Record owner development signoff after the privacy
    gate. This is separate from production deployment, unattended scheduling
    and production privacy/retention approval.
 

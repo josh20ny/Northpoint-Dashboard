@@ -1001,7 +1001,9 @@ meeting attendance from membership snapshots and scheduled/accepted service
 assignments from actual participation. Giving fund/campaign breakdowns,
 General Giving and separate Fuel campaigns were also reviewed and confirmed
 correct. The owner reviewed Waumba Land, UpStreet, Transit and InsideOut and
-confirmed the child/student ministry pages look correct. The home overview,
+confirmed the child/student ministry pages look correct. The owner also
+reviewed the home overview and confirmed it looks correct. The focused
+authenticated review covered the Phase 5 source and ministry displays; the
 privacy gate and overall Phase 5 signoff remain open.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
