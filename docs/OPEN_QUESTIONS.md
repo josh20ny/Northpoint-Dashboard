@@ -13,10 +13,10 @@ them.
    beyond the fields and sources already approved. This does not block use of
    existing staged data, aggregate display or approved current/history work.
 2. Complete representative authenticated owner review of the remaining
-   source-to-screen surfaces, especially child/student ministry displays and
-   Giving fund/campaign breakdowns. Connection and Serving, Giving week/month
-   history, and the Admin Check-In resolver have been reviewed; those specific
-   displays are accepted, not every ministry or every source value.
+   source-to-screen surfaces, especially child/student ministry displays.
+   Connection and Serving, the Giving page and week/month history, and the
+   Admin Check-In resolver have been reviewed; those specific displays are
+   accepted, not every ministry or every source value.
 3. Record owner development signoff after the remaining reviews and privacy
    gate. This is separate from production deployment, unattended scheduling
    and production privacy/retention approval.

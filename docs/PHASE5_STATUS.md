@@ -999,8 +999,9 @@ The owner also reviewed the signed-in Connection and Serving figures and
 confirmed they look correct. This accepts the reviewed separation of group
 meeting attendance from membership snapshots and scheduled/accepted service
 assignments from actual participation. Giving fund/campaign breakdowns,
-remaining ministry displays, the privacy gate and overall Phase 5 signoff
-remain open.
+General Giving and separate Fuel campaigns were also reviewed and confirmed
+correct. Child/student ministry displays, the privacy gate and overall Phase 5
+signoff remain open.
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.
