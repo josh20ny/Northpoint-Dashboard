@@ -21,6 +21,13 @@ const ROUTES = [
   { externalId: "39161", sourceName: "Sunday Morning", ministry: "service-programming", scope: "all" },
   { externalId: "159058", sourceName: "InsideOut", ministry: "insideout", scope: "all" },
   { externalId: "329713", sourceName: "Transit", ministry: "transit", scope: "all" },
+  {
+    externalId: "760311",
+    sourceName: "Transit Weekend",
+    ministry: "transit",
+    scope: "transit-weekend",
+    continuesAfterHistorical: true,
+  },
   { externalId: "1004453", sourceName: "UpStreet Large Group", ministry: "upstreet", scope: "all" },
   { externalId: "1236986", sourceName: "Waumba Land", ministry: "waumba-land", scope: "all" },
   { externalId: "1237549", sourceName: "Kids' Check-in", ministry: "shared-teams", scope: "kids-checkin" },
@@ -78,13 +85,14 @@ async function main() {
     scope: string;
     measure: (typeof MEASURES)[number];
     effectiveFrom: string;
+    effectiveTo: string | null;
   }>;
   let routeSummary: Array<{
     sourceName: string;
     ministry: string;
     scope: string;
     effectiveFrom: string;
-    effectiveTo: string;
+    effectiveTo: string | null;
   }>;
 
   try {
@@ -190,6 +198,9 @@ async function main() {
           `No complete plan-date coverage was found for ${route.sourceName}`,
         );
       const effectiveFrom = String(dates.first_historical_date);
+      const effectiveTo = "continuesAfterHistorical" in route && route.continuesAfterHistorical
+        ? null
+        : HISTORICAL_END;
       firstDates.push(effectiveFrom);
       lastDates.push(String(dates.last_plan_date));
       routeSummary.push({
@@ -197,27 +208,31 @@ async function main() {
         ministry: route.ministry,
         scope: route.scope,
         effectiveFrom,
-        effectiveTo: HISTORICAL_END,
+        effectiveTo,
       });
 
       for (const measure of MEASURES) {
-        const current = existingMappings.filter(
-          (mapping) =>
-            mapping.objectType === "ServiceType" &&
-            mapping.externalId === route.externalId &&
-            mapping.measure === measure &&
-            overlaps(mapping.effectiveFrom, mapping.effectiveTo, CURRENT_START, null),
-        );
-        if (
-          current.length !== 1 ||
-          current[0].ministry !== route.ministry ||
-          current[0].scope !== route.scope ||
-          current[0].effectiveFrom !== CURRENT_START ||
-          current[0].effectiveTo !== null
-        )
-          throw new HistoricalServingRouteError(
-            `The current ${route.sourceName} route needs review; no history was changed`,
+        const continuesAfterHistorical =
+          "continuesAfterHistorical" in route && route.continuesAfterHistorical;
+        if (!continuesAfterHistorical) {
+          const current = existingMappings.filter(
+            (mapping) =>
+              mapping.objectType === "ServiceType" &&
+              mapping.externalId === route.externalId &&
+              mapping.measure === measure &&
+              overlaps(mapping.effectiveFrom, mapping.effectiveTo, CURRENT_START, null),
           );
+          if (
+            current.length !== 1 ||
+            current[0].ministry !== route.ministry ||
+            current[0].scope !== route.scope ||
+            current[0].effectiveFrom !== CURRENT_START ||
+            current[0].effectiveTo !== null
+          )
+            throw new HistoricalServingRouteError(
+              `The current ${route.sourceName} route needs review; no history was changed`,
+            );
+        }
 
         const overlapping = existingMappings.filter(
           (mapping) =>
@@ -228,7 +243,7 @@ async function main() {
               mapping.effectiveFrom,
               mapping.effectiveTo,
               effectiveFrom,
-              HISTORICAL_END,
+                effectiveTo,
             ),
         );
         const exact = overlapping.find(
@@ -236,7 +251,7 @@ async function main() {
             mapping.ministry === route.ministry &&
             mapping.scope === route.scope &&
             mapping.effectiveFrom === effectiveFrom &&
-            mapping.effectiveTo === HISTORICAL_END,
+            mapping.effectiveTo === effectiveTo,
         );
         if (overlapping.some((mapping) => mapping !== exact))
           throw new HistoricalServingRouteError(
@@ -249,6 +264,7 @@ async function main() {
             scope: route.scope,
             measure,
             effectiveFrom,
+            effectiveTo,
           });
         proposedMappings.push({
           id: exact?.id ?? `preview-${route.externalId}-${measure}`,
@@ -259,7 +275,7 @@ async function main() {
           measure,
           scope: route.scope,
           effectiveFrom,
-          effectiveTo: HISTORICAL_END,
+          effectiveTo,
         });
       }
     }
@@ -338,7 +354,7 @@ async function main() {
       );
       for (const issue of compiled.issues) issueSet.add(issue);
       for (const value of compiled.values) {
-        const key = `${value.ministry}/${value.measure}/${value.quality}`;
+        const key = `${value.ministry}/${value.measure}/${value.scope}/${value.quality}`;
         const summary = metrics.get(key) ?? {
           weeks: 0,
           populatedWeeks: 0,
@@ -363,7 +379,7 @@ async function main() {
       reportingWeeks: { start, end },
       windows: reportingWindows,
       routeRanges: routeSummary,
-      transitWeekend: "left unmapped; owner approval is still needed",
+      transitWeekend: "separate Transit serving scope, distinct from regular Transit totals",
       mappingsAlreadyPresent: proposedMappings.length - mappingsToCreate.length,
       mappingsToCreate: mappingsToCreate.length,
       sourceRows: sourceFacts.length,
@@ -386,11 +402,11 @@ async function main() {
         measure: mapping.measure,
         scope: mapping.scope,
         effectiveFrom: mapping.effectiveFrom,
-        effectiveTo: HISTORICAL_END,
+        effectiveTo: mapping.effectiveTo,
         enabled: true,
-        note:
-          `Owner approved this historical route from the first imported local PCO plan ` +
-          `through ${HISTORICAL_END}; the current confirmed route begins ${CURRENT_START}.`,
+        note: mapping.scope === "transit-weekend"
+          ? "Owner approved Transit Weekend as a separate serving scope, distinct from regular Transit totals, from its first imported local PCO plan onward."
+          : `Owner approved this historical route from the first imported local PCO plan through ${HISTORICAL_END}; the current confirmed route begins ${CURRENT_START}.`,
       });
 
     const publicationResults: Array<Record<string, unknown>> = [];
@@ -413,10 +429,10 @@ async function main() {
           [publication.publicationId],
         );
         const coverage = await verify.query(
-          `SELECT ministry,measure,quality,count(*)::int AS weeks,
+          `SELECT ministry,measure,scope,quality,count(*)::int AS weeks,
             count(value)::int AS populated,min(week)::text AS first_week,max(week)::text AS last_week
            FROM ministry_metric_values WHERE publication_id=$1
-           GROUP BY ministry,measure,quality ORDER BY ministry,measure,quality`,
+           GROUP BY ministry,measure,scope,quality ORDER BY ministry,measure,scope,quality`,
           [publication.publicationId],
         );
         await verify.query("COMMIT");

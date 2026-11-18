@@ -59,6 +59,26 @@ describe("Services weekly people and shared teams", () => {
     expect(result.values).toEqual([expect.objectContaining({ ministry: "upstreet", value: 1 })]);
   });
 
+  it("keeps Transit Weekend assignments separate from regular Transit totals", () => {
+    const result = compile([
+      assignment("10", "8", "C"),
+      assignment("11", "9", "C"),
+    ], [
+      mapping("8", "all", "scheduled", "transit"),
+      mapping("8", "all", "accepted", "transit"),
+      mapping("9", "transit-weekend", "scheduled", "transit"),
+      mapping("9", "transit-weekend", "accepted", "transit"),
+    ]);
+
+    expect(result.issues).toEqual([]);
+    expect(result.values).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ministry: "transit", measure: "scheduled", scope: "all", value: 1 }),
+      expect.objectContaining({ ministry: "transit", measure: "accepted", scope: "all", value: 1 }),
+      expect.objectContaining({ ministry: "transit", measure: "scheduled", scope: "transit-weekend", value: 1 }),
+      expect.objectContaining({ ministry: "transit", measure: "accepted", scope: "transit-weekend", value: 1 }),
+    ]));
+  });
+
   it("establishes an accepted zero from linked unconfirmed/declined assignments, not an unmapped source", () => {
     for (const status of ["U", "D"]) {
       const result = compile([assignment("10", "8", status)], [mapping("8", "kids-checkin", "accepted")]);

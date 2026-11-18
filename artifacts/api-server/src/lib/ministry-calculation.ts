@@ -26,6 +26,7 @@ export const SAFE_SCOPES = [
   "service-1",
   "service-2",
   "service-3",
+  "transit-weekend",
   "rally",
   "large-group",
   "small-group",

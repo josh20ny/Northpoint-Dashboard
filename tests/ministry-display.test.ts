@@ -38,6 +38,7 @@ describe("ministry service scope labels", () => {
     expect(scopeLabel("kids-checkin", "pco")).toBe("Kids’ Check-In · shared team");
     expect(scopeLabel("guest-services", "pco")).toBe("Guest Services · LU weekly team");
     expect(scopeLabel("safety-team", "pco")).toBe("Guest Services · Safety team");
+    expect(scopeLabel("transit-weekend", "pco")).toBe("Transit Weekend · separate team");
   });
   it("uses the approved fund category names for PCO and workbook history", () => {
     for (const source of ["pco", "workbook"])
