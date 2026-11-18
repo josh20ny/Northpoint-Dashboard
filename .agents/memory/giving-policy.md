@@ -104,3 +104,5 @@ explained.
 only after source interpretation. This does not authorize production publishing
 or unattended scheduling; do not request the same development-data approval
 again for these fields.
+
+Phase 5B puts weekly General Giving dollars and total giving units on Home. Count qualifying units across the week, including repeat donors, with explicit joint-giver links. Keep individual fund rows and first-time unit detail on Giving. Workbook-only history is eligible for compatible gaps and reconciliation.

@@ -1,5 +1,7 @@
 # Product Requirements Document — Northpoint Dashboard 2.0
-**Version:** v0.1 | **Status:** Requirements captured; calculations and source capabilities pending validation.
+
+The [Phase 5B brief](PHASE_5B.md) specifies the current delivery after the Phase 5 development closeout. Later roadmap features remain in this product specification.
+**Status:** Phase 5 closed for development. Approved calculations are in the decision log and metric registry. Later integrations and hypotheses retain their own validation gates.
 
 ## Purpose and outcomes
 One place for any Northpoint staff member to quickly determine the state of their ministry, identify problems, understand what is working, project where things are headed, and prioritize actions. The product must be simple, clear, concise, interactive, with optional deeper analysis.
@@ -19,7 +21,7 @@ Staff, Leadership, Admin. Only Admin sees person-level giving, donor identities,
 7. Tie service plans, programming, volunteers, scorecard results, series and attendance to the same service occurrence.
 8. Ask evidence-based AI questions and receive proactive alerts with citations to internal metric results and accessible drilldowns.
 9. Preview/approve configurable weekly ClickUp leadership summaries and configurable urgent alerts.
-10. Import and reconcile historical workbook records with explicit source mappings and quality flags.
+10. Calculate PCO-covered metrics from Planning Center API data. Use mapped workbook observations for documented gaps and for checking expected totals. Preserve source lineage and let staff investigate discrepancies from the reported number.
 
 ## Ministry modules
 Home; Service Programming (Adults/Online); Giving; Connection (Groups & Guest Services); Communications; Waumba Land; UpStreet; Transit; InsideOut; Special Sundays (Christmas/Easter); Camp 75; Admin (Sources, Metrics, Scorecards, Users, Imports, Alerts, Audit). See `specs/`.
@@ -28,20 +30,20 @@ Home; Service Programming (Adults/Online); Giving; Connection (Groups & Guest Se
 Planning Center (People, Check-Ins, Giving, Groups, Services and supported volunteer/engagement data); YouTube (three channels); Instagram (six specified handles) and Northpoint Facebook; Mailchimp (all audiences); GA4 (npaustin.com, camp75.org, foraustin.com); Clearstream; Apple Podcasts/Spotify where supported; ClickUp outgoing reports; native forms and external forms/Google Sheets. OAuth-first, not OAuth-only; access scope and availability must be proven for each API.
 
 ## Operating calendar
-Weekly Mon–Sun, displayed as Sunday-end date in America/Chicago; compare YoY on aligned weeks (explicit policy pending). Support months, quarters, semesters and rolling 1-month/2–24-month trends. Service time effective dating; 9:00 and 11:00 current adult/kid/middle school services, InsideOut 4:30; preserve historical 9:30 where applicable.
+Weekly periods end Sunday in America/Chicago. Phase 5B compares corresponding numbered Sundays and includes only meaningful periods for the same measure. Longer-range product views include months, quarters, semesters and adjustable trends. Preserve effective-dated service times, including the first morning service’s time changes. Use service order in cross-era reporting and the actual evening service for InsideOut.
 
 ## UX requirements
 Home is the previous-Sunday cross-ministry snapshot. Attendance history, entry
 and all other ministry KPIs belong together on the relevant ministry page;
 there is no separate attendance product/tab. Adult attendance belongs under
 Service Programming. Older attendance links redirect to that ministry.
-First glance must answer top three questions. Use simple cards, sparklines, trend comparison, colored health only with numeric/text labels, clear freshness timestamps; support drilldowns and accessible contrast. Distinguish metrics from interpretations. Responsive desktop-first.
+On Home, each implemented ministry has a named headline KPI for the same reporting Sunday, an adjustable four-week comparison, YoY and a YTD actual/eight-week-average chart. Attendance totals lead their service splits. Show source details on drilldown and meaningful exceptions in context. See [Phase 5B](PHASE_5B.md) for exact measures, role boundaries and the mobile/desktop acceptance checks.
 
 ## Success criteria (initial proposed targets, not approved business KPIs)
-All primary metrics traceable to source and formula; daily sync audit; no privilege escalation; initial vertical slice matches validated spreadsheet baseline; historical import reconciles on sampled weeks/years; user can navigate from alert to evidence in <3 interactions; weekly ClickUp report is configurable and previewable.
+All primary metrics traceable to source and formula; daily sync audit; no privilege escalation; initial vertical slice reconciles like-for-like against an independent baseline, with differences explained; historical import reconciles on sampled weeks/years; user can navigate from alert to evidence in <3 interactions; weekly ClickUp report is configurable and previewable.
 
 ## Out of scope for initial milestone
 Per-user ministry personalization, forecasting every measure, broad self-service SQL, automatic action-taking AI, probabilistic predictions about identifiable persons visible to all staff, replacement of Planning Center as system of record.
 
 ## Open definitions
-See `OPEN_QUESTIONS.md` and `METRICS.md`. No numeric threshold, fixed retention window, or giving cadence should be treated as approved yet.
+See `OPEN_QUESTIONS.md` and `METRICS.md`. Use the approved giving cadence and adult YoY color rule in the decision log. Broader health thresholds and production retention remain open.

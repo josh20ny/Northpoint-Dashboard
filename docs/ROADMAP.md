@@ -1,6 +1,8 @@
 # Execution Roadmap — Release Gates
 
 ## Current implementation status
+
+Phase 5 closed for development on November 18. **Phase 5B is next and awaits implementation.** The paragraphs below record earlier milestone outcomes.
 Phase 0 is retained. Phase 1 implementation adds invite-only verified sign-in,
 local roles, ministry/service configuration, people/source reference schemas and
 append-only audit history. See `PHASE_1_IMPLEMENTATION.md` for scope, verification
@@ -32,8 +34,7 @@ Phase 4 is closed for development with owner approval on November 9, 2026
 It provides manual auditorium headcounts,
 immediate saves, immutable corrections, typed aggregate reads, the home KPI and
 attendance drilldown, plus deliberate evidence-bound historical promotion.
-After the owner accepted the supplied workbook as authoritative, its mapped
-adult history was bulk-imported: 80 service observations across 40 Sundays.
+The owner accepted the supplied workbook for historical adult auditorium counts. The import covered 80 service observations across 40 Sundays.
 Individual week publication is no longer required for this accepted source.
 The actual adult ministry/definition is configured; manual occurrence setup
 remains separate from unresolved historical start times. Other ministry
@@ -51,7 +52,8 @@ or full-project historical acceptance.
 | 2 | Historical workbook import explorer, explicit mappings, staged rows, source QA | Several approved weeks reconcile |
 | 3 | Planning Center OAuth, People/Services/Check-Ins ingestion | Incremental + backfill, provenance, sync status |
 | 4 | Adult attendance complete vertical slice and basic home | Met for development: 80 source counts/40 weeks reconciled, plus manual counts and comparisons |
-| 5 | Giving restricted models, groups, serving, child/student modules | Role isolation, complete source flags |
+| 5 | Giving restricted models, groups, serving, child/student modules | Development closeout approved November 18, 2026. See [decisions](DECISIONS.md). |
+| **5B** | PCO-first reporting, usable ministry KPIs, trend charts and simpler administration | Demonstrate [Phase 5B acceptance checks](PHASE_5B.md#acceptance-walkthrough) on the signed-in dashboard. |
 | 6 | Configurable scorecards, manual forms, service-plan links | Workflow with version/audit + source semantics |
 | 7 | Metric registry, thresholds and health cards, ministry pages | Definition changes replay safely |
 | 8 | Four-part engagement and journeys | Denominators/rules approved, cohorts validated |
@@ -63,30 +65,16 @@ or full-project historical acceptance.
 
 **Ordering note:** phase 4 needs source validation and can initially use native manual counts before all PCO connectors are complete. Phases may overlap only after interfaces are tested; do not build all ministry pages before a complete vertical slice.
 
-## Deferred Integrations cleanup and PCO processing improvements
+## Integrations status and remaining work
 
-The owner asked to defer work while current Planning Center imports are running.
-The Integrations page should later group provider details into collapsible
-sections, with a concise Planning Center heading that expands to its controls
-and sync history. Keep this UI-only change separate from live import operations.
+The Phase 5 development record documents the expandable provider interface and improvements to per-product PCO processing, including checkpoints where the underlying product supports them. Groups keeps full-history reconciliation. See [Phase 5 status](PHASE5_STATUS.md) for actual implementation and remaining operational gates. Phase 5B keeps the Integrations controls, clarifies sync wording and simplifies the Admin landing page and directory.
 
-PCO throughput work should start only after the active imports settle. First
-measure per-product duration, pages, records, database revisions, retries and
-rate limits; then implement a verified per-product last-success checkpoint with
-overlap for late changes, reduce supported relationship/request and database
-write overhead, and evaluate carefully bounded rate-aware parallelism. Current
-progress is durably saved per page, but the existing incremental mode starts at
-root collections rather than a saved per-product timestamp. Keep atomic
-checkpoints, replay safety, lineage, pause/cancel behavior and provider limits.
-See `PHASE5_STATUS.md` for the staged plan and acceptance checks.
+**Next delivery is Phase 5B.** Work through the [implementation brief](PHASE_5B.md) and [verified code findings](PHASE_5B_AUDIT.md). Phase 6 follows the Phase 5B acceptance walkthrough.
 
-**Next:** prepare Phase 5's restricted giving models, groups, serving and
-child/student modules against their documented sources and role boundaries.
-Phase 5 implementation has not started as part of this closeout. Preserve the
-previous-Sunday cross-ministry dashboard and per-ministry attendance/KPI scope.
-Existing production-readiness gates remain separate and unchanged.
+## Original foundation tasks
 
-## First ten implementation tasks
+These tasks describe the early phases. The current implementation order is in [Phase 5B](PHASE_5B.md#implementation-order).
+
 1. Scaffold Git-compatible monorepo, lint/format/typecheck/test and `.env.example`.
 2. Add Google-compatible/Replit auth adapter with verified identities and invite/allowlist.
 3. Implement RBAC guards + audit events + role test fixtures.
@@ -94,7 +82,7 @@ Existing production-readiness gates remain separate and unchanged.
 5. Implement reusable metric response contract and Sunday/Chicago time utility with tests.
 6. Build admin source/connection status scaffold (no fake OAuth).
 7. Implement XLSX import analyzer and mapping review UI with raw-only staging.
-8. Implement manual adult attendance input with revisions, approval and authoritative source marker.
+8. Implement direct manual adult attendance entry with immutable revisions and recorded provenance.
 9. Implement attendance metric endpoint with four-week and YoY comparisons after policy review.
 10. Build home Adult Attendance KPI and drilldown, loading/partial/error states, validation fixtures.
 

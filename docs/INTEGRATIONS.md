@@ -1,5 +1,7 @@
 # Integration Registry and OAuth-first Design
 
+Phase 5B uses the existing Planning Center connection and staged API facts for covered measures. The workbook provides documented gaps and reconciliation. Provider setup, grant changes and historical file operations live in Administration. See the [Phase 5B brief](PHASE_5B.md).
+
 Every provider must have a connection card: name, account/workspace, consent flow, granted scopes, access owner, last success, freshness SLA, failure reason, reconnect/revoke, backfill and coverage. Use OAuth authorization code (+ PKCE when supported), CSRF state, strict callback allowlists, encrypted refresh tokens, rotation and service-side requests. **Do not ask users to type third-party passwords into Northpoint Dashboard.** OAuth tokens are not login credentials.
 
 | Provider | Desired data / action | Authorization strategy | Readiness |

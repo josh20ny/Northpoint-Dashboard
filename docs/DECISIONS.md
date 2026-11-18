@@ -22,14 +22,24 @@
 | D-017 | APPROVED | GA4 and podcast/social/email integrations desired | Provider capability/discovery gates |
 | D-018 | APPROVED | Phased V1 order proposed previously accepted | See ROADMAP |
 | D-019 | APPROVED | OAuth-first integration administration | Exceptions require review, never collect provider passwords inside app |
-| D-020 | OPEN | Whether Leadership may see aggregate giving and which confidential breakdowns | Default aggregate-only |
+| D-020 | APPROVED | Signed-in Staff and Leadership may see broad aggregate Giving. Person-linked financial data is Admin-only. | See the November 10 Giving decision and November 18 development privacy boundary. |
 | D-021 | OPEN | Exact regularity criteria & denominator for engaged levels | Rule registry and backtests |
 | D-022 | OPEN | Health thresholds and weekly summary destination and auto-send gate | Seed draft only |
-| D-023 | OPEN | Which source is authoritative for each numeric measure | Reconcile mapping with owners |
+| D-023 | APPROVED | Use Planning Center wherever it records the measure. Use the accepted workbook for genuine gaps and comparison. | Phase 5B applies this per metric, population, scope and period. |
 | D-024 | APPROVED | Preserve source history; separate explicit lifecycle markers from completed-scan absence; no automatic purge in development | Missing is not deleted; retention/privacy deletion require pre-production decisions |
 | D-025 | APPROVED | Close Phase 3 for development with explicit live-verification deferrals; proceed to Phase 4 | Not production acceptance; do not wait for long rescans or claim deferred checks passed |
 
 New decisions must be dated with owner, alternatives, migration impact, and tests.
+
+## Phase 5B source and display decisions — 2026-11-18
+
+**Approved by the product owner in the post–Phase 5 walkthrough and written clarification.** Planning Center is the authority for any number it records or that can be calculated faithfully from its API records. Read synchronized server-side data. Investigate a temporary sync failure, incomplete publication or discrepancy with the workbook before classifying that period’s coverage. Keep a usable partial PCO value visibly partial. For documented periods or measures outside PCO coverage, use an accepted, comparable workbook observation with lineage. Manual auditorium headcounts remain available. Compare overlapping sources privately by metric, definition, date, period, scope and unit. Record the difference and its explanation without overwriting either observation.
+
+The earlier approvals to trust and bulk-import workbook history still apply to the original batch. They no longer require each imported series to appear as a separate staff KPI. Raw evidence, prior decisions, revisions and audit events retain their history. The [walkthrough brief](PHASE_5B.md) governs the requested cards, charts, detail pages and administration changes. It distinguishes approved requests from implementation choices and later phases.
+
+The overview requires a selectable four-week average and year-over-year comparison, plus a separate YTD chart with an eight-week moving average. Adult history highlights positive YoY in green and zero or negative in red. Weekly giving units count all qualifying units that gave. Connection distinguishes active people from meeting attendance. The two-row child/student view separates attendance and first-time check-ins by service and Sunday total.
+
+The migration should classify existing publications at read time or through versioned derived data, extend missing PCO aggregates and retire obsolete workflows after checking their callers. Verify overlapping complete/partial/zero values, true gaps, source transitions, replays, auditability and role boundaries in the [acceptance walkthrough](PHASE_5B.md#acceptance-walkthrough).
 
 ## Phase 5 source trust, order and Giving visibility — 2026-11-10
 
@@ -76,8 +86,7 @@ phase; do not show invented scores before their definitions are set. Put manual
 entry and other user-input controls in collapsed sections at the bottom of the
 page so they do not compete with the reported data.
 
-Apply this order to Connection and Groups, the child/student ministries, Service
-Programming and Giving. Historical tables may follow the key summary sections.
+This was the Phase 5 layout. For subsequent work, use the page-specific order and control placement in [Phase 5B](PHASE_5B.md).
 
 The owner defined first-time giving as the first recorded giving event for the
 person/family at Northpoint, and lapse as three consecutive missed expected
@@ -133,7 +142,7 @@ provided in the files of this project is accurate and should just be imported
 and displayed where appropriate. We don't need a bunch of steps to show the
 historical data.”
 
-The provided workbook is the accepted historical source. Source authority is
+Under Phase 5B this acceptance applies to eligible gaps and reconciliation. The provided workbook is an accepted historical source. Batch authority is
 recorded once for its batch and fingerprint, not per week or cell. Mapped,
 usable historical values should bulk-import into the appropriate implemented
 metrics without repeated publication acknowledgements or independent
@@ -170,9 +179,7 @@ January 25 retains its separately confirmed zero and ice-storm context.
 
 Manual counts need no approval and must be adjustable. Corrections retain
 previous revisions and the authenticated editor; no approval queue is required.
-Historical evidence review remains distinct from deliberate historical
-promotion. Source authority by era, historical service times, YoY and exact
-four-week averaging/completeness policies remain unresolved.
+Historical evidence review remains distinct from deliberate historical promotion. Later decisions above set source authority, adult averaging and YoY alignment. Unverified clock times still require dated evidence.
 
 Alternatives: Admin-approved manual submissions, treating all past blanks as
 zero, or interpreting counts as unique people. Migration impact: additive

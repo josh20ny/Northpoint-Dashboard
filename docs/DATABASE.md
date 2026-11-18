@@ -1,5 +1,7 @@
 # Logical Database Model (proposed; validate before migration generation)
 
+Phase 5B retains immutable source records, workbook lineage, manual revisions and role restrictions. First inspect the existing publication and metric-value tables. Add versioned derived coverage or aggregates only where the existing schema cannot represent a requested measure. See [Phase 5B](PHASE_5B.md#source-selection).
+
 ## Phase 4 implementation note
 
 Comparison migrations 0016/0017 add

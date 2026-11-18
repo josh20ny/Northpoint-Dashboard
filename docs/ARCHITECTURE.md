@@ -1,5 +1,7 @@
 # System Architecture
 
+The implemented dashboard runs on React/Vite, Express/TypeScript, generated OpenAPI clients and PostgreSQL. Start Phase 5B in those packages. PCO access, source resolution and chart calculations belong on the server. The topology below records the original planning proposal. See [implementation](IMPLEMENTATION.md) and the [code audit](PHASE_5B_AUDIT.md).
+
 ## Proposed topology
 ```text
 Provider APIs / Forms / Spreadsheet uploads

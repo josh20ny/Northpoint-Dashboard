@@ -1,5 +1,7 @@
 # Ingestion, Reconciliation and Freshness
 
+For Phase 5B, classify PCO coverage per measure, population, scope, period and date. Normalize and calculate from staged PCO facts first. Compare the accepted workbook in reconciliation and select it only for a verified gap with compatible semantics. Keep discrepancy, as-of date and provenance available to authorized reviewers. See the [source selection table](PHASE_5B.md#source-selection).
+
 ## Pipeline pattern
 1. Admin authorizes integration and confirms account/scope; credentials encrypted.
 2. Create scoped sync run with idempotency key; fetch paginated raw records, obey retry-after and rate quotas.

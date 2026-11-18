@@ -5,7 +5,7 @@ The supplied XLSX has **51 worksheets**, **35,123 formulas** and **1,536 externa
 ## Owner acceptance and Phase 5 mapping
 
 The owner has accepted this workbook as an accurate historical source and
-approved importing usable values where they map to implemented measures. Do not
+approved importing usable values where they map to implemented measures. Under [Phase 5B](PHASE_5B.md#source-selection), these values fill verified PCO coverage gaps or support reconciliation. Comparable PCO-covered periods use PCO even when the workbook has a value. Do not
 request repeated per-week or per-cell value approval. This acceptance does not
 make a worksheet header a canonical metric definition: Phase 5 still needs
 explicit sheet/column-to-measure, unit, scope and date-era mappings, snapshot

@@ -1,5 +1,9 @@
 # API Contract Skeleton
 
+## Phase 5B contract to implement
+
+Extend the authenticated aggregate reads used by Home and ministry detail. Return the report Sunday, lead measure, service and total values, source coverage, dated roster as-of, selected average/denominator, aligned YoY and YTD actual/prior/eight-week points as applicable. The UI formats the same values for cards, charts and dated history. Publish schemas in `lib/api-spec/openapi.yaml` before regenerating the client and validators. Preserve the weekly adult save/correction contract. Remove endpoints for obsolete controls only after checking their other consumers. Verify Staff/Leadership responses contain no person-linked fields. The [brief](PHASE_5B.md) defines acceptance.
+
 ## Phase 4 implemented surface
 
 `GET /api/v1/attendance` additionally accepts `averageWeeks` (integer 1–52,

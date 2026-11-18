@@ -3,10 +3,8 @@ name: Church-wide dashboard and ministry detail scope
 description: Owner's required previous-Sunday overview and per-ministry attendance/KPI drilldowns.
 ---
 
-The main dashboard should show a snapshot from the previous Sunday against all
-the documented metrics for every ministry, not only adult attendance.
-Under Ministries, clicking a ministry should show its attendance plus all its
-other documented KPIs.
+The main dashboard shows the previous completed Sunday across ministries. The owner selected a concise headline, supporting numbers, YTD chart and comparisons for each implemented card in [Phase 5B](../../docs/PHASE_5B.md). Detailed KPIs belong on the ministry page.
+Under Ministries, each detail page shows its selected attendance and supporting measures. The ministry specifications describe additional KPIs for later phases.
 
 **Why:** The owner explicitly clarified the intended product scope; the
 adult-only Phase 4 delivery is not the finished dashboard.
@@ -38,17 +36,7 @@ its metrics to the relevant ministry, and keep detailed history/entry with that
 ministry's other metrics. Legacy attendance links may redirect to Service
 Programming; do not reintroduce a standalone Attendance navigation item.
 
-Use a shared ministry-page order: attendance first, formula-based health
-metrics next, then other KPIs. Keep health scores absent until their formulas
-are defined. Put manual entry and other user-input controls in collapsed
-sections at the bottom of ministry pages.
-
-**Why:** The owner explicitly requested this hierarchy to keep primary measures
-visible and prevent entry controls from distracting from reported results.
-
-**How to apply:** Use the order across Connection/Groups, child/student
-ministries, Service Programming and Giving. Show future health formulas as
-unconfigured, never as invented scores.
+Phase 5B supersedes the original generic hierarchy. Service Programming promotes attendance history and moves serving history down. Kids/students put first-time check-ins directly below attendance. Connection displays Group attendance, Guest Services teams, then Health metrics. Put working controls alongside the number or table they affect. Keep genuine source issues and evidence available to the right role.
 
 For child/student attendance, use Sunday PCO Check-Ins as the source of truth.
 Waumba Land and UpStreet use mapped Check-Ins locations per service; Transit

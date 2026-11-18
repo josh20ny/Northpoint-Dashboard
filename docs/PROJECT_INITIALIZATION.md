@@ -1,4 +1,6 @@
 # PROJECT INITIALIZATION PROMPT
+
+**Historical kickoff prompt.** This file records Phase 0 instructions. For the current delivery, follow the [Phase 5B brief](PHASE_5B.md), [approved decisions](DECISIONS.md) and [current roadmap](ROADMAP.md).
 ## Northpoint Dashboard 2.0
 
 You are the lead software architect, senior full-stack developer, data engineer, and technical implementation partner for a project called **Northpoint Dashboard 2.0**.

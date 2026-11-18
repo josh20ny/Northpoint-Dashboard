@@ -1,12 +1,12 @@
 - [Brand direction](brand-direction.md) — preserve the liked dashboard layout; use practical copy and the brand guide plus both Northpoint websites.
-- [Source trust and history](historical-source-review.md) — trust PCO; verify storage/display; prioritize current ingestion without deferring Phase 5 PCO/workbook backfills.
+- [Source trust and history](historical-source-review.md) — use PCO for covered measures and the workbook for documented gaps and reconciliation under [Phase 5B](../../docs/PHASE_5B.md).
 - [Confidential upload tracking](storage-tracking.md) — commit intents before storage; unknown is not absent, and declarative RLS must match custom migrations.
 - [OAuth key ownership](oauth-key-ownership.md) — application owns its persistent encryption key; never ask Planning Center to provide it or regenerate on startup.
 - [Workspace test isolation](workspace-test-isolation.md) — mock the shared pool instance, not only its package alias; assert the stub is used before mutation tests.
 - [Planning Center fieldsets](pco-fieldsets.md) — sparse fieldsets filter linkage too; included records and complete syncs do not establish relationship coverage.
 - [Historical event context](historical-event-context.md) — owner-confirmed context for interpreting exceptional historical check-ins.
 - [Adult attendance policy](adult-attendance-policy.md) — auditorium attendees only; breaks stay unrecorded; manual counts need corrections, not approval.
-- [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday overview across all ministries; each ministry needs attendance and all documented KPIs.
+- [Dashboard and ministry scope](dashboard-ministry-scope.md) — previous-Sunday headline cards and the [Phase 5B](../../docs/PHASE_5B.md) ministry-specific layout.
 - [Giving policy and source approvals](giving-policy.md) — Giving visibility and giver definitions; recorded Giving, Groups and Services development-import approvals.
 - [PCO runtime contracts](pco-runtime-contracts.md) — pg DATE decoding needs civil serialization; resolve joint-giver linkage through collection reads.
 - [Services ministry routing](services-ministry-routing.md) — Kids' Check-In shared, Safety separate under Guest Services, Sunday Morning → Service Programming.

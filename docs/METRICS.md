@@ -4,9 +4,9 @@
 
 ## Time and comparison
 - Weekly boundary: Mon 00:00 through Sun 23:59:59.999 `America/Chicago`, label by Sunday date (APPROVED).
-- Rolling 4-week complete: last four completed Sunday-ending weeks (DRAFT; separate from rolling calendar month).
+- Phase 5B weekly comparisons use complete observations in a trailing calendar-week window ending at the reporting anchor. Default four weeks, adjustable from 1 to 52. Expose the actual recorded denominator. Each YTD mini-chart uses a separate fixed eight-week average.
 - Rolling month: previous calendar-month-length interval relative to today, or 30 days? **TBD**; show both available options until signed off.
-- YoY: align 52-week / same Sunday vs nearest-date same-weekday policy **TBD**; explicitly handle 53-week years and holiday movements.
+- Phase 5B YoY follows the same numbered Sunday in the previous year. Match metric, population, scope and unit. An unmatched 53rd Sunday or missing baseline has no comparable value. A zero baseline has no percentage. Monthly and future forecast policies are separate.
 - Missing, delayed or partial weeks: `quality_status` and denominator; do not display as zero except for the owner-confirmed attendance rule below.
 
 ## Attendance
@@ -21,8 +21,7 @@
 - Full Sunday actuals require both configured adult source slots; a single known
   service produces only a labelled subtotal. Unrecorded/invalidated/future values
   never become full totals.
-- Four-week denominators and YoY alignment remain unapproved. The implementation
-  shows unavailable explanations, not invented numeric comparisons.
+- The owner approved the adult window and ordinal-Sunday comparator on November 9. Phase 5B puts the control beside the metric and reuses this convention for comparable weekly measures.
 
 ### Owner-confirmed legacy review names (2026-11-07)
 - `SPD!F` → `adult_service_1`.
@@ -50,8 +49,8 @@ below. See `DECISIONS.md`.
 - `adult_in_person_attendance`: sum of auditorium per-service headcounts for Sunday under the Phase 4 definition; aggregate observations are marked as such. Manual entry is approved without an approval queue; historical source authority/promotion remains explicit and separate.
 - `adult_online_connections`: raw source-defined live Sunday connections; distinct from estimated persons (DRAFT).
 - `adult_total_engagement`: historical `in_person + online_connections * multiplier`; preserve as *legacy-defined* metric, with effective-dated multiplier, and do not call it unique attendees (DRAFT).
-- Kids/students attendance: normalized Planning Center Check-Ins headcount by occurrence/ministry/age/grade/gender/service/room where source supports; no double count of re-checks (DRAFT).
-- First-time kids/students: first known verified check-in to specified ministry across available event history; label left-censored data and scope (DRAFT).
+- Child/student attendance uses Sunday PCO Check-Ins, approved room/service routes and existing review decisions. Publish service counts and a separately deduplicated ministry Sunday total. Historical aggregate headcounts cannot establish distinct people or room splits.
+- First-time check-ins use the first known eligible visit to that ministry across available PCO history. Publish service splits and a distinct Sunday total. Record the earliest reliable coverage and unresolved service attribution. See [Phase 5B](PHASE_5B.md).
 - Return 2nd/3rd: percent of first-timers with 2nd/3rd distinct-day visit within a configurable observation window; report cohort maturity and median/mean lag; exact window **TBD**.
 - Capacity utilization = observed attendance / effective capacity. Historical capacities vary by venue and service.
 
@@ -64,7 +63,11 @@ For a person/household-defined evaluation period at time T:
 `engagement_count = SUM(boolean qualifying dimensions)` ONLY WHEN inputs are known. `Engaged N = at least N dimensions`, N=1..4, per user definition; **these are cumulative, not mutually exclusive**. Also offer mutually exclusive `exactly N` cohorts clearly labeled. Define eligible population/denominator, household linkage, no-kid households, kids aging out, privacy and incomplete sources before treating these as authoritative. Display unknown/not-evaluable separately. Do not penalize a person for lacking children without explicit product decision.
 
 ## Giving
-Gross/net, fund, one-off/recurring cadence, first-time gift and conversion are independent definitions. Donor identity and transaction drilldown **Admin only**. Expose to others only agreed aggregates, with small-cell privacy suppression. Exact funds, refund rules and cadence **TBD**.
+General Giving uses the approved fund designations on qualifying received gifts, dated in Chicago. Keep all-fund receipts, refunds, Fuel campaigns and recurring schedules distinct. Phase 5B adds total distinct giving units that gave in the reporting week. Count repeated gifts once per unit using the applicable PCO joint-giver policy. First-time and lapsed units remain separate measures. Staff and Leadership see broad aggregates. Donor identity, transactions and person-linked signals are Admin-only. See [Giving](specs/GIVING.md) and [decisions](DECISIONS.md) for existing definitions and production privacy gates.
+
+## Connection
+
+Count eligible active groups and distinct active participants from dated PCO Groups evidence. Multiple memberships for one person may increase membership count, but count the person once. Report meeting attendance from explicit attended event/person pairs at eligible ended, non-cancelled meetings in the approved Groups category. Coach and leader counts need evidence of the respective role. The workbook series identified in the walkthrough describes active participants, even though its historical label says attendance. See [Connection](specs/CONNECTION.md).
 
 ## Leading indicators / next steps
 `Discover attendance → first subsequent qualified next step`; `Sneak Peek → first serving`; `group interest → join`; kid/student visit → return; signup → baptism (only if completion data available). Track cohort n, converted n, window, median lag, uncensored rate, source coverage. Correlations are exploratory and do not imply causation. First-time gifts (welcome gifts vs money donations) must be disambiguated.
@@ -77,6 +80,10 @@ Rule registry per metric/ministry with config effective date and green/yellow/re
 
 ## Forecast
 Actual vs target vs statistical forecast shown independently. Always expose model and training window, uncertainty bands, errors and 'forecast vs target' comparisons. See `FORECASTING.md`.
+
+## Source selection
+
+Apply [the Phase 5B selection table](PHASE_5B.md#source-selection) before comparisons, charts and exports. Keep observed zero, partial, unavailable and stale distinct. The accepted workbook supports reconciliation and comparable gaps. Adult auditorium headcounts are the established manual exception.
 
 ## Data contract for every measure
 `metric_slug, title, value, unit, grain, period_start, period_end, timezone, ministry, filters, definition_version, source_refs, last_updated_at, completeness, quality_status, target, comparable_prior, comparison_policy, lineage`.

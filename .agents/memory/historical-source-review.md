@@ -3,6 +3,8 @@ name: Historical source review
 description: Why matching workbook inventory counts cannot establish source equivalence.
 ---
 
+Current policy (November 18, 2026): PCO is primary across recorded history. Use the accepted workbook for confirmed gaps or like-for-like checks. A partial or failed PCO sync cannot silently turn into a workbook number. Earlier bulk-import decisions below concern storage and do not require staff-facing workbook cards. See [Phase 5B](../../docs/PHASE_5B.md).
+
 Accept accurately pulled PCO data without granular checking of every source
 value; prioritize accurate ingestion, storage and display using the existing
 PCO interaction structure.
