@@ -23,6 +23,17 @@ split gift in the main trend, add overlapping sources, or relabel all-fund
 receipts as General Giving. This choice does not change the first-time/lapsed
 giver definitions below, which concern gifts to Northpoint.
 
+The owner's two key Giving measures are total dollars and the number of people
+who give. Historical workbook giving-unit values are person counts, not money;
+keep them distinct from dollar totals and from current PCO units that may group
+explicit joint givers.
+
+**Why:** The owner clarified that the important tracked measures are giving
+total in dollars and giving units as the number of people who give.
+
+**How to apply:** Preserve currency versus count and keep historical person-count
+series separate from family-grouped PCO units unless their definitions align.
+
 Keep yearly Fuel campaigns separate.
 
 **Why:** The owner chose “Keep campaigns separate” rather than combining PCO's
