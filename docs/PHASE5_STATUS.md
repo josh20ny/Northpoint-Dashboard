@@ -969,6 +969,12 @@ Three source-labeled workbook publications were imported from the accepted
 Missing source cells remain missing, not zero. Monthly values are shown in a
 separate history table; the weekly General Giving trend is unchanged.
 
+The owner reviewed the signed-in Giving history and confirmed the separate
+monthly/weekly values and period labels look correct. This is acceptance of
+that Giving history display only; it does not close the separate review of
+General Giving, fund/campaign breakdowns, other ministries, the Check-In
+resolver, the privacy gate or overall Phase 5 signoff.
+
 ### Connection values restored from completed Groups history
 
 The post-calculation-version Groups publication was rebuilt from the completed

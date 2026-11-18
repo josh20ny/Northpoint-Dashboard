@@ -1,29 +1,58 @@
-# Remaining Owner Decisions — Prioritized
+# Remaining Owner Decisions and Acceptance Gates
 
-These are **not blockers to building auth, schema, the import explorer, or the first adult attendance slice**. They block publishing authoritative business measures.
+This list reflects the current Phase 5 implementation. Approved source
+definitions and historical mappings are recorded in `DECISIONS.md`,
+`PHASE5_STATUS.md` and `PHASE5_WORKBOOK_CROSSWALK.md`; the older draft questions
+below should not be treated as unresolved when those records already answer
+them.
 
-## Before engagement can be called authoritative
-1. Qualifying lookback/cadence for giving, volunteering, groups and kid/student check-ins; whether group membership alone counts.
-2. Does the fourth dimension apply only to parents, how do no-child households count, and whose household relationships determine attribution?
-3. Engaged level denominator: adult attenders, all adults in People, active household contacts or another defined population?
-4. What data gaps mean 'unknown' vs 'not active' and how do past periods get recalculated after a rule change?
+## Still open for Phase 5
 
-## Before dashboards and weekly reports go live
-5. Which adult attendance figures are authoritative for each historical era and how do online connections/multipliers work?
-6. What's the exact rolling-month window for other metrics? Adult attendance is
-   resolved: default four calendar weeks, adjustable 1–52, only complete valid
-   totals in the current definition; YoY uses same-numbered-Sunday alignment and
-   accepted 2025 in-person total baselines. See `PHASE_4_IMPLEMENTATION.md`.
-7. What constitutes first-time gift (guest welcome gift vs monetary donation)?
-8. Which health thresholds, weights and metric priorities should be seeded? Start unconfigured otherwise.
-9. ClickUp workspace/channel destinations, delivery approval vs auto-send, cutoff timing and alert quiet hours.
-10. Which person-level views are allowed for staff beyond attendance (serving, group, kid/student details)?
+1. Complete the privacy review and approve a suitably restricted development
+   environment before adding identifiable donor, group-member or child history
+   beyond the fields and sources already approved. This does not block use of
+   existing staged data, aggregate display or approved current/history work.
+2. Complete representative authenticated owner review of the remaining
+   source-to-screen surfaces, especially Check-In exceptions, Connection and
+   Serving. Do not treat an implementation check or a single page review as
+   approval of every ministry or every source value.
+3. Record owner development signoff after the remaining reviews and privacy
+   gate. This is separate from production deployment, unattended scheduling
+   and production privacy/retention approval.
 
-## Before specific integration modules
-11. Accounts, scopes and admins for GA4/YouTube/Meta/Mailchimp/Clearstream/podcast sources.
-12. Scorecard template criteria and exact Double/Triple/Homerun numeric mappings; number of survey responses available.
-13. For the accepted workbook, how should each historical sheet/column map to canonical measures, units and eras, including 9:30→9:00, venue changes and COVID periods? Workbook value authority is settled; this is a semantic mapping, date coverage and PCO-overlap question, not a request to revalidate individual values.
-14. Retention window for 2nd/3rd visits, first-time definition across ministry vs church and historical data limits.
-15. Sensitivity threshold for aggregate privacy/small-cell suppression and data retention obligations.
+No additional metric definition is currently needed to publish the approved
+Phase 5 measures. Actual source gaps, unresolved Check-Ins, partial coverage
+and unavailable historical values must remain visible as documented; owner
+review is not a request to manually approve every PCO record.
 
-Owner can respond in natural language. Record approved answers as D-### entries in `DECISIONS.md` and version the associated metric config.
+## Reserved for later phases or pre-production
+
+- Health/engagement thresholds, score weights, ministry scorecards, and
+  configurable evaluation workflows belong to later phases. Giving's first
+  gift, cadence, lapse and Admin-adjustable formula are already defined;
+  those signals are not themselves a health score.
+- Cross-domain household identity, return windows, cohort maturity, and
+  engagement denominators belong to later engagement work. Do not infer them
+  from matching provider IDs or aggregate workbook counts.
+- YouTube, social, email, website analytics, podcast and ClickUp sources need
+  their own provider access and product decisions; they are not missing PCO
+  attendance or serving values.
+- Fixed retention periods and privacy-deletion procedures require a separate
+  pre-production decision. Current development behavior preserves source
+  history and does not automatically purge it.
+
+## Resolved definitions to preserve
+
+- Giving aggregates are visible to signed-in roles; donor names/IDs,
+  transactions and person-linked giving signals are Admin-only. The workbook's
+  monthly recurring dollars and weekly/monthly giving-person counts are
+  separate, period-labelled measures.
+- Child/student attendance follows the approved event, location, service-time,
+  ministry, grade-fallback and Check-In review rules. Unresolved Check-Ins
+  remain visible and Admin-resolvable; missing links are not invented.
+- Connection meeting attendance counts explicit attended records in Groups
+  only, deduplicated by event/person. Services scheduled and accepted assignment
+  counts remain separate and do not claim actual participation.
+- Historical PCO and accepted workbook values are not added together. Use the
+  approved source precedence, period, scope, effective dates and coverage
+  documented in the Phase 5 status and crosswalk.
