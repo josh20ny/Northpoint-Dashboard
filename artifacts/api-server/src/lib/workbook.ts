@@ -236,6 +236,18 @@ export function stageRows(
   const ranges = catalog.sheets.find((s) => s.name === mapping.sheet)?.merges ?? [];
   const staged: StagedImportRow[] = [];
   const seen = new Set<string>();
+  const monthNumber = new Map<string, number>(
+    [
+      ["jan", 1], ["january", 1], ["feb", 2], ["february", 2],
+      ["mar", 3], ["march", 3], ["apr", 4], ["april", 4],
+      ["may", 5], ["jun", 6], ["june", 6], ["jul", 7], ["july", 7],
+      ["aug", 8], ["august", 8], ["sep", 9], ["september", 9],
+      ["oct", 10], ["october", 10], ["nov", 11], ["november", 11],
+      ["dec", 12], ["december", 12],
+    ] as const,
+  );
+  const period = mapping.period ?? "week";
+  const snapshotMonth = `${snapshotDate.slice(0, 7)}-01`;
   for (let row = mapping.startRow; row <= mapping.endRow; row++) {
     const coordinate = `${mapping.valueColumn}${row}`,
       dateCoordinate = `${mapping.dateColumn}${row}`;
@@ -245,13 +257,27 @@ export function stageRows(
     const originalDate =
       d?.formula !== null && d?.formula !== undefined ? d.cachedValue : (d?.value ?? null);
     const flags = [...(c?.flags ?? []), ...(d?.flags ?? []).map((f) => `date_${f}`)];
-    const sourceDate = excelDate(originalDate, catalog.dateSystem);
+    const sourceDate =
+      period === "month" ? null : excelDate(originalDate, catalog.dateSystem);
     let sundayDate: string | null = null;
-    if (sourceDate) {
+    let periodDate: string | null = null;
+    if (period === "month") {
+      const month = monthNumber.get((originalDate ?? "").trim().toLowerCase());
+      const year = mapping.sourceYear;
+      if (!month || !Number.isInteger(year) || year! < 1900 || year! > 2100) {
+        flags.push("missing_or_invalid_month");
+      } else {
+        periodDate = `${year}-${String(month).padStart(2, "0")}-01`;
+        if (periodDate > snapshotMonth) flags.push("future_relative_to_snapshot");
+        if (seen.has(periodDate)) flags.push("duplicate_month_in_mapping");
+        seen.add(periodDate);
+      }
+    } else if (sourceDate) {
       const day = new Date(`${sourceDate}T12:00:00Z`);
       if (day.getUTCDay() !== 0) flags.push("non_sunday_date");
       day.setUTCDate(day.getUTCDate() + ((7 - day.getUTCDay()) % 7));
       sundayDate = day.toISOString().slice(0, 10);
+      periodDate = sundayDate;
       if (sundayDate > snapshotDate) flags.push("future_relative_to_snapshot");
       if (seen.has(sundayDate)) flags.push("duplicate_week_in_mapping");
       seen.add(sundayDate);
@@ -279,6 +305,7 @@ export function stageRows(
       dateCoordinate,
       originalDate,
       sundayDate,
+      periodDate,
       value,
       formula: c?.formula ?? null,
       cachedValue: c?.cachedValue ?? null,

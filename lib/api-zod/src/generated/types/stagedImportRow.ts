@@ -16,6 +16,8 @@ export interface StagedImportRow {
   /** @nullable */
   sundayDate: string | null;
   /** @nullable */
+  periodDate?: string | null;
+  /** @nullable */
   value: number | null;
   /** @nullable */
   formula: string | null;

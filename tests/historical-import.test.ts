@@ -56,6 +56,48 @@ describe("historical workbook discovery and raw-only staging", () => {
     );
     expect(rows[1]!.flags).toContain("missing_or_invalid_date");
   });
+  it("stages month labels as month-start periods without calling them Sundays", () => {
+    const w = readWorkbook(
+      syntheticWorkbook(
+        `<row r="2"><c r="A2" t="inlineStr"><is><t>Jan</t></is></c><c r="B2"><v>12</v></c></row><row r="3"><c r="A3" t="inlineStr"><is><t>December</t></is></c><c r="B3"><v>19</v></c></row>`,
+      ),
+    );
+    const rows = stageRows(
+      {
+        ...mappingInput,
+        startRow: 2,
+        endRow: 3,
+        period: "month",
+        sourceYear: 2026,
+      },
+      w.cells.map((c) => c.cell),
+      w,
+      "2026-11-07",
+    );
+    expect(rows[0]).toMatchObject({
+      originalDate: "Jan",
+      sundayDate: null,
+      periodDate: "2026-01-01",
+      value: 12,
+    });
+    expect(rows[1]).toMatchObject({
+      originalDate: "December",
+      periodDate: "2026-12-01",
+    });
+    expect(rows[1]!.flags).toContain("future_relative_to_snapshot");
+    const report = buildReport(
+      rows.map((data) => ({
+        mappingId: "month-mapping",
+        definition: { ...mappingInput, period: "month" as const, sourceYear: 2026 },
+        data,
+      })),
+      [],
+    );
+    expect(report.weeks.map(({ period, week }) => [period, week])).toEqual([
+      ["month", "2026-01-01"],
+      ["month", "2026-12-01"],
+    ]);
+  });
   it("treats only literal blank attendance cells as zero after date eligibility", () => {
     const blank = { value: null, formula: null, flags: ["missing_value"] };
     expect(acceptedBlankAttendanceIsZero("member_attendance", blank)).toBe(true);

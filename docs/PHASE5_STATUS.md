@@ -476,8 +476,9 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   9:00 AM service times.
 - Published 14 annual Giving workbook series (2013–2026), retaining exact USD
   minor units, 720 dated rows and 718 usable values. Source-defined historical
-  general giving is not an all-fund cash-flow reconciliation. Fund-category
-  equivalence and monthly/unit-count blocks remain unmapped.
+  general giving is not an all-fund cash-flow reconciliation. Fund categories
+  were mapped and the separate monthly recurring / giving-people blocks were
+  subsequently published; see the dated November 18 update below.
 - Fixed Giving publication coverage: a newer current-window scan no longer
   blocks publication of retained, completed Giving backfill or marks its first
   overlap week partial merely because the current scan began midweek. Other
@@ -624,8 +625,9 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   all-role aggregate reads, identifier exclusion and invalid-scope rejection.
   API and dashboard type checks passed.
 - The five fund-category mappings were approved and published in the later
-  November 17 update below. Workbook Fuel (T) remains campaign-unspecified, and
-  monthly recurring/giving-unit blocks still need period and unit definitions.
+  November 17 update below. Workbook Fuel (T) remains campaign-unspecified.
+  Monthly recurring dollars and weekly/monthly giving-people counts now have
+  separate source labels and period handling.
   Overall Phase 5 acceptance stays open.
 
 ### Approved fund breakdowns and observed-zero correction — November 17, 2026

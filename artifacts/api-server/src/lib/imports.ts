@@ -227,7 +227,9 @@ export async function createMapping(p: AdminActor, id: string, input: ImportMapp
       input.endRow > sheet.maxRow ||
       columnNumber(input.valueColumn) > 16384 ||
       columnNumber(input.dateColumn) > 16384 ||
-      input.valueColumn === input.dateColumn
+      input.valueColumn === input.dateColumn ||
+      ((input.period ?? "week") === "month" &&
+        (!Number.isInteger(input.sourceYear) || input.sourceYear! < 1900 || input.sourceYear! > 2100))
     )
       throw new AccessError(
         400,
@@ -333,7 +335,11 @@ export async function stageMapping(p: AdminActor, id: string, mappingId: string)
     const definition = await c.query(
       "SELECT id FROM attendance_definitions ORDER BY version DESC LIMIT 1",
     );
-    if (accepted.rowCount && definition.rowCount) {
+    if (
+      accepted.rowCount &&
+      definition.rowCount &&
+      ["adult_service_1", "adult_service_2"].includes(m.definition.target)
+    ) {
       await c.query("SELECT pg_advisory_xact_lock(716104)");
       const { importAuthorizedWorkbook } = await import("./attendance-workbook");
       const result = await importAuthorizedWorkbook(c, id, definition.rows[0].id, true);
@@ -368,12 +374,15 @@ export function buildReport(
 ): ImportReport {
   const groups = new Map<string, ImportWeek>();
   for (const { mappingId, definition: d, data } of rows) {
-    if (!data.sundayDate) continue;
-    const key = JSON.stringify([data.sundayDate, d.target, d.unit, d.ministry]);
+    const period = d.period ?? "week";
+    const periodDate = data.periodDate ?? data.sundayDate;
+    if (!periodDate) continue;
+    const key = JSON.stringify([period, periodDate, d.target, d.unit, d.ministry]);
     let group = groups.get(key);
     if (!group) {
       group = {
-        week: data.sundayDate,
+        week: periodDate,
+        period,
         target: d.target,
         unit: d.unit,
         ministry: d.ministry,
@@ -424,14 +433,17 @@ export function buildReport(
           }
         : null;
   }
-  const weekDates = [...new Set(weeks.map((w) => w.week))];
+  const weekDates = [...new Set(weeks.map((w) => `${w.period ?? "week"}:${w.week}`))];
   return {
     weeks,
     stagedRows: rows.length,
     flaggedRows: rows.filter((r) => r.data.flags.length).length,
-    approvedWeeks: weekDates.filter((date) =>
-      weeks.filter((w) => w.week === date).every((w) => w.approved),
-    ).length,
+    approvedWeeks: weekDates.filter((periodDate) => {
+      const [period, date] = periodDate.split(":");
+      return weeks
+        .filter((w) => (w.period ?? "week") === period && w.week === date)
+        .every((w) => w.approved);
+    }).length,
   };
 }
 export async function evidence(c: PoolClient, id: string) {
@@ -543,7 +555,7 @@ export async function exportReport(p: Principal, id: string, kind: string) {
     const maps = await mappings(c, id);
     await audit(c, p, "report_exported", id);
     if (kind === "report") {
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Historical source reconciliation</title><style>body{font:15px system-ui;margin:32px;color:#223242}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px;text-align:left}small{display:block}</style></head><body><h1>Historical source reconciliation</h1><p>Review-only staging. No metrics published. ${report.approvedWeeks} complete reviewed weeks; ${report.flaggedRows} flagged rows.</p><table><tr><th>Sunday</th><th>Candidate</th><th>Source evidence</th><th>Variance</th><th>Review / flags</th></tr>${report.weeks.map((w) => `<tr><td>${escapeHtml(w.week)}</td><td>${escapeHtml(w.target)}<small>${escapeHtml(w.unit)} / ${escapeHtml(w.ministry)}</small></td><td>${w.evidence.map((e) => `${escapeHtml(e.sheet)}!${escapeHtml(e.coordinate)}: ${escapeHtml(e.value ?? "unknown")}`).join("<br>")}</td><td>${escapeHtml(w.variance ?? "not comparable")}</td><td>${w.approved ? "Approved evidence" : "Unreviewed"}<small>${escapeHtml(w.flags.join(", "))}</small></td></tr>`).join("")}</table></body></html>`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Historical source reconciliation</title><style>body{font:15px system-ui;margin:32px;color:#223242}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px;text-align:left}small{display:block}</style></head><body><h1>Historical source reconciliation</h1><p>Review-only staging. No metrics published. ${report.approvedWeeks} reviewed periods; ${report.flaggedRows} flagged rows.</p><table><tr><th>Period</th><th>Candidate</th><th>Source evidence</th><th>Variance</th><th>Review / flags</th></tr>${report.weeks.map((w) => `<tr><td>${escapeHtml(w.period === "month" ? w.week.slice(0, 7) : w.week)}</td><td>${escapeHtml(w.target)}<small>${escapeHtml(w.unit)} / ${escapeHtml(w.ministry)}</small></td><td>${w.evidence.map((e) => `${escapeHtml(e.sheet)}!${escapeHtml(e.coordinate)}: ${escapeHtml(e.value ?? "unknown")}`).join("<br>")}</td><td>${escapeHtml(w.variance ?? "not comparable")}</td><td>${w.approved ? "Approved evidence" : "Unreviewed"}<small>${escapeHtml(w.flags.join(", "))}</small></td></tr>`).join("")}</table></body></html>`;
       const reviews = report.weeks
         .filter((w) => w.approval)
         .map((w) => {
@@ -575,6 +587,8 @@ export async function exportReport(p: Principal, id: string, kind: string) {
           "sheet",
           "column",
           "date_axis",
+          "period",
+          "source_year",
           "rows",
           "legacy_label",
           "candidate",
@@ -594,6 +608,8 @@ export async function exportReport(p: Principal, id: string, kind: string) {
               d.sheet,
               d.valueColumn,
               d.dateColumn,
+              d.period ?? "week",
+              d.sourceYear ?? "",
               `${d.startRow}:${d.endRow}`,
               d.legacyLabel,
               d.target,
@@ -609,7 +625,7 @@ export async function exportReport(p: Principal, id: string, kind: string) {
     } else if (kind === "errors") {
       filename = "row_errors.csv";
       output = [
-        ["mapping_version", "sheet", "cell", "date_cell", "original_date", "sunday", "flags"],
+        ["mapping_version", "sheet", "cell", "date_cell", "original_date", "period", "period_start", "flags"],
         ...rows
           .filter((r) => r.data.flags.length)
           .map((r) => [
@@ -618,15 +634,17 @@ export async function exportReport(p: Principal, id: string, kind: string) {
             r.data.coordinate,
             r.data.dateCoordinate,
             r.data.originalDate,
-            r.data.sundayDate,
+            r.definition.period ?? "week",
+            r.data.periodDate ?? r.data.sundayDate,
             r.data.flags.join(";"),
           ]),
       ];
     } else {
-      filename = kind === "conflicts" ? "source_conflicts.csv" : "reconciled_weekly.csv";
+      filename = kind === "conflicts" ? "source_conflicts.csv" : "reconciled_periods.csv";
       output = [
         [
-          "sunday",
+          "period",
+          "period_start",
           "candidate",
           "unit",
           "ministry",
@@ -647,6 +665,7 @@ export async function exportReport(p: Principal, id: string, kind: string) {
               w.flags.some((f) => f.includes("duplicate")),
           )
           .map((w) => [
+            w.period ?? "week",
             w.week,
             w.target,
             w.unit,

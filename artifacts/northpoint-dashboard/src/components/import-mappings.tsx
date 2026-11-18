@@ -33,7 +33,15 @@ const statusTone: Record<string, string> = {
   superseded: "off",
 };
 
-function RowsPreview({ batchId, mappingId }: { batchId: string; mappingId: string }) {
+function RowsPreview({
+  batchId,
+  mappingId,
+  period,
+}: {
+  batchId: string;
+  mappingId: string;
+  period: "week" | "month";
+}) {
   const [page, setPage] = useState(1);
   const params = { page };
   const q = useGetImportRows(batchId, mappingId, params, {
@@ -62,7 +70,7 @@ function RowsPreview({ batchId, mappingId }: { batchId: string; mappingId: strin
                 "Value cell",
                 "Date cell",
                 "Original date",
-                "Sunday",
+                period === "month" ? "Month start" : "Sunday",
                 "Value",
                 "Formula",
                 "Cached",
@@ -87,7 +95,7 @@ function RowsPreview({ batchId, mappingId }: { batchId: string; mappingId: strin
                   <Nullable value={r.originalDate} />
                 </td>
                 <td className="px-2 py-1">
-                  <Nullable value={r.sundayDate} />
+                  <Nullable value={r.periodDate ?? r.sundayDate} />
                 </td>
                 <td className="px-2 py-1">
                   <Nullable value={r.value} />
@@ -149,7 +157,7 @@ function MappingCard({
         <div>
           <p className="font-mono text-[13px] font-semibold">{d.target}</p>
           <p className="text-[12px] text-muted-foreground">
-            {d.legacyLabel} · {d.ministry} · {d.unit}
+            {d.legacyLabel} · {d.ministry} · {d.unit} · {d.period ?? "week"}
           </p>
         </div>
         <StatusPill
@@ -170,6 +178,12 @@ function MappingCard({
           <dt className="inline text-muted-foreground">Dates </dt>
           <dd className="inline">{d.dateColumn}</dd>
         </div>
+        {d.sourceYear && (
+          <div>
+            <dt className="inline text-muted-foreground">Month year </dt>
+            <dd className="inline">{d.sourceYear}</dd>
+          </div>
+        )}
         <div>
           <dt className="inline text-muted-foreground">Priority </dt>
           <dd className="inline">{d.priority}</dd>
@@ -262,7 +276,13 @@ function MappingCard({
         <FormError error={review.error} />
         <FormError error={stage.error} />
       </div>
-      {showRows && !disabled && <RowsPreview batchId={batchId} mappingId={m.id} />}
+      {showRows && !disabled && (
+        <RowsPreview
+          batchId={batchId}
+          mappingId={m.id}
+          period={d.period ?? "week"}
+        />
+      )}
     </li>
   );
 }

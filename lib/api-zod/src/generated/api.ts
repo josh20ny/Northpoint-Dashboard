@@ -319,7 +319,8 @@ export const ImportMinistryHistoryBody = zod.object({
   "ministry": zod.string(),
   "measure": zod.string(),
   "scope": zod.string().min(1).max(importMinistryHistoryBodyScopeMax),
-  "year": zod.number().int().min(importMinistryHistoryBodyYearMin).max(importMinistryHistoryBodyYearMax).nullable()
+  "year": zod.number().int().min(importMinistryHistoryBodyYearMin).max(importMinistryHistoryBodyYearMax).nullable(),
+  "period": zod.enum(['week', 'month']).optional()
 })
 
 export const ImportMinistryHistoryResponse = zod.object({
@@ -977,6 +978,9 @@ export const getImportResponseMappingsItemDefinitionPriorityMax = 100;
 
 export const getImportResponseMappingsItemDefinitionLegacyLabelMax = 300;
 
+export const getImportResponseMappingsItemDefinitionSourceYearMin = 1900;
+export const getImportResponseMappingsItemDefinitionSourceYearMax = 2100;
+
 
 
 export const GetImportResponse = zod.object({
@@ -1014,7 +1018,9 @@ export const GetImportResponse = zod.object({
   "priority": zod.string().min(1).max(getImportResponseMappingsItemDefinitionPriorityMax),
   "confidence": zod.enum(['low', 'medium', 'high']),
   "legacyLabel": zod.string().min(1).max(getImportResponseMappingsItemDefinitionLegacyLabelMax),
-  "supersedes": zod.string().uuid().nullish()
+  "supersedes": zod.string().uuid().nullish(),
+  "period": zod.enum(['week', 'month']).optional(),
+  "sourceYear": zod.number().int().min(getImportResponseMappingsItemDefinitionSourceYearMin).max(getImportResponseMappingsItemDefinitionSourceYearMax).optional()
 }),
   "status": zod.enum(['draft', 'approved', 'rejected', 'superseded']),
   "reviewNote": zod.string().nullable(),
@@ -1102,6 +1108,9 @@ export const createImportMappingBodyPriorityMax = 100;
 
 export const createImportMappingBodyLegacyLabelMax = 300;
 
+export const createImportMappingBodySourceYearMin = 1900;
+export const createImportMappingBodySourceYearMax = 2100;
+
 
 
 export const CreateImportMappingBody = zod.object({
@@ -1117,7 +1126,9 @@ export const CreateImportMappingBody = zod.object({
   "priority": zod.string().min(1).max(createImportMappingBodyPriorityMax),
   "confidence": zod.enum(['low', 'medium', 'high']),
   "legacyLabel": zod.string().min(1).max(createImportMappingBodyLegacyLabelMax),
-  "supersedes": zod.string().uuid().nullish()
+  "supersedes": zod.string().uuid().nullish(),
+  "period": zod.enum(['week', 'month']).optional(),
+  "sourceYear": zod.number().int().min(createImportMappingBodySourceYearMin).max(createImportMappingBodySourceYearMax).optional()
 })
 
 export const createImportMappingResponseDefinitionSheetMax = 100;
@@ -1140,6 +1151,9 @@ export const createImportMappingResponseDefinitionPriorityMax = 100;
 
 export const createImportMappingResponseDefinitionLegacyLabelMax = 300;
 
+export const createImportMappingResponseDefinitionSourceYearMin = 1900;
+export const createImportMappingResponseDefinitionSourceYearMax = 2100;
+
 
 
 export const CreateImportMappingResponse = zod.object({
@@ -1157,7 +1171,9 @@ export const CreateImportMappingResponse = zod.object({
   "priority": zod.string().min(1).max(createImportMappingResponseDefinitionPriorityMax),
   "confidence": zod.enum(['low', 'medium', 'high']),
   "legacyLabel": zod.string().min(1).max(createImportMappingResponseDefinitionLegacyLabelMax),
-  "supersedes": zod.string().uuid().nullish()
+  "supersedes": zod.string().uuid().nullish(),
+  "period": zod.enum(['week', 'month']).optional(),
+  "sourceYear": zod.number().int().min(createImportMappingResponseDefinitionSourceYearMin).max(createImportMappingResponseDefinitionSourceYearMax).optional()
 }),
   "status": zod.enum(['draft', 'approved', 'rejected', 'superseded']),
   "reviewNote": zod.string().nullable(),
@@ -1213,6 +1229,7 @@ export const GetImportRowsResponse = zod.object({
   "dateCoordinate": zod.string(),
   "originalDate": zod.string().nullable(),
   "sundayDate": zod.string().nullable(),
+  "periodDate": zod.string().nullish(),
   "value": zod.number().nullable(),
   "formula": zod.string().nullable(),
   "cachedValue": zod.string().nullable(),
@@ -1231,6 +1248,7 @@ export const GetImportReportParams = zod.object({
 export const GetImportReportResponse = zod.object({
   "weeks": zod.array(zod.object({
   "week": zod.string(),
+  "period": zod.enum(['week', 'month']).optional(),
   "target": zod.string(),
   "unit": zod.string(),
   "ministry": zod.string(),

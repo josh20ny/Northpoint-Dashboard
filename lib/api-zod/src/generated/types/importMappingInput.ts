@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ImportMappingInputConfidence } from './importMappingInputConfidence';
+import type { ImportMappingInputPeriod } from './importMappingInputPeriod';
 
 export interface ImportMappingInput {
   /**
@@ -57,4 +58,10 @@ export interface ImportMappingInput {
   legacyLabel: string;
   /** @nullable */
   supersedes?: string | null;
+  period?: ImportMappingInputPeriod;
+  /**
+     * @minimum 1900
+     * @maximum 2100
+     */
+  sourceYear?: number;
 }

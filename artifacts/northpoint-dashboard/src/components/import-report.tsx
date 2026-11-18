@@ -28,7 +28,7 @@ const EXPORTS = [
   ["mappings", "Mappings CSV"],
   ["errors", "Errors CSV"],
   ["conflicts", "Conflicts CSV"],
-  ["weekly", "Weekly CSV"],
+  ["weekly", "Periods CSV"],
   ["report", "Report HTML"],
 ] as const;
 
@@ -47,7 +47,10 @@ function WeekRow({ batchId, w, disabled }: { batchId: string; w: ImportWeek; dis
     <li className="rounded-lg border bg-card p-3.5" data-testid={`card-week-${key}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px]">
-          <span className="font-mono font-semibold">{w.week}</span> ·{" "}
+          <span className="font-mono font-semibold">
+            {w.period === "month" ? w.week.slice(0, 7) : w.week}
+          </span>{" "}
+          ·{" "}
           <span className="font-mono">{w.target}</span> · {w.ministry} · {w.unit}
         </p>
         <StatusPill
@@ -220,7 +223,7 @@ export function ImportReportPanel({ batchId, disabled }: { batchId: string; disa
       <SectionHeading
         icon={Scale}
         title="Reconciliation"
-        detail="Weekly comparison of staged evidence across mappings."
+        detail="Compare staged evidence by weekly or monthly reporting period."
       />
       <div className="mb-3 flex flex-wrap gap-2">
         {EXPORTS.map(([kind, label]) => (
@@ -259,7 +262,7 @@ export function ImportReportPanel({ batchId, disabled }: { batchId: string; disa
             {[
               ["Staged rows", r.stagedRows],
               ["Flagged rows", r.flaggedRows],
-              ["Approved weeks", r.approvedWeeks],
+              ["Approved periods", r.approvedWeeks],
             ].map(([k, v]) => (
               <div key={k} className="rounded-md border bg-muted/30 px-2.5 py-1.5">
                 <dt className="text-muted-foreground">{k}</dt>

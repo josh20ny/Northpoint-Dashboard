@@ -23,7 +23,11 @@ type Draft = Record<
   | "legacyLabel"
   | "supersedes",
   string
-> & { confidence: ImportMappingInputConfidence | "" };
+> & {
+  confidence: ImportMappingInputConfidence | "";
+  period: "week" | "month";
+  sourceYear: string;
+};
 
 const blank: Draft = {
   sheet: "",
@@ -39,6 +43,8 @@ const blank: Draft = {
   confidence: "",
   legacyLabel: "",
   supersedes: "",
+  period: "week",
+  sourceYear: "",
 };
 
 function F({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -88,6 +94,8 @@ export function ImportMappingForm({ detail }: { detail: ImportDetail }) {
       confidence: d.confidence,
       legacyLabel: d.legacyLabel.trim(),
       supersedes: d.supersedes || null,
+      period: d.period,
+      sourceYear: d.period === "month" && d.sourceYear ? Number(d.sourceYear) : undefined,
     };
     create.mutate(
       { id: detail.batch.id, data },
@@ -152,6 +160,31 @@ export function ImportMappingForm({ detail }: { detail: ImportDetail }) {
             data-testid="input-mapping-date-column"
           />
         </F>
+        <F label="Period">
+          <select
+            value={d.period}
+            onChange={set("period")}
+            className={inputCls}
+            data-testid="select-mapping-period"
+          >
+            <option value="week">Weekly Sunday</option>
+            <option value="month">Monthly label</option>
+          </select>
+        </F>
+        {d.period === "month" && (
+          <F label="Month label year" hint="Use the year shown above the month column.">
+            <input
+              required
+              type="number"
+              min={1900}
+              max={2100}
+              value={d.sourceYear}
+              onChange={set("sourceYear")}
+              className={inputCls}
+              data-testid="input-mapping-source-year"
+            />
+          </F>
+        )}
         <F label="Start row">
           <input
             required

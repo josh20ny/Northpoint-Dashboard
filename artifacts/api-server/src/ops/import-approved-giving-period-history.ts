@@ -1,26 +1,156 @@
 /**
- * Preview or publish the owner-approved monthly and weekly Giving workbook
- * series. Values are read from the accepted workbook staging cells, never
- * from PCO person records. No Planning Center sync state is read or changed.
+ * Preview or publish the owner-approved Giving workbook measures by their
+ * source periods. Uses the reviewed Imports mappings and lineage validator;
+ * reads aggregate workbook cells only and never touches a PCO sync.
  */
-import { createHash } from "node:crypto";
 import { pool } from "@workspace/db";
-import { recordAudit } from "../lib/audit";
-import { buildGivingWorkbookPeriodHistory } from "../lib/giving-workbook-period-history";
-import { MINISTRY_DEFINITION_VERSION } from "../lib/ministry-calculation";
-import type { WorkbookCell } from "@workspace/api-zod";
+import type { ImportMappingInput, WorkbookCell } from "@workspace/api-zod";
+import { createMapping, reviewMapping, stageMapping } from "../lib/imports";
+import { importMinistryHistory } from "../lib/ministry-data";
 import type { Catalog } from "../lib/workbook";
+import { buildGivingWorkbookPeriodHistory } from "../lib/giving-workbook-period-history";
 
 const apply = process.argv.includes("--apply");
-const sha256 = (value: unknown) =>
-  createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const approvalNote =
+  "Owner accepted these source-labeled Giving period measures for historical display.";
+
+type Actor = Parameters<typeof createMapping>[0];
+type Entry = {
+  label: string;
+  column: string;
+  dateColumn: string;
+  startRow: number;
+  endRow: number;
+  measure: string;
+  unit: string;
+  period: "week" | "month";
+  sourceYear?: number;
+  alignedYear?: number;
+  semantics: string;
+};
+type ExistingMapping = {
+  id: string;
+  status: string;
+  definition: ImportMappingInput;
+  stagedCount: number;
+};
+type PlannedEntry = Entry & {
+  status: "create" | "approve" | "stage" | "reuse";
+  mappingId?: string;
+};
+
+const entries: Entry[] = [
+  ...[
+    ["B", 2022],
+    ["C", 2023],
+    ["E", 2024],
+    ["G", 2025],
+  ].map(([column, year]) => ({
+    label: `Monthly recurring gifts ${year} (workbook)`,
+    column: String(column),
+    dateColumn: "A",
+    startRow: 101,
+    endRow: 112,
+    measure: "legacy_monthly_recurring_giving",
+    unit: "USD",
+    period: "month" as const,
+    sourceYear: Number(year),
+    semantics:
+      "Accepted workbook-defined monthly recurring-gift dollar subtotal. Keep separate from General Giving; source values are USD.",
+  })),
+  ...[
+    ["B", 2021],
+    ["C", 2022],
+    ["D", 2023],
+    ["E", 2024],
+    ["F", 2025],
+    ["G", 2026],
+  ].map(([column, year]) => ({
+    label: `Giving people per week ${year} (workbook)`,
+    column: String(column),
+    dateColumn: "A",
+    startRow: 118,
+    endRow: 169,
+    measure: "legacy_giving_people",
+    unit: "people",
+    period: "week" as const,
+    alignedYear: Number(year),
+    semantics:
+      "Accepted workbook-defined count of people who gave during this Sunday-aligned week. Separate from current PCO giving units that may group joint givers.",
+  })),
+  ...[
+    ["J", 2021],
+    ["K", 2022],
+    ["L", 2023],
+    ["M", 2024],
+    ["N", 2025],
+    ["O", 2026],
+  ].map(([column, year]) => ({
+    label: `Giving people per month ${year} (workbook)`,
+    column: String(column),
+    dateColumn: "I",
+    startRow: 118,
+    endRow: 129,
+    measure: "legacy_giving_people",
+    unit: "people",
+    period: "month" as const,
+    sourceYear: Number(year),
+    semantics:
+      "Accepted workbook-defined count of people who gave during the calendar month. Separate from current PCO giving units that may group joint givers.",
+  })),
+];
+
+function expectedDefinition(entry: Entry): ImportMappingInput {
+  return {
+    sheet: "$$$",
+    valueColumn: entry.column,
+    dateColumn: entry.dateColumn,
+    startRow: entry.startRow,
+    endRow: entry.endRow,
+    target: entry.measure,
+    unit: entry.unit,
+    ministry: "giving",
+    semantics: entry.semantics,
+    priority: "accepted_workbook_history",
+    confidence: "high",
+    legacyLabel: entry.label,
+    supersedes: null,
+    period: entry.period,
+    sourceYear: entry.sourceYear,
+  };
+}
+
+function sameDefinition(actual: ImportMappingInput, expected: ImportMappingInput) {
+  return (
+    actual.sheet === expected.sheet &&
+    actual.valueColumn === expected.valueColumn &&
+    actual.dateColumn === expected.dateColumn &&
+    actual.startRow === expected.startRow &&
+    actual.endRow === expected.endRow &&
+    actual.target === expected.target &&
+    actual.unit === expected.unit &&
+    actual.ministry === expected.ministry &&
+    actual.semantics === expected.semantics &&
+    actual.priority === expected.priority &&
+    actual.confidence === expected.confidence &&
+    actual.legacyLabel === expected.legacyLabel &&
+    (actual.period ?? "week") === expected.period &&
+    (actual.sourceYear ?? null) === (expected.sourceYear ?? null) &&
+    (actual.supersedes ?? null) === null
+  );
+}
 
 async function main() {
   const c = await pool.connect();
+  let actor: Actor;
+  let batchId: string;
+  let snapshotDate: string;
+  let seriesSummary: unknown[];
+  let plan: PlannedEntry[];
   try {
-    await c.query("BEGIN");
+    await c.query("BEGIN READ ONLY");
     await c.query("SELECT set_config('np.role','admin',true)");
-    const accepted = await c.query<{
+    const batches = await c.query<{
       id: string;
       sha256: string;
       snapshotDate: string;
@@ -40,25 +170,26 @@ async function main() {
          )
        ORDER BY b.created_at DESC LIMIT 2`,
     );
-    if (accepted.rowCount !== 1)
+    if (batches.rowCount !== 1)
       throw new Error("Expected exactly one accepted active workbook with the reviewed Giving sheet");
-    const batch = accepted.rows[0]!;
-    if (batch.snapshotDate !== "2026-11-07")
-      throw new Error(`Expected the accepted 2026-11-07 snapshot, found ${batch.snapshotDate}`);
+    const batch = batches.rows[0]!;
+    batchId = batch.id;
+    snapshotDate = batch.snapshotDate;
+    actor = { userId: batch.actorId, role: "admin" };
+    if (snapshotDate !== "2026-11-07")
+      throw new Error(`Expected the accepted 2026-11-07 snapshot; found ${snapshotDate}`);
     if (!batch.catalog.sheets.some((sheet) => sheet.name === "$$$" && sheet.maxRow >= 169))
       throw new Error("The accepted Giving sheet does not match the reviewed period-history layout");
-
-    await c.query("SELECT set_config('np.user_id',$1,true)", [batch.actorId]);
+    await c.query("SELECT set_config('np.user_id',$1,true)", [actor.userId]);
     const sourceRows = await c.query<{ coordinate: string; cell: WorkbookCell }>(
       `SELECT coordinate,cell FROM import_cells
        WHERE batch_id=$1 AND sheet='$$$'
          AND coordinate ~ '^(A|B|C|D|E|F|G|I|J|K|L|M|N|O)(9[9]|10[0-9]|11[0-9]|12[0-9]|13[0-9]|14[0-9]|15[0-9]|16[0-9])$'`,
-      [batch.id],
+      [batchId],
     );
     const cells = new Map(sourceRows.rows.map((row) => [row.coordinate, row.cell]));
-    const series = buildGivingWorkbookPeriodHistory(cells, batch.catalog, batch.snapshotDate);
-
-    const summary = series.map((item) => {
+    const series = buildGivingWorkbookPeriodHistory(cells, batch.catalog, snapshotDate);
+    seriesSummary = series.map((item) => {
       const dates = item.values.map((value) => value.week).sort();
       return {
         series: item.label,
@@ -76,130 +207,122 @@ async function main() {
           .map((value) => ({ period: value.week, value: value.value })),
       };
     });
-    if (!apply) {
-      await c.query("ROLLBACK");
-      console.log(
-        JSON.stringify(
-          {
-            mode: "preview",
-            snapshotDate: batch.snapshotDate,
-            series: summary,
-            sourceCellsRead: true,
-            personLinkedDataRead: false,
-            pcoSyncTouched: false,
-            metricsPublished: false,
-          },
-          null,
-          2,
-        ),
-      );
-      return;
-    }
 
-    const publications = [];
-    for (const item of series) {
-      const product = `workbook:giving:${item.measure}:${item.period}`;
-      const sourceKey = sha256({
-        batchId: batch.id,
-        sha256: batch.sha256,
-        snapshotDate: batch.snapshotDate,
-        key: item.key,
-        period: item.period,
-        values: item.values,
-        evidence: item.evidence,
-      });
-      const existing = await c.query<{ id: string }>(
-        `SELECT id FROM ministry_publications
-         WHERE product=$1 AND account_ref=$2 AND source_key=$3`,
-        [product, batch.id, sourceKey],
+    const existing = (
+      await c.query<ExistingMapping>(
+        `SELECT m.id,m.status,m.definition,
+          (SELECT count(*)::int FROM import_staged_rows r WHERE r.mapping_id=m.id) AS "stagedCount"
+         FROM import_mappings m WHERE m.batch_id=$1`,
+        [batchId],
+      )
+    ).rows;
+    plan = entries.map((entry) => {
+      const expected = expectedDefinition(entry);
+      const current = existing.filter(
+        (row) =>
+          row.status !== "superseded" &&
+          row.definition.sheet === expected.sheet &&
+          row.definition.valueColumn === expected.valueColumn &&
+          row.definition.target === expected.target &&
+          row.definition.ministry === expected.ministry,
       );
-      if (existing.rowCount) {
-        publications.push({ label: item.label, id: existing.rows[0]!.id, reused: true });
-        continue;
-      }
-      const dates = item.values.map((value) => value.week).sort();
-      const publication = await c.query<{ id: string }>(
-        `INSERT INTO ministry_publications(
-           product,account_ref,source_key,source_kind,definition_version,
-           source_as_of,coverage_start,coverage_end
-         ) VALUES($1,$2,$3,'workbook',$4,$5,$6,$7) RETURNING id`,
-        [
-          product,
-          batch.id,
-          sourceKey,
-          MINISTRY_DEFINITION_VERSION,
-          new Date(`${batch.snapshotDate}T12:00:00Z`),
-          dates[0],
-          dates.at(-1),
-        ],
-      );
-      const publicationId = publication.rows[0]!.id;
-      await c.query(
-        `INSERT INTO ministry_metric_values(
-           publication_id,ministry,measure,scope,week,period,value,unit,
-           quality,denominator,flags
-         )
-         SELECT $1,x->>'ministry',x->>'measure',x->>'scope',
-           (x->>'week')::date,x->>'period',(x->>'value')::bigint,x->>'unit',
-           x->>'quality',(x->>'denominator')::bigint,x->'flags'
-         FROM jsonb_array_elements($2::jsonb) AS x`,
-        [publicationId, JSON.stringify(item.values)],
-      );
-      await c.query(
-        `INSERT INTO ministry_publication_evidence(publication_id,evidence,created_by)
-         VALUES($1,$2,$3)`,
-        [
-          publicationId,
-          JSON.stringify({
-            source: "accepted workbook",
-            batchId: batch.id,
-            sha256: batch.sha256,
-            snapshotDate: batch.snapshotDate,
-            ownerDecision: "Publish separately",
-            label: item.label,
-            measure: item.measure,
-            period: item.period,
-            unit: item.unit,
-            evidence: item.evidence,
-          }),
-          batch.actorId,
-        ],
-      );
-      await recordAudit(
-        batch.actorId,
-        "ministry.data_published",
-        "ministry_publication",
-        publicationId,
-        "success",
-        c,
-      );
-      publications.push({
-        label: item.label,
-        id: publicationId,
-        rows: item.values.length,
-        reused: false,
-      });
-    }
+      if (!current.length) return { ...entry, status: "create" };
+      if (current.length !== 1 || !sameDefinition(current[0]!.definition, expected))
+        throw new Error(`${entry.label} already has a different current mapping; refusing to replace it`);
+      const found = current[0]!;
+      if (found.status === "draft")
+        return { ...entry, status: "approve", mappingId: found.id };
+      if (found.status !== "approved")
+        throw new Error(`${entry.label} mapping is not approved`);
+      if (found.stagedCount && found.stagedCount !== entry.endRow - entry.startRow + 1)
+        throw new Error(`${entry.label} has an incomplete staged row set`);
+      return {
+        ...entry,
+        status: found.stagedCount ? ("reuse" as const) : ("stage" as const),
+        mappingId: found.id,
+      };
+    });
     await c.query("COMMIT");
-    console.log(
-      JSON.stringify(
-        {
-          mode: "applied",
-          snapshotDate: batch.snapshotDate,
-          series: summary,
-          publications,
-          pcoSyncTouched: false,
-        },
-        null,
-        2,
-      ),
-    );
   } catch (error) {
     await c.query("ROLLBACK").catch(() => undefined);
     throw error;
   } finally {
     c.release();
   }
+
+  if (plan!.length > 250) throw new Error("Mapping review limit exceeded");
+  if (!apply) {
+    console.log(
+      JSON.stringify(
+        {
+          mode: "preview",
+          snapshotDate,
+          series: seriesSummary,
+          plannedMappings: plan!.map(({ label, column, dateColumn, period, sourceYear, status }) => ({
+            label,
+            valueColumn: column,
+            dateColumn,
+            period,
+            sourceYear,
+            status,
+          })),
+          sourceCellsRead: true,
+          personLinkedDataRead: false,
+          pcoSyncTouched: false,
+          metricsPublished: false,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const publications = [];
+  for (const entry of plan!) {
+    let mappingId = entry.mappingId;
+    if (entry.status === "create") {
+      const mapping = await createMapping(actor!, batchId!, expectedDefinition(entry));
+      mappingId = mapping.id;
+      await reviewMapping(actor!, batchId!, mappingId!, "approved", approvalNote);
+      await stageMapping(actor!, batchId!, mappingId!);
+    } else if (entry.status === "approve") {
+      await reviewMapping(actor!, batchId!, mappingId!, "approved", approvalNote);
+      await stageMapping(actor!, batchId!, mappingId!);
+    } else if (entry.status === "stage") {
+      await stageMapping(actor!, batchId!, mappingId!);
+    }
+    const result = await importMinistryHistory(actor!, {
+      batchId: batchId!,
+      mappingId: mappingId!,
+      ministry: "giving",
+      measure: entry.measure,
+      scope: "all",
+      year: entry.period === "week" ? (entry.alignedYear ?? null) : null,
+      period: entry.period,
+    });
+    publications.push({
+      label: entry.label,
+      period: entry.period,
+      publicationId: result.publicationId,
+      values: result.values,
+      issues: result.issues,
+      reused: result.reused,
+    });
+  }
+  console.log(
+    JSON.stringify(
+      {
+        mode: "applied",
+        snapshotDate: snapshotDate!,
+        series: seriesSummary!,
+        publications,
+        pcoSyncTouched: false,
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 main().catch((error) => {

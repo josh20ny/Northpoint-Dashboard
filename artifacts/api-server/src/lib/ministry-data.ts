@@ -118,10 +118,12 @@ function validateTarget(ministry: string, measure: string, scope: string) {
       "legacy_first_time_givers",
       "legacy_recurring_givers",
       "legacy_lapsed_givers",
+      "legacy_monthly_recurring_giving",
+      "legacy_giving_people",
     ].includes(measure) !==
     (ministry === "giving")
   )
-    throw new AccessError(400, "Financial measures belong only to Giving");
+    throw new AccessError(400, "Giving measures belong only to Giving");
   if (measure === "giving_total" && scope !== "all")
     throw new AccessError(400, "General Giving must use the all-services scope");
   if (scope.startsWith("fuel-") && (ministry !== "giving" || measure !== "fund_giving"))
@@ -1177,6 +1179,7 @@ export async function importMinistryHistory(
   input: MinistryHistoryInput,
 ): Promise<MinistryPublicationResult> {
   validateTarget(input.ministry, input.measure, input.scope);
+  const period = input.period ?? "week";
   if (
     [
       "attendance",
@@ -1210,6 +1213,8 @@ export async function importMinistryHistory(
         409,
         "Choose the ministry and measure that were explicitly approved on the source mapping",
       );
+    if ((definition.period ?? "week") !== period || (period === "month" && input.year !== null))
+      throw new AccessError(409, "Choose a source mapping and year alignment that match the selected period");
     const monetary = MEASURES[input.measure].unit.endsWith("_minor");
     if (monetary && !["USD", "USD_minor", "currency_usd"].includes(definition.unit))
       throw new AccessError(409, "Approve the mapping's USD currency/unit before monetary import");
@@ -1230,19 +1235,25 @@ export async function importMinistryHistory(
     let axisYear: number | null = null;
     for (const r of rows) {
       const row = r.data;
-      // Use a real mapped date or an explicitly selected ordinal-year alignment.
-      if (!sunday(row.sundayDate)) {
+      const mappedDate = period === "month" ? row.periodDate : (row.periodDate ?? row.sundayDate);
+      const validPeriodDate =
+        period === "month"
+          ? typeof mappedDate === "string" &&
+            validCalendarDate(mappedDate) &&
+            mappedDate.endsWith("-01")
+          : sunday(mappedDate);
+      if (!validPeriodDate || !mappedDate) {
         issues.add("unreadable_source_date");
         continue;
       }
-      let week = row.sundayDate;
-      if (input.year !== null) {
-        const sourceYear = Number(row.sundayDate.slice(0, 4));
+      let week = mappedDate;
+      if (period === "week" && input.year !== null) {
+        const sourceYear = Number(mappedDate.slice(0, 4));
         if (axisYear !== null && axisYear !== sourceYear)
           throw new AccessError(409, "Ordinal alignment requires a single-year date axis");
         axisYear = sourceYear;
         const ordinal = Math.round(
-          (+new Date(row.sundayDate) - +new Date(ordinalSunday(sourceYear, 0))) / (7 * 86400000),
+          (+new Date(mappedDate) - +new Date(ordinalSunday(sourceYear, 0))) / (7 * 86400000),
         );
         try {
           week = ordinalSunday(input.year, ordinal);
@@ -1255,12 +1266,13 @@ export async function importMinistryHistory(
         issues.add("future_at_snapshot");
         continue;
       }
-      if (weeks.has(week))
+      const periodKey = `${period}:${week}`;
+      if (weeks.has(periodKey))
         throw new AccessError(
           409,
-          "Mapping contains duplicate source weeks; choose a single source series",
+          "Mapping contains duplicate source periods; choose a single source series",
         );
-      weeks.add(week);
+      weeks.add(periodKey);
       const unsafe = (row.flags ?? []).some((f: string) =>
         /forecast|conflict|duplicate|unsafe_numeric|invalid|non_numeric|error|non_sunday|merged/.test(
           f,
@@ -1290,6 +1302,7 @@ export async function importMinistryHistory(
         ministry: input.ministry,
         measure: input.measure,
         scope: input.scope,
+        period,
         week,
         value,
         unit: monetary ? "USD_minor" : MEASURES[input.measure].unit,
@@ -1307,7 +1320,7 @@ export async function importMinistryHistory(
       throw new AccessError(409, "No readable dated observations before the snapshot");
     values.sort((a, b) => a.week.localeCompare(b.week));
     return publish(c, p, {
-      product: `workbook:${input.ministry}:${input.measure}:${input.scope}`,
+      product: `workbook:${input.ministry}:${input.measure}:${input.scope}${input.period ? `:${period}` : ""}`,
       account: input.batchId,
       key: digest(
         canonical({

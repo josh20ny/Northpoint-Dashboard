@@ -7,9 +7,11 @@
  */
 import type { ImportEvidence } from './importEvidence';
 import type { ImportEvidenceReview } from './importEvidenceReview';
+import type { ImportWeekPeriod } from './importWeekPeriod';
 
 export interface ImportWeek {
   week: string;
+  period?: ImportWeekPeriod;
   target: string;
   unit: string;
   ministry: string;

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MinistryHistoryInputPeriod } from './ministryHistoryInputPeriod';
 
 export interface MinistryHistoryInput {
   batchId: string;
@@ -22,4 +23,5 @@ export interface MinistryHistoryInput {
      * @nullable
      */
   year: number | null;
+  period?: MinistryHistoryInputPeriod;
 }

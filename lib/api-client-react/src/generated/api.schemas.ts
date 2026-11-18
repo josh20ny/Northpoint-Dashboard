@@ -335,6 +335,14 @@ export interface MinistryPublicationInput {
   end: string;
 }
 
+export type MinistryHistoryInputPeriod = typeof MinistryHistoryInputPeriod[keyof typeof MinistryHistoryInputPeriod];
+
+
+export const MinistryHistoryInputPeriod = {
+  week: 'week',
+  month: 'month',
+} as const;
+
 export interface MinistryHistoryInput {
   batchId: string;
   mappingId: string;
@@ -351,6 +359,7 @@ export interface MinistryHistoryInput {
      * @nullable
      */
   year: number | null;
+  period?: MinistryHistoryInputPeriod;
 }
 
 export interface MinistryPublicationResult {
@@ -1078,6 +1087,14 @@ export const ImportMappingInputConfidence = {
   high: 'high',
 } as const;
 
+export type ImportMappingInputPeriod = typeof ImportMappingInputPeriod[keyof typeof ImportMappingInputPeriod];
+
+
+export const ImportMappingInputPeriod = {
+  week: 'week',
+  month: 'month',
+} as const;
+
 export interface ImportMappingInput {
   /**
      * @minLength 1
@@ -1128,6 +1145,12 @@ export interface ImportMappingInput {
   legacyLabel: string;
   /** @nullable */
   supersedes?: string | null;
+  period?: ImportMappingInputPeriod;
+  /**
+     * @minimum 1900
+     * @maximum 2100
+     */
+  sourceYear?: number;
 }
 
 export type ImportMappingStatus = typeof ImportMappingStatus[keyof typeof ImportMappingStatus];
@@ -1205,6 +1228,8 @@ export interface StagedImportRow {
   /** @nullable */
   sundayDate: string | null;
   /** @nullable */
+  periodDate?: string | null;
+  /** @nullable */
   value: number | null;
   /** @nullable */
   formula: string | null;
@@ -1229,6 +1254,14 @@ export interface ImportEvidence {
   flags: string[];
 }
 
+export type ImportWeekPeriod = typeof ImportWeekPeriod[keyof typeof ImportWeekPeriod];
+
+
+export const ImportWeekPeriod = {
+  week: 'week',
+  month: 'month',
+} as const;
+
 export type ImportReviewMethod = typeof ImportReviewMethod[keyof typeof ImportReviewMethod];
 
 
@@ -1246,6 +1279,7 @@ export interface ImportEvidenceReview {
 
 export interface ImportWeek {
   week: string;
+  period?: ImportWeekPeriod;
   target: string;
   unit: string;
   ministry: string;

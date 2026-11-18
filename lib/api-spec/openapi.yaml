@@ -969,6 +969,7 @@ components:
         measure: { type: string }
         scope: { type: string, minLength: 1, maxLength: 80 }
         year: { type: [integer, "null"], minimum: 1900, maximum: 2100 }
+        period: { type: string, enum: [week, month] }
     MinistryPublicationResult:
       type: object
       required: [publicationId, values, issues, reused]
@@ -1507,6 +1508,8 @@ components:
         confidence: { type: string, enum: [low, medium, high] }
         legacyLabel: { type: string, minLength: 1, maxLength: 300 }
         supersedes: { type: ["string", "null"], format: uuid }
+        period: { type: string, enum: [week, month] }
+        sourceYear: { type: integer, minimum: 1900, maximum: 2100 }
     ImportMapping:
       type: object
       required: [id, definition, status, reviewNote, stagedCount]
@@ -1545,6 +1548,7 @@ components:
         dateCoordinate: { type: string }
         originalDate: { type: ["string", "null"] }
         sundayDate: { type: ["string", "null"] }
+        periodDate: { type: ["string", "null"] }
         value: { type: ["number", "null"] }
         formula: { type: ["string", "null"] }
         cachedValue: { type: ["string", "null"] }
@@ -1571,6 +1575,7 @@ components:
       required: [week, target, unit, ministry, evidence, variance, flags, evidenceHash, approved]
       properties:
         week: { type: string }
+        period: { type: string, enum: [week, month] }
         target: { type: string }
         unit: { type: string }
         ministry: { type: string }
