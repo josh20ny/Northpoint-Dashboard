@@ -58,6 +58,15 @@ freshness reporting, but do not replace full reconciliation with a recent-only
 sync merely to make routine runs faster. No new scan, schedule change or
 production deployment is authorized by this decision.
 
+### Transit Weekend serving scope — 2026-11-18
+
+**APPROVED**, owner: product owner. Report PCO's Transit Weekend source as a
+separate scope on Transit, never merged into regular Transit totals. Keep the
+documented scheduled and accepted response definitions; neither proves actual
+participation. The separate source route starts with its first staged local
+plan date and remains effective for future records. No source scan or
+production deployment is authorized by this decision.
+
 ### Shared ministry-page hierarchy — 2026-11-12
 
 **APPROVED**, owner: product owner. Keep ministry detail pages consistent:

@@ -103,3 +103,14 @@ headers, including stricter limits for deep pagination.
 **Why:** The provider's documented capabilities differ across products; blindly copying Giving's include optimization can omit records or reject requests.
 
 **How to apply:** Check the product/version documentation before removing association requests, prove complete parent linkage, and use returned rate limits rather than assumed request allowances.
+
+For Groups, preserve full-history reconciliation over faster recent-only scans.
+Older membership edits and changed event attendance lack reliable update
+timestamps, and attendance is event-scoped.
+
+**Why:** The owner explicitly chose full-history accuracy for Groups after the
+complete scan took 3 hours 52 minutes.
+
+**How to apply:** Keep rate-limit-aware bounded batching and resumable progress,
+report actual freshness, and do not claim a short delta scan catches older
+corrections.

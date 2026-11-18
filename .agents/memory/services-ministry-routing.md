@@ -33,6 +33,15 @@ Sunday Morning maps to Service Programming (SPD).
 **How to apply:** Use this confirmed destination rather than treating Sunday
 Morning as a church-wide volunteer total.
 
+Transit Weekend is a separate reporting scope on Transit, not part of regular
+Transit totals. Keep its scheduled/accepted response counts distinct from actual
+participation.
+
+**Why:** The owner chose “Keep separate” for the PCO Transit Weekend source.
+
+**How to apply:** Route its records to the dedicated Transit Weekend scope and
+preserve the distinction between schedule responses and attendance.
+
 Historical ownership of these Services sources is not confirmed.
 
 **Why:** When asked whether the same routes apply throughout their history,

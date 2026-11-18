@@ -798,10 +798,23 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   periods. The remaining 77 are under event-specific/unmapped source types and
   do not enter weekly ministry totals. Weeks without usable source observations
   remain missing, not zero.
-- Transit Weekend remains intentionally unmapped pending a separate
-  interpretation: its history contains 24 plans and 236 PlanPerson records
-  from February 2018 through February 2026. Do not assume that this source
-  belongs in the regular Transit metric. One PlanPerson request per plan remains
+- Transit Weekend is now published as a separate Transit serving scope from
+  its first staged local plan date, February 8, 2018, onward. This does not
+  merge its counts into regular Transit and does not claim actual attendance.
+  The stored backfill has 236 assignments across seven complete event weeks:
+
+  | Week ending | Scheduled | Accepted |
+  | --- | ---: | ---: |
+  | 2018-02-11 | 3 | 1 |
+  | 2019-02-17 | 3 | 1 |
+  | 2022-02-13 | 3 | 0 |
+  | 2023-02-19 | 10 | 10 |
+  | 2024-02-18 | 19 | 19 |
+  | 2025-02-16 | 19 | 17 |
+  | 2026-02-08 | 17 | 12 |
+
+  Both historical Serving publications passed validity and coverage readback.
+  No new PCO scan was started. One PlanPerson request per plan remains
   necessary for the documented API.
 - Added the already-published LU weekly and Safety scheduling figures to
   Connection as separate teams, in addition to the shared-team directory view.
