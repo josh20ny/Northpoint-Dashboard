@@ -12,4 +12,7 @@ Minimize personal fields; document purpose, retention/deletion, incident respons
 - CI secret scanner, dependency audit and immutable audit logs.
 - Backups/restore drill; least-privilege database credentials; encrypted at rest/in transit.
 - Prompt injection tests with external notes and user-supplied spreadsheets.
-- No real production donor/child data in development or demo fixtures.
+- Development may contain only the expressly owner-approved, minimized
+  Planning Center data under the documented role restrictions. Do not use
+  additional donor/child fields, broad production exports, or real-person data
+  in demo fixtures without a separate review and approval.

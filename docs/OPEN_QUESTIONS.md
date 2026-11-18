@@ -8,13 +8,11 @@ them.
 
 ## Still open for Phase 5
 
-1. Complete the privacy review and approve a suitably restricted development
-   environment before adding identifiable donor, group-member or child history
-   beyond the fields and sources already approved. This does not block use of
-   existing staged data, aggregate display or approved current/history work.
-2. Record owner development signoff after the privacy
-   gate. This is separate from production deployment, unattended scheduling
-   and production privacy/retention approval.
+1. Record owner development signoff. The owner approved the current minimized
+   development data boundary on November 18, 2026; this does not approve
+   additional sensitive fields or provider scopes. Production deployment,
+   unattended scheduling and production privacy/retention approval remain
+   separate.
 
 No additional metric definition is currently needed to publish the approved
 Phase 5 measures. Actual source gaps, unresolved Check-Ins, partial coverage
@@ -36,6 +34,8 @@ review is not a request to manually approve every PCO record.
 - Fixed retention periods and privacy-deletion procedures require a separate
   pre-production decision. Current development behavior preserves source
   history and does not automatically purge it.
+- Numeric small-cell suppression thresholds and privacy/retention rules for
+  production remain open; the development approval does not establish them.
 
 ## Resolved definitions to preserve
 

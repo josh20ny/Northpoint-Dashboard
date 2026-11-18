@@ -419,3 +419,18 @@ them into current PCO giving units that may group explicit joint givers.
 Preserve blank workbook cells as missing. Store and display monthly periods as
 months rather than Sundays. No new PCO sync or production publication is
 authorized by this decision.
+
+## Phase 5 development privacy boundary — 2026-11-18
+
+**APPROVED**, owner: product owner. Approve the current, minimized Planning
+Center data in the existing development environment only, under the established
+role restrictions: broad Giving aggregates may be viewed by signed-in roles;
+donor names/IDs, transactions and person-linked Giving signals are Admin-only;
+the Check-In resolver may show child name and grade to Admins but not
+birthdates; group/serving person-level data remains Admin-only.
+
+This approval covers only the existing fields and staged data. It does not
+authorize collecting additional sensitive fields, expanding provider scopes,
+starting another PCO scan, enabling unattended processing, or using the data in
+production. Numeric small-cell suppression, privacy/retention policy and
+production approval remain separate decisions.

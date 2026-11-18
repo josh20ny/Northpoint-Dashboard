@@ -829,24 +829,23 @@ values remain dated to their scan week and expose their `source_as_of` timestamp
   addition, including the exclusion of shared Kids' Check-In and unrelated
   workbook measures from the Guest Services series.
 
-1. Complete the privacy review and approve a suitably restricted development
-   environment before adding more identifiable donor, group-member or child
-   history beyond the owner-requested Admin-only Check-In name/grade fields
-   and the explicitly approved Giving, Groups and Services assignment fields.
-   This gates expansion beyond those approvals, not the already-approved
-   imports or work on existing staged sources.
-2. Map the existing PCO events, rooms, groups and funds to approved ministry
-   measures; publish completed scans and accept representative
-   source-to-storage-to-screen results. Do not infer a ministry from an
-   unreviewed name or treat all synced records as reportable.
-3. Run the remaining historical backfills and accepted workbook mappings for
-   all applicable Phase 5 domains after the data/privacy gates; resolve actual
-   historical units, era mappings, overlaps and coverage gaps.
-4. Complete the focused authenticated browser pass, live-source acceptance and
-   owner development signoff. These are not claimed by type checks or
-   synthetic/rollback fixtures.
-5. Keep production deployment and unattended scheduling separate from this
-   development gate.
+1. **Complete:** The owner approved the current, minimized development data
+   boundary on 2026-11-18. The approval does not extend to additional sensitive
+   fields, provider scopes, another source scan, unattended processing or
+   production.
+2. **Complete:** Approved PCO mappings and publications are in place; accepted
+   workbook history has been imported for applicable Phase 5 measures. Actual
+   source gaps, partial coverage, unresolved Check-Ins and unavailable values
+   remain explicitly labelled rather than treated as zero or complete.
+3. **Complete:** The owner reviewed the signed-in Giving, Check-In,
+   Connection/Serving, child-ministry and home-overview displays and confirmed
+   they look correct. This is representative source-to-screen acceptance, not
+   granular review of every PCO record.
+4. **Open:** Obtain the owner's development signoff for Phase 5 after this
+   status review.
+5. Production deployment, unattended scheduling, numeric small-cell
+   suppression and production privacy/retention approval remain outside this
+   development closeout.
 
 ## Integrations usability and PCO processing
 
