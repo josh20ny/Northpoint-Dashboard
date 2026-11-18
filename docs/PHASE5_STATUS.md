@@ -1,8 +1,6 @@
 # Phase 5: implementation and live-source gates
 
-Phase 5 remains open until current-source acceptance, all required historical
-backfills, and owner development signoff are complete. Implementation is not
-proof that new provider permissions or live datasets have been accepted.
+**Development closed November 18, 2026.** This file records the Phase 5 implementation and successive reviews. Statements about pending reviews below describe their dates. The [decision log](DECISIONS.md) records the final signoff and production gates. The [Phase 5B brief](PHASE_5B.md) supersedes earlier instructions about workbook display, page hierarchy and the next delivery.
 
 ## Owner decisions
 
@@ -29,7 +27,7 @@ proof that new provider permissions or live datasets have been accepted.
 
 ## Implemented surfaces
 
-The existing Dashboard layout and adult attendance workflow are retained.
+At the Phase 5 closeout the existing Dashboard layout and adult attendance workflow were retained. Phase 5B changes the presentation described in this section.
 Giving, Connection, Waumba Land, UpStreet, Transit and InsideOut now have
 weekly views that render eligible published values, date ranges,
 comparison/history tables, source dates, quality flags and a KPI inventory.
@@ -100,7 +98,7 @@ Irregular or insufficient patterns are **unclassified**, not healthy.
 
 ## Workbook history and overlaps
 
-Accepted, approved and staged source mappings can publish all Phase 5 measures.
+Phase 5 allowed accepted, approved and staged workbook mappings to publish historical measures. Phase 5B restricts their use in staff reporting to documented gaps. Comparable overlaps support reconciliation.
 Read cached numeric workbook values without executing Excel formulas. Error,
 duplicate, unsafe, merged/shifted or undated evidence remains missing.
 Counts and currency units must match the approved source interpretation.
@@ -383,9 +381,7 @@ needed for this Admin workflow; birthdates and other personal fields remain
 excluded. A new Check-Ins/People refresh is required before these fields are
 available on existing stored records. No refresh was started.
 
-Each source/version is idempotent. Select the newest revision from each source,
-then prefer complete PCO over overlapping complete workbook values; never add
-the sources together. Archived/withdrawn/changed mappings and changed formulas
+Each source/version is idempotent. Phase 5 selected the newest revision from each source and preferred PCO only between equally complete candidates. Phase 5B requires PCO authority throughout its coverage, including partial observations. Archived/withdrawn/changed mappings and changed formulas
 invalidate affected publication output. Manual adult corrections are untouched.
 
 ## Bounds and known distinctions
@@ -969,7 +965,7 @@ Three source-labeled workbook publications were imported from the accepted
 Missing source cells remain missing, not zero. Monthly values are shown in a
 separate history table; the weekly General Giving trend is unchanged.
 
-The owner reviewed the signed-in Giving history and confirmed the separate
+At that point the owner reviewed the signed-in Giving history and confirmed the separate
 monthly/weekly values and period labels look correct. This is acceptance of
 that Giving history display only; it does not close the separate review of
 General Giving, fund/campaign breakdowns, other ministries, the Check-In
@@ -1004,7 +1000,7 @@ correct. The owner reviewed Waumba Land, UpStreet, Transit and InsideOut and
 confirmed the child/student ministry pages look correct. The owner also
 reviewed the home overview and confirmed it looks correct. The focused
 authenticated review covered the Phase 5 source and ministry displays; the
-privacy gate and overall Phase 5 signoff remain open.
+development privacy gate and overall Phase 5 signoff were subsequently approved in [DECISIONS.md](DECISIONS.md).
 
 Do not deploy these worker changes or enable unattended scheduling as part of
 the development-only Phase 5 work without separate authorization.

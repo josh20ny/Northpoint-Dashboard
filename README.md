@@ -1,20 +1,8 @@
 # Northpoint Dashboard 2.0
 
-**Status:** Phase 4 adult-attendance development closed with owner approval
-(November 9, 2026, America/Chicago), reconciled and ready for Phase 5 preparation.
-Imports and Integrations page cleanup is deferred; see `docs/ROADMAP.md`. See
-`docs/PHASE_4_IMPLEMENTATION.md` for setup, verification and release limits.
-Phase 2 sample-review gate met; Phase 3 direct Planning Center
-connection and resumable source ingestion with opt-in server-side run-to-completion
-processing implemented. Development OAuth consent and organization confirmation
-are complete, as are all three backfills/revision rescans and relationship checks.
-Admin-configurable refresh scheduling is implemented; unattended hosting and final
-operational acceptance are still required.
-The owner-authorized workbook history now imports in bulk: 80 adult service
-counts across 40 Sundays are loaded, with provenance and no per-week approvals.
-See the superseding source-acceptance policy in `docs/DECISIONS.md`.
-The original supplied README is preserved at `docs/ORIGINAL_PLANNING_README.md`.
-The complete initialization instructions are in `docs/PROJECT_INITIALIZATION.md`.
+**Current work — Phase 5B.** Phase 5 closed for development on November 18, 2026. Its signed-in ministry views, source mappings and historical publications are the starting point. Phase 5B turns the owner's walkthrough into a focused dashboard revision before Phase 6.
+
+Start with the [Phase 5B implementation brief](docs/PHASE_5B.md), the [code audit](docs/PHASE_5B_AUDIT.md) and the [coding-agent prompt](docs/AGENT_TASK_PROMPTS.md#phase-5b). Planning Center is the primary source wherever it records the measure. The accepted workbook fills documented historical or manual-data gaps and supplies comparison evidence. Phase 5 development signoff and production readiness have separate gates.
 
 ## Vision
 
@@ -37,7 +25,7 @@ One place for Northpoint staff to see ministry health, understand what is changi
 - PostgreSQL infrastructure metadata, versioned SQL and explicit migration commands.
 - Replaceable auth contract, verified OIDC sign-in, invite-only admission and local roles.
 - Administration for invitations/access, ministries and dated service occurrences.
-- People/external-reference and immutable raw-source provenance schemas (empty).
+- People/external-reference and immutable raw-source provenance schemas.
 - Auditable configuration changes, append-only audit history and raw-source RLS.
 - Synthetic test-only principals, unit/API tests, optional database check, lint,
   TypeScript, formatting configuration, credential-pattern check and GitHub CI.
@@ -48,10 +36,7 @@ Admin-only historical workbook exploration/staging is available at
 limits, source fingerprint discrepancy and remaining release gates.
 Planning Center authorization and source staging are available under
 `/administration/integrations`; see `docs/PHASE_3_IMPLEMENTATION.md`.
-The development Planning Center organization is connected; full live-data
-acceptance remains outstanding. No published dataset or ministry formula exists. Only
-invited, verified identities can create staff sessions. Public pages remain a
-no-data preview; this is not a production-ready analytics release.
+The connected development organization has published aggregates for Giving, Connection, serving and child/student ministries. Opening the operational dashboards requires an invited, verified staff account. See the [Phase 5 closeout](docs/DECISIONS.md#phase-5-development-closeout--2026-11-18) for acceptance scope.
 
 ## Architecture and repository
 
@@ -145,30 +130,11 @@ application mechanism per database. No production release is authorized by this 
 
 ## Current roadmap slice
 
-Phase 4 provides protected adult attendance inside
-`/ministries/service-programming` (legacy `/attendance` redirects), with immediate
-manual entry, append-only corrections, deliberate historical promotion and a
-home KPI. Auditorium attendees only; volunteers and stage participants excluded.
-Online-only and intentionally off Sundays remain unrecorded, not measured zero.
-Rolling averages default to four calendar weeks and allow 1–52-week windows,
-with recorded denominators and exclusions shown. YoY uses labelled week-aligned
-2025 in-person totals already present in the accepted workbook.
-Phase 2's January 4, 11 and 18 sample weeks have current
-owner-confirmed approvals for both adult services (six exact-evidence approvals).
-This is not independent two-source or full-year verification. The imported
-workbook retains its accepted 2026-11-07 cutoff and original fingerprint caveat.
-Planning Center authorization and organization confirmation are complete in
-development. All three backfills/revision rescans and repaired relationships were
-verified. Opt-in run-to-completion resumes partial runs; Admins can configure
-Daily/Weekly/Custom frequency, custom intervals and start date, time, weekdays and time zone for
-People → Services → Check-Ins (daily 1 AM Central by default). Unattended hosting,
-first scheduled-cycle acceptance, deletion/retention rules and release acceptance
-remain pre-production requirements, not blockers to Phase 4 development under
-D-025. Later modules remain out of scope. No production release is authorized.
+The [roadmap](docs/ROADMAP.md) places Phase 5B between the accepted Phase 5 development work and Phase 6 scorecards. The [Phase 5 status record](docs/PHASE5_STATUS.md) and [adult attendance reconciliation](docs/PHASE_4_RECONCILIATION.md) document what shipped. The Phase 5B brief describes what the coding agent still needs to implement.
 
 ## Non-negotiable standards
 
-No live personal/church data committed to source. Staff cannot access person-level giving through UI, API, exports, AI, logs, or notifications. Every metric exposes source, freshness, definition version, and date window. All integrations must be reconnectable from Admin > Integrations.
+No live personal/church data committed to source. Staff cannot access person-level giving through UI, API, exports, AI, logs, or notifications. Every metric retains source, freshness, definition version and date window for authorized inspection. Staff views show dates and material quality exceptions. All integrations must be reconnectable from Admin > Integrations.
 
 ## Sources
 

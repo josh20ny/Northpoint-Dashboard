@@ -1,5 +1,7 @@
 # Phase 5 workbook-to-measure crosswalk
 
+**Phase 5B use.** This inventory records source semantics and prior imports. Use it to identify dated gaps and compare like measures. The staff display rules in the [Phase 5B brief](PHASE_5B.md) supersede the original instruction to show all source-labeled workbook KPIs.
+
 ## Scope and status
 
 This crosswalk documents the non-Giving Phase 5 history in the accepted
@@ -25,7 +27,7 @@ reopen the owner's acceptance of the workbook's values.
 | `Historical - Kids`, `R:AG` | `Week`, `Date`, then 2013–2026; section title `Historical - In-Person US Attendance` | UpStreet, `attendance_headcount`, `all` | Same distinction: an aggregate source count, not unique PCO participants; no service split in this block. |
 | `Historical - Students`, `A:P` | `Week`, `Date`, then 2013–2026; section title `Historical - In-Person Transit Attendance` | Transit, `attendance_headcount`, `all` | Keep as a workbook headcount series. Do not reinterpret it as a unique-person count. |
 | `Historical - Students`, `R:AG` | `Week`, `Date`, then 2013–2026; section title `Historical - In-Person IO Attendance` | InsideOut, `attendance_headcount`, `all` | The historical series is not split into large-group and small-group measures. |
-| `Historical - Connection`, `A:K` | `Week`, `Date`, then 2018–2026; section title `Historical - Total Groups Attendance` | Connection, `member_attendance`, `all` | Accepted workbook-defined attendance. Keep distinct from PCO `group_attendance`, which counts explicit event/person pairs. |
+| `Historical - Connection`, `A:K` | `Week`, `Date`, then 2018–2026; section title `Historical - Total Groups Attendance` | Connection, `member_attendance`, `all` | Phase 5 historical key. Trace the series against the owner-identified active-participant history before a gap fill. It cannot represent checked meeting attendance. |
 | `Historical - Connection`, `M:S` | `Week`, `Date`, then 2022–2026; section title `Historical - Engaged 1` | None in Phase 5 | Preserve as source history for later engagement work; do not publish as a Phase 5 group or attendance measure. |
 
 The identified historical attendance tabs do not expose year-by-year volunteer
@@ -66,7 +68,7 @@ rules below; do not import both copies of an overlapping observation.
 | `Transit!F:H`, `IO!I`: SGLs in rally | `volunteer_rally` | Keep rally participation separate from actual serving and from PCO scheduled/accepted volunteers. |
 | `IO!F:G`: large- and small-group attendance | `large_group` and `small_group` | Keep the source-defined measures separate. The existing definitions intentionally do not assume that either count is unique students or that the two can be summed. |
 | `IO!J`: SGLs in groups | `volunteer_headcount` | Candidate source count with small-group context; do not combine with rally counts or infer unique people. |
-| `Connection!D`, `Connection!V`: total groups attendance and group-member attendance | `member_attendance` | Similar labels need explicit column mapping so the same weekly count is not imported twice. Preserve any distinct source-defined measures separately. |
+| `Connection!D`, `Connection!V`: historical attendance labels | Phase 5 imported them separately | D is the source of the displayed “Total group attendance” column, clarified as active participants. Check V independently. Neither label establishes an attended group meeting. |
 | `Connection!C`, `Connection!B`: number of groups | `group_count` | Use only for a dated snapshot whose scope matches the active/non-archived group definition; not a weekly attendance measure. |
 | `Connection!U`: groups that took attendance | `groups_reported` | Source-defined count of reporting groups; not total active groups. |
 | `Connection!M:N`: group leaders and coaches | `group_leaders` / `coaches` | Map separately. A coach is not automatically a PCO leader, and a workbook aggregate is not a person-level list. |
@@ -129,7 +131,7 @@ They remain independent of PCO values and of similarly named workbook series:
 - `Connection!B`: 2025 group-count series, aligned to the corresponding
   ordinal Sundays in 2025.
 - `Connection!C`: 2026 group-count series.
-- `Connection!D`: Total groups attendance.
+- `Connection!D`: imported under “Total groups attendance.” In the walkthrough the owner identified the displayed series as people active in groups. Use it only for compatible dated participation gaps or checks after tracing the mapping.
 - `Connection!V`: Group member attendance.
 
 The two Connection attendance columns stay separate rather than being treated
@@ -196,8 +198,7 @@ units. Their period metadata keeps monthly data distinct from Sundays.
    reusing the current year's literal dates.
 2. Keep the 9:30/11:00 labels tied to their effective date era. Do not silently
    rename historical services to current times.
-3. For a matching measure, unit, scope and period, prefer a complete PCO series
-   over an overlapping complete workbook value. Never add the two sources.
+3. For matching definitions, units, scopes and periods, use PCO wherever it records the measure. Keep partial or stale PCO visible with its coverage. Use a comparable workbook observation only for a documented source gap. An overlap provides reconciliation evidence.
    Workbook headcounts remain distinct from unique PCO Check-Ins participants;
    incomparable measures stay separate rather than being forced into an
    overlap.

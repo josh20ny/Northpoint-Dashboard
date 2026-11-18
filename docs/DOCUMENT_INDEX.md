@@ -1,5 +1,11 @@
 # Documentation Index
 
+**Current delivery**
+
+- [Phase 5B implementation brief](PHASE_5B.md) — timestamped feedback, source policy, implementation order and acceptance.
+- [Phase 5B code audit](PHASE_5B_AUDIT.md) — findings, code locations and verification results.
+- [Coding-agent kickoff](AGENT_TASK_PROMPTS.md#phase-5b).
+
 - `docs/PHASE_4_RECONCILIATION.md` — completed adult-attendance development reconciliation and limits.
 
 - `AGENTS.md`

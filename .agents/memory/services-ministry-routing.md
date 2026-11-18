@@ -51,3 +51,5 @@ the owner answered “I’m not sure”.
 backdate them. Seek dated source evidence for earlier ownership; an old plan's
 existence or a source's current name alone does not establish historical
 volunteer counts or ministry ownership.
+
+Phase 5B makes the ministries directory navigation-only. Show Guest Services in Connection directly below group attendance. Relocate shared Kids’ Check-In to Connection as a separately labeled team. Preserve dated team routing and avoid duplicating shared counts on the children’s pages.

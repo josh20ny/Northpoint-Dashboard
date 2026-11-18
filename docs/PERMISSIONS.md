@@ -4,8 +4,8 @@
 |---|---|---|---|
 | View church/ministry aggregate attendance and engagement | Yes | Yes | Yes |
 | View person-level attendance and permitted check-in history | Yes, audited | Yes, audited | Yes, audited |
-| View group/serving person-level data | Pending privacy signoff | Pending | Yes, audited |
-| View aggregate giving | Yes, approved/suppressed views | Yes, approved/suppressed views | Yes |
+| View group/serving person-level data in development | No | No | Yes, audited |
+| View broad Giving aggregates in development | Yes | Yes | Yes |
 | View person-level giving/donor attribution/transactions | **No** | **No** | **Yes, audited** |
 | View/modify health and engagement rule definitions | No | Read | Yes |
 | Enter manual attendance/scorecards | Yes | Yes | Yes |

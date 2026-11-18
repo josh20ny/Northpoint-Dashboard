@@ -1,5 +1,7 @@
 # Configurable Health and Next-step Scorecards
 
+Phase 5B uses directional differences against the selected average and the aligned prior year. Adult weekly history uses green for positive change and red for zero or negative change, with text equivalents. Overall ministry health and its weighting belong to the later registry.
+
 ## Requirements
 Admin configures metric membership, target source, directionality (higher/lower is better), green/yellow/red bands, weighting, minimum sample size, effective dates, and ministry applicability. Distinguish 'not configured'/'insufficient data' from red.
 

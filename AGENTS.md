@@ -1,5 +1,7 @@
 # Instructions for AI coding agents
 
+For work after Phase 5, start with the [Phase 5B brief](docs/PHASE_5B.md) and [code audit](docs/PHASE_5B_AUDIT.md). Use the Planning Center API through the existing server-side ingestion path wherever it records the requested measure. Workbook acceptance allows mapped gap fills and reconciliation. Imported rows alone do not establish a staff KPI.
+
 This file is mandatory for every agent/task. **Specifications are contracts, not a suggestion to implement everything at once.**
 
 ## Before coding
@@ -10,7 +12,7 @@ This file is mandatory for every agent/task. **Specifications are contracts, not
 
 ## Boundaries
 - API/analytics server alone is responsible for metric computation and authorization; frontend may format but must not redefine metrics.
-- Store ingested source provenance; enforce idempotent upserts and backfills.
+- Store ingested source provenance and enforce idempotent upserts and backfills. Keep technical lineage out of the default staff view.
 - No direct browser calls to secrets-bearing provider APIs. OAuth server-side, least privilege, encrypted token storage, refresh and revocation support.
 - Replit auth should be hidden behind a provider adapter so it can later be replaced with Google Workspace OIDC.
 - Deny by default. Giving donor identity/transactions must not flow to Staff/Leadership via endpoints, exports, chat, audit details, charts, logs, or error payloads.
@@ -29,7 +31,7 @@ This file is mandatory for every agent/task. **Specifications are contracts, not
 - Summarize what changed, what passed, known gaps, any handoff steps.
 
 ## Forbidden assumptions
-Do not assume service time 9:30/11:00 is still current; 2026 programming is 9:00/11:00, with historical schedules as historical data. Do not use chart-only aggregates as proof of a person's attendance. Do not claim correlation is causation. Do not assume every integration has OAuth or accessible API endpoints.
+Resolve clock times from the effective-dated ministry schedule. Use First service and Second service across time changes and the actual evening service for InsideOut. Do not use chart-only aggregates as proof of a person's attendance. Do not claim correlation is causation. Do not assume every integration has OAuth or accessible API endpoints.
 
 ## Stop and escalate
 Request product-owner review before changing a metric definition, adding person-level data access, enabling AI tool actions, mapping ambiguous historical columns, deleting legacy source data, or widening OAuth scopes.

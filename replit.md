@@ -1,7 +1,6 @@
 # Northpoint Dashboard 2.0
 
-Phase 4 adult-attendance workspace for a portable internal ministry analytics platform.
-Read `AGENTS.md` and `docs/PROJECT_INITIALIZATION.md` before implementation.
+Phase 5 closed for development. The next implementation is **Phase 5B**. Read [the agent brief](docs/PHASE_5B.md), [code audit](docs/PHASE_5B_AUDIT.md) and [AGENTS.md](AGENTS.md) before building. Use React/Vite, Express and the existing PCO connection. The roadmap places scorecards in Phase 6.
 
 ## Run & Operate
 
@@ -32,8 +31,8 @@ All supplied planning documents are retained under their original paths.
 
 ## Architecture decisions
 
-- Phase 3 authorized for Planning Center People, Services and Check-Ins.
-  Giving, Groups and operational metric publication remain out of scope.
+- The development connection stages People, Check-Ins, Services, Giving and Groups. Phase 5 publishes authorized aggregate ministry results. The [decision log](docs/DECISIONS.md) records exact data and role boundaries.
+
 - Vite/Express retained instead of introducing proposed Next.js; recommendation
   and alternatives in `docs/IMPLEMENTATION.md`, not recorded as owner-approved.
 - Invite-only verified staff access; no inferred domain admission.
@@ -42,44 +41,11 @@ All supplied planning documents are retained under their original paths.
 
 ## Product
 
-Foundation shell, invite-only OIDC/local roles, Admin access/ministry/service
-configuration, audit log, historical workbook exploration/raw staging,
-reference schemas, documentation and health. Planning Center OAuth and restricted
-source ingestion support manual pages or opt-in run-to-completion on the API.
-Admins must be able to adjust scheduled refresh timing and frequency.
-The frequency choices must be Daily, Weekly and Custom. Custom supports every N
-days or weeks (and hours), anchored to a start date; weekly patterns select weekdays.
-The scheduler defaults to daily 1 AM Central; start time and time zone remain editable.
-It processes People, Services and Check-Ins sequentially and requires a running API. Reliable unattended hosting is
-still outstanding. No operational metrics or individual attendance/giving views.
-The owner chose to keep development only; unattended production hosting is deferred.
-Phase 3 is closed for development under D-025; Phase 4 does not wait
-for fresh lifecycle scans, a scheduled-cycle/restart exercise, or real credential-
-failure/reconnect tests. These remain unverified live and required before
-production. Keep the schedule disabled until ready to demonstrate it, treat
-lifecycle absence as unassessed, and never assume unattended freshness. This
-closeout does not authorize metric publication, deletion, or credential changes.
+Staff see a previous-Sunday summary and can drill into the ministry that owns each number. The Phase 5B brief specifies the selected-average and YoY comparisons, YTD graphs and page-by-page changes. Use PCO throughout each metric’s recorded history. Use accepted, compatible workbook values for genuine gaps and as reconciliation evidence. Adult auditorium counts are manual, with accepted workbook history.
 
-Phase 4 implements protected adult attendance within Service Programming at
-`/ministries/service-programming`, a home KPI,
-immediate manual saves and immutable corrections. Count seated auditorium
-attendees only; exclude volunteers and people on stage. Online-only/intentionally
-off Sundays are unrecorded, not zero. Manual entries need no approval.
-Admin setup selects the adult ministry; service slots must be explicitly mapped,
-not inferred from old headers. The owner subsequently accepted the provided
-workbook as the historical source and rejected per-week publication steps.
-Accepted mapped history bulk-imports with immutable batch/fingerprint authority
-and honest system attribution; preserve manual corrections and unrecorded dates.
-No fabricated Admin approval is needed. See the superseding decision in
-`docs/DECISIONS.md`.
-Adult comparisons now provide default-four-week rolling averages with selectable
-1–52-week windows, explicit complete-week denominators and exclusions. YoY uses
-the accepted workbook's 2025 in-person total baselines with labelled numbered-
-Sunday alignment, without inventing per-service history or exposing raw imports.
-See `docs/PHASE_4_IMPLEMENTATION.md` for verification and acceptance limits.
-Phase 4's development exit gate is met; `docs/PHASE_4_RECONCILIATION.md` records
-the full accepted-source/API reconciliation. This does not authorize production,
-provider scans, scheduling, credential changes or broader historical claims.
+The existing development data, invite-only roles, Admin-only donor details and Check-In exception handling have specific permissions. Use the existing server-side calculation and publication paths for derived values. Minimized authorized development data and production readiness have distinct acceptance gates.
+
+Admin-configurable scheduled refresh supports Daily, Weekly and Custom frequency with an effective start, timezone and weekdays. Unattended hosting, production privacy and release approval remain separate. Use existing staged facts and synthetic fixtures for Phase 5B. See [Phase 5 status](docs/PHASE5_STATUS.md) for the accepted baseline.
 
 ## User preferences
 

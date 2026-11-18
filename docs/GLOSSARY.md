@@ -15,3 +15,7 @@
 - **Back door**: disengagement indicator; interval TBD.
 - **Scorecard**: structured qualitative service evaluation, often 1–4.
 - **Cohort maturity**: sufficient elapsed time for return/conversion measurement.
+
+- **Weekly giving units** means distinct giving units making a qualifying gift in a reporting week, using the explicit PCO unit policy. A person with multiple gifts counts once per unit.
+- **Active group participants** means distinct people in eligible active groups as of the observation date. **Group meeting attendances** are explicit attended event/person pairs during the reporting period.
+- **First service / Second service** identify service order over time. An actual clock time belongs to the dated occurrence.

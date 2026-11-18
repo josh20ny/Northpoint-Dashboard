@@ -383,3 +383,5 @@ credential-lifecycle demonstration remain required before production. Do not
 enable the schedule, change credentials, start scans, configure unattended hosting
 or publish this application as part of Phase 4. Retention/privacy, runtime
 least-privilege, backups/restore and production approval remain separate gates.
+
+**Subsequent handoff.** Phase 5 closed on November 18. [Phase 5B](PHASE_5B.md) supersedes this historical screen layout and specifies the new adult chart, history table and backend cleanup. The manual counts, revisions and audit described above remain evidence for those changes.
