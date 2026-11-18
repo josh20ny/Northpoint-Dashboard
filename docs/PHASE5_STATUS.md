@@ -856,9 +856,8 @@ The Integrations page now presents Planning Center and Other providers as
 keyboard-operable, collapsed-by-default sections. Planning Center's connection
 state remains visible in its heading; its controls mount only while expanded,
 and status polling runs only while open. Admin restrictions and all existing
-controls remain in place. The dashboard type check passed and the preview
-retains its sign-in gate; the screenshot browser was not signed in, so the
-authenticated contents still need an owner-side visual check.
+controls remain in place. The dashboard type check passed. The owner reviewed
+the signed-in page and confirmed the collapsed provider layout looks correct.
 
 ### PCO processing: page efficiency improved; durable deltas remain
 
